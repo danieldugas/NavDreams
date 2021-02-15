@@ -63,9 +63,17 @@ def run(HOST='127.0.0.1', PORT=25001, time_step=0.1, sleep_time=-1, planner_type
             import base64
             if dico["camera"] != 'JPG':
                 jpgbytes = base64.decodestring(dico["camera"])
-                jpgfile = open("/tmp/img.jpg", "wb")
-                jpgfile.write(jpgbytes)
-                jpgfile.close()
+
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(jpgbytes))
+
+            from matplotlib import pyplot as plt
+            plt.imshow(np.asarray(img))
+            plt.ion()
+            plt.show()
+            plt.pause(0.1)
+
 
             # do cool stuff here
             to_save = {k: dico[k] for k in ('clock', 'crowd', 'odom', 'report')}

@@ -18,6 +18,8 @@ from dwa import DynamicWindowApproachNavigationPlanner
 def run(HOST='127.0.0.1', PORT=25001, time_step=0.1, sleep_time=-1, planner_type="DWA"):
     s = socket_handler.init_socket(HOST, PORT)
 
+    viewer = None
+
     def handler(signal_received, frame):
         # Handle any cleanup here
         print('SIGINT or CTRL-C detected. Exiting gracefully')
@@ -62,18 +64,57 @@ def run(HOST='127.0.0.1', PORT=25001, time_step=0.1, sleep_time=-1, planner_type
 #             print(dico)
             import base64
             if dico["camera"] != 'JPG':
-                jpgbytes = base64.decodestring(dico["camera"])
+#                 jpgbytes = base64.decodestring(dico["camera"])
+                jpgbytes = base64.b64decode(dico["camera"])
 
             from PIL import Image
             import io
             img = Image.open(io.BytesIO(jpgbytes))
+            arr = np.asarray(img)
+            width = arr.shape[1]
+            height = arr.shape[0]
 
-            from matplotlib import pyplot as plt
-            plt.imshow(np.asarray(img))
-            plt.ion()
-            plt.show()
-            plt.pause(0.1)
+#             from matplotlib import pyplot as plt
+#             plt.imshow(arr)
+#             plt.ion()
+#             plt.show()
+#             plt.pause(0.1)
 
+            import pyglet
+            from pyglet.gl import GLubyte
+            pixels = arr[::-1,:,:].flatten()
+            rawData = (GLubyte * len(pixels))(*pixels)
+            imageData = pyglet.image.ImageData(width, height, 'RGB', rawData)
+
+            # Window and viewport size
+            WINDOW_W = width
+            WINDOW_H = height
+            VP_W = WINDOW_W
+            VP_H = WINDOW_H
+            from gym.envs.classic_control import rendering
+            import pyglet
+            from pyglet import gl
+            # Create viewer
+            if viewer is None:
+                viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
+                score_label = pyglet.text.Label(
+                    '0000', font_size=12,
+                    x=20, y=WINDOW_H*2.5/40.00, anchor_x='left', anchor_y='center',
+                    color=(255,255,255,255))
+                currently_rendering_iteration = 0
+            # Render in pyglet
+            currently_rendering_iteration += 1
+            viewer.draw_circle(r=10, color=(0.3,0.3,0.3))
+            win = viewer.window
+            win.switch_to()
+            win.dispatch_events()
+            win.clear()
+            gl.glViewport(0, 0, VP_W, VP_H)
+            imageData.blit(0,0)
+            # Text
+            score_label.text = ""
+            score_label.draw()
+            win.flip()
 
             # do cool stuff here
             to_save = {k: dico[k] for k in ('clock', 'crowd', 'odom', 'report')}

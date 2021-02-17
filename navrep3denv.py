@@ -17,6 +17,7 @@ class NavRep3DEnv(object):
         self.time_step = 0.1
         self.sleep_time = -1
         self.s = socket_handler.init_socket(HOST, PORT)
+        self.last_cmd_vel = (0, 0)
         self.viewer = None
         self.current_scenario = None
         self.total_steps = 0
@@ -61,11 +62,6 @@ class NavRep3DEnv(object):
     def step(self, actions):
         self.total_steps += 1
         tic = timer()
-        planner = RVONavigationPlanner()
-        # @Fabien: how do I get static obstacles as polygons?
-        planner.set_static_obstacles([])
-
-        last_cmd_vel = (0, 0)
 
         time_in = time.time()
         # making the raw string to send from the dict
@@ -99,13 +95,14 @@ class NavRep3DEnv(object):
         # @Fabien: odom velocities are 0, should be higher
         odom = helpers.get_odom(dico)
         x, y, th, _, _, _ = odom
-        speed, rot = last_cmd_vel
+        speed, rot = self.last_cmd_vel
         odom[3] = speed * np.cos(th)
         odom[4] = speed * np.sin(th)
         odom[5] = rot
 
         speed = actions[0]
         rot = actions[2]
+        self.last_cmd_vel = (speed, rot)
 
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
         self.pub['vel_cmd'] = (speed, np.rad2deg(rot))

@@ -8,16 +8,15 @@ from navrep.tools.envplayer import EnvPlayer
 
 import helpers
 import socket_handler
-from rvo import RVONavigationPlanner
 
 class NavRep3DEnv(object):
-    def __init__(self):
+    def __init__(self, silent=False):
         HOST = '127.0.0.1'
         PORT = 25001
+        self.silent = silent
         self.time_step = 0.1
         self.sleep_time = -1
         self.s = socket_handler.init_socket(HOST, PORT)
-        self.last_cmd_vel = (0, 0)
         self.viewer = None
         self.current_scenario = None
         self.total_steps = 0
@@ -27,7 +26,8 @@ class NavRep3DEnv(object):
             socket_handler.stop(self.s)
             exit(0)
         signal(SIGINT, handler)
-        print("Running simulation")
+        if not self.silent:
+            print("Running simulation")
 
     def _get_dt(self):
         return self.time_step
@@ -36,8 +36,9 @@ class NavRep3DEnv(object):
         return self.viewer
 
     def reset(self):
-        print("Scenario # " + str(self.current_scenario))
-        self.pub = {'clock': 0, 'vel_cmd': (0, 0), 'sim_control': 'i'}
+        if not self.silent:
+            print("Scenario # " + str(self.current_scenario))
+        self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
 
         # send a few packet to be sure it is launched
         for _ in range(5):
@@ -97,19 +98,9 @@ class NavRep3DEnv(object):
             print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
 #         crowd = helpers.get_crowd(dico)
-        # @Fabien: odom velocities are 0, should be higher
-#         x, y, th, _, _, _ = odom
-#         speed, rot = self.last_cmd_vel
-#         odom[3] = speed * np.cos(th)
-#         odom[4] = speed * np.sin(th)
-#         odom[5] = rot
-
-        speed = actions[0]
-        rot = actions[2]
-        self.last_cmd_vel = (speed, rot)
 
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
-        self.pub['vel_cmd'] = (speed, np.rad2deg(rot))
+        self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
 
         done = False
         reward = 0
@@ -138,9 +129,10 @@ class NavRep3DEnv(object):
 
 #                 recorder.save_dico('/tmp/recorder/tests_'+str(i), list_save)
 
-        toc = timer()
-        print("Step: {} Hz".format(1. / (toc - tic)))
-        print("Clock: {}".format(dico["clock"]))
+        if not self.silent:
+            toc = timer()
+            print("Step: {} Hz".format(1. / (toc - tic)))
+            print("Clock: {}".format(dico["clock"]))
 
         return arrimg, reward, done, {}
 
@@ -167,9 +159,10 @@ class NavRep3DEnv(object):
         rawData = (GLubyte * len(pixels))(*pixels)
         imageData = pyglet.image.ImageData(width, height, 'RGB', rawData)
 
-        toc = timer()
-        print("Render (fetch): {} Hz".format(1. / (toc - tic)))
-        tic = timer()
+        if not self.silent:
+            toc = timer()
+            print("Render (fetch): {} Hz".format(1. / (toc - tic)))
+            tic = timer()
 
         if mode == 'matplotlib':
             from matplotlib import pyplot as plt
@@ -210,8 +203,9 @@ class NavRep3DEnv(object):
                 pyglet.image.get_buffer_manager().get_color_buffer().save(
                     "/tmp/navrep3denv{:05}.png".format(self.total_steps))
 
-        toc = timer()
-        print("Render (display): {} Hz".format(1. / (toc - tic)))
+        if not self.silent:
+            toc = timer()
+            print("Render (display): {} Hz".format(1. / (toc - tic)))
 
 def debug_env_max_speed(env):
     env.reset()

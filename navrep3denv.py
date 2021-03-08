@@ -88,17 +88,21 @@ class NavRep3DEnv(object):
 #                 list_save.append(to_save)
 
         # @Fabien: how do I get the true goal?
-        goal = np.array(helpers.get_odom(dico)[:2])
-        goal[0] = 0.
+        odom = helpers.get_odom(dico)
+        goal_is_reached = False
+        # avoid crashing if the odom message is corrupted
+        try:
+            goal_is_reached = odom[0] <= 0
+        except IndexError:
+            print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
 #         crowd = helpers.get_crowd(dico)
         # @Fabien: odom velocities are 0, should be higher
-        odom = helpers.get_odom(dico)
-        x, y, th, _, _, _ = odom
-        speed, rot = self.last_cmd_vel
-        odom[3] = speed * np.cos(th)
-        odom[4] = speed * np.sin(th)
-        odom[5] = rot
+#         x, y, th, _, _, _ = odom
+#         speed, rot = self.last_cmd_vel
+#         odom[3] = speed * np.cos(th)
+#         odom[4] = speed * np.sin(th)
+#         odom[5] = rot
 
         speed = actions[0]
         rot = actions[2]
@@ -113,7 +117,7 @@ class NavRep3DEnv(object):
         if helpers.check_ending_conditions(180.0, -20, dico):
             done = True
 
-        if helpers.get_odom(dico)[0] <= goal[0]:
+        if goal_is_reached:
             done = True
             reward = 100
 
@@ -136,6 +140,7 @@ class NavRep3DEnv(object):
 
         toc = timer()
         print("Step: {} Hz".format(1. / (toc - tic)))
+        print("Clock: {}".format(dico["clock"]))
 
         return arrimg, reward, done, {}
 
@@ -208,8 +213,22 @@ class NavRep3DEnv(object):
         toc = timer()
         print("Render (display): {} Hz".format(1. / (toc - tic)))
 
+def debug_env_max_speed(env):
+    env.reset()
+    for i in range(10000):
+        try:
+            _,_,done,_ = env.step(np.array([1, 0, 0]))
+        except IndexError:
+            pass
+        if i % 10 == 0:
+            env.render()
+        if done:
+            env.reset()
+    env.close()
+
 
 if __name__ == "__main__":
     env = NavRep3DEnv()
+#     debug_env_max_speed(env)
     player = EnvPlayer(env)
     player.run()

@@ -5,20 +5,29 @@ import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
+import gym
 
 import helpers
 import socket_handler
 
-class NavRep3DEnv(object):
+class NavRep3DEnv(gym.Env):
     def __init__(self, silent=False):
+        # gym env definition
+        super(NavRep3DEnv, self).__init__()
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(
+            low=0, high=255, shape=(240, 320, 3), dtype=np.uint8)
+        # this
         HOST = '127.0.0.1'
         PORT = 25001
         self.silent = silent
-        self.time_step = 0.1
+        self.time_step = 0.2
         self.sleep_time = -1
+        self.max_time = 180.0
         self.s = socket_handler.init_socket(HOST, PORT)
         self.viewer = None
-        self.current_scenario = None
+        self.current_scenario = 0
+        self.increase_difficulty = False
         self.total_steps = 0
         def handler(signal_received, frame):
             # Handle any cleanup here
@@ -48,16 +57,25 @@ class NavRep3DEnv(object):
             time.sleep(self.time_step)
 
         if self.current_scenario is not None:
-            # next scenario!
-            socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
-
-            # wait for sim to load new scenario
-            time.sleep(1)
-            self.current_scenario += 1
+            if self.increase_difficulty:
+                # next scenario!
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
+                self.current_scenario += 1
+                self.increase_difficulty = False
+            else:
+                # same scenario
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
         else:
             self.current_scenario = 0
 
-        obs, _, _, _ = self.step([0, 0, 0])
+        # wait for sim to load new scenario
+        time.sleep(1)
+
+        # make sure scenario is loaded
+        self.last_image = None
+        while self.last_image is None:
+            obs, _, _, _ = self.step([0, 0, 0])
+
         return obs
 
     def step(self, actions):
@@ -89,10 +107,10 @@ class NavRep3DEnv(object):
 #                 list_save.append(to_save)
 
         # @Fabien: how do I get the true goal?
-        odom = helpers.get_odom(dico)
-        goal_is_reached = False
         # avoid crashing if the odom message is corrupted
+        goal_is_reached = False
         try:
+            odom = helpers.get_odom(dico)
             goal_is_reached = odom[0] <= 0
         except IndexError:
             print("Warning: odom message is corrupted")
@@ -105,16 +123,24 @@ class NavRep3DEnv(object):
         done = False
         reward = 0
         # checking ending conditions
-        if helpers.check_ending_conditions(180.0, -20, dico):
-            done = True
+        if "clock" in dico:
+            if float(dico["clock"]) > self.max_time:
+                if not self.silent:
+                    print("Time limit reached")
+                done = True
 
         if goal_is_reached:
+            if not self.silent:
+                print("Goal reached")
             done = True
             reward = 100
+            self.increase_difficulty = True
 
         # Debug: This skips the first test, remove
         if self.current_scenario == 0:
+            print("Skipping first scenario")
             done = True
+            self.increase_difficulty = True
 
         # doing a step
         self.pub = helpers.do_step(self.time_step, self.pub)

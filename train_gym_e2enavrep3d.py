@@ -10,11 +10,11 @@ from navrep3denv import NavRep3DEnv
 if __name__ == "__main__":
     MILLION = 1000000
     TRAIN_STEPS = 60 * MILLION
-    MODELPATH = "/tmp/model"
+    MODELPATH = "SAC_navrep3d"
     env = NavRep3DEnv(silent=True)
 
     model = SAC(CnnPolicy, env, verbose=1, buffer_size=10000)
-    model.learn(total_timesteps=1, log_interval=1)
+    model.learn(total_timesteps=10000, log_interval=1)
     model.save(MODELPATH)
 
     del model # remove to demonstrate saving and loading

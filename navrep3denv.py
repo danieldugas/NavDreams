@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from signal import signal, SIGINT
 from sys import exit
 from tqdm import tqdm
 import time
@@ -20,7 +19,7 @@ class NavRep3DEnv(gym.Env):
         super(NavRep3DEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(240, 320, 3), dtype=np.uint8)
+            low=0, high=255, shape=(120, 160, 3), dtype=np.uint8)
         # this
         HOST = '127.0.0.1'
         PORT = 25001
@@ -33,6 +32,7 @@ class NavRep3DEnv(gym.Env):
         self.current_scenario = 0
         self.increase_difficulty = False
         self.total_steps = 0
+        self.last_odom = None
         def handler(signal_received, frame):
             # Handle any cleanup here
             print('SIGINT or CTRL-C detected. Exiting gracefully')
@@ -116,9 +116,15 @@ class NavRep3DEnv(gym.Env):
         # @Fabien: how do I get the true goal?
         # avoid crashing if the odom message is corrupted
         goal_is_reached = False
+        progress = 0
         try:
             odom = helpers.get_odom(dico)
+            # goal
             goal_is_reached = odom[0] <= 0
+            # progress
+            if self.last_odom is not None:
+                progress = self.last_odom[0] - odom[0]
+            self.last_odom = odom
         except IndexError:
             print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
@@ -128,7 +134,7 @@ class NavRep3DEnv(gym.Env):
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
 
         done = False
-        reward = 0
+        reward = progress * 0.01
         # checking ending conditions
         if "clock" in dico:
             if float(dico["clock"]) > self.max_time:
@@ -244,7 +250,7 @@ class NavRep3DEnv(gym.Env):
 def debug_env_max_speed(env, render=False):
     env.reset()
     n_episodes = 0
-    for i in tqdm(range(1000000)):
+    for i in tqdm(range(100000)):
         _,_,done,_ = env.step(np.random.uniform(size=(3,)))
         if i % 10 == 0 and render:
             env.render()
@@ -260,7 +266,7 @@ def check_stablebaselines_compat(env):
 
 if __name__ == "__main__":
     env = NavRep3DEnv(silent=True)
-    check_stablebaselines_compat(env)
-    debug_env_max_speed(env)
+#     check_stablebaselines_compat(env)
+#     debug_env_max_speed(env)
     player = EnvPlayer(env)
     player.run()

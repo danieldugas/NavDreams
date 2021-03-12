@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 from signal import signal, SIGINT
 from sys import exit
+from tqdm import tqdm
 import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
 import gym
+import base64
+from PIL import Image
+import io
 
 import helpers
 import socket_handler
@@ -34,7 +38,7 @@ class NavRep3DEnv(gym.Env):
             print('SIGINT or CTRL-C detected. Exiting gracefully')
             socket_handler.stop(self.s)
             exit(0)
-        signal(SIGINT, handler)
+#         signal(SIGINT, handler)
         if not self.silent:
             print("Running simulation")
 
@@ -74,11 +78,15 @@ class NavRep3DEnv(gym.Env):
         # make sure scenario is loaded
         self.last_image = None
         while self.last_image is None:
+            if not self.silent:
+                print("Reset pre-load step")
             obs, _, _, _ = self.step([0, 0, 0])
 
         return obs
 
     def step(self, actions):
+        if not self.silent:
+            print("Step: ...")
         self.total_steps += 1
         tic = timer()
 
@@ -92,14 +100,13 @@ class NavRep3DEnv(gym.Env):
 
 #             print(dico)
         arrimg = None
-        import base64
-        from PIL import Image
-        import io
         if dico["camera"] != 'JPG':
 #                 jpgbytes = base64.decodestring(dico["camera"])
             jpgbytes = base64.b64decode(dico["camera"])
             img = Image.open(io.BytesIO(jpgbytes))
             arrimg = np.asarray(img)
+        if arrimg is None:
+            arrimg = np.zeros(self.observation_space.shape, dtype=np.uint8)
         self.last_image = arrimg
 
         # do cool stuff here
@@ -138,7 +145,8 @@ class NavRep3DEnv(gym.Env):
 
         # Debug: This skips the first test, remove
         if self.current_scenario == 0:
-            print("Skipping first scenario")
+            if not self.silent:
+                print("Skipping first scenario")
             done = True
             self.increase_difficulty = True
 
@@ -233,22 +241,26 @@ class NavRep3DEnv(gym.Env):
             toc = timer()
             print("Render (display): {} Hz".format(1. / (toc - tic)))
 
-def debug_env_max_speed(env):
+def debug_env_max_speed(env, render=False):
     env.reset()
-    for i in range(10000):
-        try:
-            _,_,done,_ = env.step(np.array([1, 0, 0]))
-        except IndexError:
-            pass
-        if i % 10 == 0:
+    n_episodes = 0
+    for i in tqdm(range(1000000)):
+        _,_,done,_ = env.step(np.random.uniform(size=(3,)))
+        if i % 10 == 0 and render:
             env.render()
         if done:
             env.reset()
+            n_episodes += 1
     env.close()
+
+def check_stablebaselines_compat(env):
+    from stable_baselines.common.env_checker import check_env
+    check_env(env)
 
 
 if __name__ == "__main__":
-    env = NavRep3DEnv()
-#     debug_env_max_speed(env)
+    env = NavRep3DEnv(silent=True)
+    check_stablebaselines_compat(env)
+    debug_env_max_speed(env)
     player = EnvPlayer(env)
     player.run()

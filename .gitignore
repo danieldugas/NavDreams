@@ -1,3 +1,5 @@
 *.pyc
 *.prof
 Python-RVO2/
+*.zip
+*.dat

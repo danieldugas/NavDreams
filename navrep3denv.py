@@ -149,13 +149,6 @@ class NavRep3DEnv(gym.Env):
             reward = 100
             self.increase_difficulty = True
 
-        # Debug: This skips the first test, remove
-        if self.current_scenario == 0:
-            if not self.silent:
-                print("Skipping first scenario")
-            done = True
-            self.increase_difficulty = True
-
         # doing a step
         self.pub = helpers.do_step(self.time_step, self.pub)
 

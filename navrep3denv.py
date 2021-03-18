@@ -116,6 +116,7 @@ class NavRep3DEnv(gym.Env):
         # @Fabien: how do I get the true goal?
         # avoid crashing if the odom message is corrupted
         goal_is_reached = False
+        fallen_through_ground = False
         progress = 0
         try:
             odom = helpers.get_odom(dico)
@@ -125,6 +126,8 @@ class NavRep3DEnv(gym.Env):
             if self.last_odom is not None:
                 progress = self.last_odom[0] - odom[0]
             self.last_odom = odom
+            if odom[-1] < 0:
+                fallen_through_ground = True
         except IndexError:
             print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
@@ -141,6 +144,11 @@ class NavRep3DEnv(gym.Env):
                 if not self.silent:
                     print("Time limit reached")
                 done = True
+
+        if fallen_through_ground:
+            if not self.silent:
+                print("Fallen through ground")
+            done = True
 
         if goal_is_reached:
             if not self.silent:

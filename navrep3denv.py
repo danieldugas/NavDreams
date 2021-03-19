@@ -62,10 +62,16 @@ class NavRep3DEnv(gym.Env):
 
         if self.current_scenario is not None:
             if self.increase_difficulty:
-                # next scenario!
-                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
-                self.current_scenario += 1
-                self.increase_difficulty = False
+                if self.current_scenario >= 9:
+                    if not self.silent:
+                        print("Max difficulty reached")
+                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+                    self.increase_difficulty = False
+                else:
+                    # next scenario!
+                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
+                    self.current_scenario += 1
+                    self.increase_difficulty = False
             else:
                 # same scenario
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
@@ -266,7 +272,7 @@ def check_stablebaselines_compat(env):
 
 
 if __name__ == "__main__":
-    env = NavRep3DEnv(silent=True)
+    env = NavRep3DEnv(silent=False)
 #     check_stablebaselines_compat(env)
 #     debug_env_max_speed(env)
     player = EnvPlayer(env)

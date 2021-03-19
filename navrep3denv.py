@@ -121,7 +121,7 @@ class NavRep3DEnv(gym.Env):
         try:
             odom = helpers.get_odom(dico)
             # goal
-            goal_is_reached = odom[0] <= 0
+            goal_is_reached = (odom[0] <= -7 and abs(odom[1]) < 1)
             # progress
             if self.last_odom is not None:
                 progress = self.last_odom[0] - odom[0]

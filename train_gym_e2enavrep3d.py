@@ -15,6 +15,8 @@ if __name__ == "__main__":
 
     model = SAC(CnnPolicy, env, verbose=1, buffer_size=10000)
     model.learn(total_timesteps=10000, log_interval=1)
+
+    print("Saving model to {}".format(MODELPATH))
     model.save(MODELPATH)
 
     del model # remove to demonstrate saving and loading

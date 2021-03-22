@@ -83,6 +83,7 @@ class NavRep3DEnv(gym.Env):
 
         # make sure scenario is loaded
         self.last_image = None
+        self.last_odom = None
         while self.last_image is None:
             if not self.silent:
                 print("Reset pre-load step")
@@ -124,13 +125,17 @@ class NavRep3DEnv(gym.Env):
         goal_is_reached = False
         fallen_through_ground = False
         progress = 0
+        GOAL_XY = np.array([-7, 0])
+        GOAL_RADIUS = 1.
         try:
             odom = helpers.get_odom(dico)
             # goal
-            goal_is_reached = (odom[0] <= -7 and abs(odom[1]) < 1)
+            goal_dist = np.linalg.norm(GOAL_XY - odom[:2])
+            goal_is_reached = (goal_dist < GOAL_RADIUS)
             # progress
             if self.last_odom is not None:
-                progress = self.last_odom[0] - odom[0]
+                last_goal_dist = np.linalg.norm(GOAL_XY - self.last_odom[:2])
+                progress = last_goal_dist - goal_dist
             self.last_odom = odom
             if odom[-1] < 0:
                 fallen_through_ground = True
@@ -143,7 +148,7 @@ class NavRep3DEnv(gym.Env):
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
 
         done = False
-        reward = progress * 0.01
+        reward = progress * 0.1
         # checking ending conditions
         if "clock" in dico:
             if float(dico["clock"]) > self.max_time:

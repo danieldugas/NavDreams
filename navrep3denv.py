@@ -32,7 +32,7 @@ class NavRep3DEnv(gym.Env):
         self.s = socket_handler.init_socket(HOST, PORT)
         # variables
         self.current_scenario = 0
-        self.increase_difficulty = False
+        self.difficulty_increase = 0
         self.last_odom = None
         # other tools
         self.viewer = None
@@ -67,8 +67,6 @@ class NavRep3DEnv(gym.Env):
         return self.viewer
 
     def reset(self):
-        if self.verbose > 0:
-            print("Scenario # " + str(self.current_scenario))
         self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
 
         # send a few packet to be sure it is launched
@@ -79,17 +77,20 @@ class NavRep3DEnv(gym.Env):
             time.sleep(self.time_step)
 
         if self.current_scenario is not None:
-            if self.increase_difficulty:
+            if self.difficulty_increase == 1:
                 if self.current_scenario >= 9:
-                    if self.verbose > 0:
-                        print("Max difficulty reached")
                     socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-                    self.increase_difficulty = False
                 else:
-                    # next scenario!
                     socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
                     self.current_scenario += 1
-                    self.increase_difficulty = False
+                self.difficulty_increase = 0
+            elif self.difficulty_increase == -1:
+                if self.current_scenario == 0:
+                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+                else:
+                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.previous()))
+                    self.current_scenario -= 1
+                self.difficulty_increase = 0
             else:
                 # same scenario
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
@@ -102,7 +103,7 @@ class NavRep3DEnv(gym.Env):
         # reset variables
         self.last_odom = None
         self.steps_since_reset = 0
-        self.episode_reward = 0
+        self.episode_reward = 0.
 
         # make sure scenario is loaded
         self.last_image = None
@@ -111,10 +112,13 @@ class NavRep3DEnv(gym.Env):
                 print("Reset pre-load step")
             obs, _, _, _ = self.step([0, 0, 0])
 
+        if self.verbose > 0:
+            print("Scenario # " + str(self.current_scenario))
+
         # reset variables again (weird things may have happened in the meantime, screwing up logging)
         self.last_odom = None
         self.steps_since_reset = 0
-        self.episode_reward = 0
+        self.episode_reward = 0.
 
         return obs
 
@@ -188,13 +192,14 @@ class NavRep3DEnv(gym.Env):
             if self.verbose > 0:
                 print("Fallen through ground")
             done = True
+            self.difficulty_increase = -1
 
         if goal_is_reached:
             if self.verbose > 0:
                 print("Goal reached")
             done = True
             reward = 100
-            self.increase_difficulty = True
+            self.difficulty_increase = 1
 
         # log reward
         self.episode_reward += reward
@@ -293,7 +298,7 @@ class NavRep3DEnv(gym.Env):
             gl.glViewport(0, 0, VP_W, VP_H)
             imageData.blit(0,0)
             # Text
-            self.score_label.text = ""
+            self.score_label.text = "R {:.1f}".format(self.episode_reward)
             self.score_label.draw()
             win.flip()
             if save_to_file:

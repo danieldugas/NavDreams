@@ -4,6 +4,7 @@
 
 from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import SAC
+from sb3_callbacks import NavRep3DLogCallback
 
 from navrep3denv import NavRep3DEnv
 
@@ -13,8 +14,10 @@ if __name__ == "__main__":
     MODELPATH = "SAC_navrep3d"
     env = NavRep3DEnv(silent=True)
 
+    cb = NavRep3DLogCallback(logpath="SAC_navrep3d_log", savepath=MODELPATH, verbose=1)
+
     model = SAC(CnnPolicy, env, verbose=1, buffer_size=10000)
-    model.learn(total_timesteps=10000, log_interval=1)
+    model.learn(total_timesteps=TRAIN_STEPS, callback=cb)
 
     print("Saving model to {}".format(MODELPATH))
     model.save(MODELPATH)

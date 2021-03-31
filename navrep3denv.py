@@ -5,6 +5,7 @@ import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
+from pandas import DataFrame
 import gym
 import base64
 from PIL import Image
@@ -14,7 +15,7 @@ import helpers
 import socket_handler
 
 class NavRep3DEnv(gym.Env):
-    def __init__(self, silent=False):
+    def __init__(self, silent=False, collect_statistics=True):
         # gym env definition
         super(NavRep3DEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
@@ -24,15 +25,34 @@ class NavRep3DEnv(gym.Env):
         HOST = '127.0.0.1'
         PORT = 25001
         self.silent = silent
+        self.collect_statistics = collect_statistics
         self.time_step = 0.2
         self.sleep_time = -1
         self.max_time = 180.0
         self.s = socket_handler.init_socket(HOST, PORT)
-        self.viewer = None
+        # variables
         self.current_scenario = 0
         self.increase_difficulty = False
-        self.total_steps = 0
         self.last_odom = None
+        # other tools
+        self.viewer = None
+        self.episode_statistics = None
+        if self.collect_statistics:
+            self.episode_statistics = DataFrame(
+                columns=[
+                    "total_steps",
+                    "scenario",
+                    "damage",
+                    "steps",
+                    "goal_reached",
+                    "reward",
+                    "num_agents",
+                    "num_walls",
+                    "wall_time",
+                ])
+        self.total_steps = 0
+        self.steps_since_reset = None
+        self.episode_reward = None
         def handler(signal_received, frame):
             # Handle any cleanup here
             print('SIGINT or CTRL-C detected. Exiting gracefully')
@@ -81,13 +101,22 @@ class NavRep3DEnv(gym.Env):
         # wait for sim to load new scenario
         time.sleep(1)
 
+        # reset variables
+        self.last_odom = None
+        self.steps_since_reset = 0
+        self.episode_reward = 0
+
         # make sure scenario is loaded
         self.last_image = None
-        self.last_odom = None
         while self.last_image is None:
             if not self.silent:
                 print("Reset pre-load step")
             obs, _, _, _ = self.step([0, 0, 0])
+
+        # reset variables again (weird things may have happened in the meantime, screwing up logging)
+        self.last_odom = None
+        self.steps_since_reset = 0
+        self.episode_reward = 0
 
         return obs
 
@@ -95,6 +124,7 @@ class NavRep3DEnv(gym.Env):
         if not self.silent:
             print("Step: ...")
         self.total_steps += 1
+        self.steps_since_reset += 1
         tic = timer()
 
         time_in = time.time()
@@ -168,6 +198,9 @@ class NavRep3DEnv(gym.Env):
             reward = 100
             self.increase_difficulty = True
 
+        # log reward
+        self.episode_reward += reward
+
         # doing a step
         self.pub = helpers.do_step(self.time_step, self.pub)
 
@@ -186,6 +219,20 @@ class NavRep3DEnv(gym.Env):
             print("Step: {} Hz".format(1. / (toc - tic)))
             print("Clock: {}".format(dico["clock"]))
 
+        # log data
+        if done and self.steps_since_reset > 2:
+            if self.collect_statistics:
+                self.episode_statistics.loc[len(self.episode_statistics)] = [
+                    self.total_steps,
+                    'navrep3dtrain',
+                    np.nan,
+                    self.steps_since_reset,
+                    goal_is_reached,
+                    self.episode_reward,
+                    np.clip(self.current_scenario, 0, 5),
+                    np.clip(self.current_scenario*2, 0, 20),
+                    time.time(),
+                ]
         return arrimg, reward, done, {}
 
     def close(self):

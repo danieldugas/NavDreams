@@ -15,7 +15,7 @@ import helpers
 import socket_handler
 
 class NavRep3DEnv(gym.Env):
-    def __init__(self, silent=False, collect_statistics=True):
+    def __init__(self, verbose=0, collect_statistics=True):
         # gym env definition
         super(NavRep3DEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
@@ -24,8 +24,8 @@ class NavRep3DEnv(gym.Env):
         # this
         HOST = '127.0.0.1'
         PORT = 25001
-        self.silent = silent
         self.collect_statistics = collect_statistics
+        self.verbose = verbose
         self.time_step = 0.2
         self.sleep_time = -1
         self.max_time = 180.0
@@ -59,8 +59,6 @@ class NavRep3DEnv(gym.Env):
             socket_handler.stop(self.s)
             exit(0)
 #         signal(SIGINT, handler)
-        if not self.silent:
-            print("Running simulation")
 
     def _get_dt(self):
         return self.time_step
@@ -69,7 +67,7 @@ class NavRep3DEnv(gym.Env):
         return self.viewer
 
     def reset(self):
-        if not self.silent:
+        if self.verbose > 0:
             print("Scenario # " + str(self.current_scenario))
         self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
 
@@ -83,7 +81,7 @@ class NavRep3DEnv(gym.Env):
         if self.current_scenario is not None:
             if self.increase_difficulty:
                 if self.current_scenario >= 9:
-                    if not self.silent:
+                    if self.verbose > 0:
                         print("Max difficulty reached")
                     socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
                     self.increase_difficulty = False
@@ -109,7 +107,7 @@ class NavRep3DEnv(gym.Env):
         # make sure scenario is loaded
         self.last_image = None
         while self.last_image is None:
-            if not self.silent:
+            if self.verbose > 0:
                 print("Reset pre-load step")
             obs, _, _, _ = self.step([0, 0, 0])
 
@@ -121,7 +119,7 @@ class NavRep3DEnv(gym.Env):
         return obs
 
     def step(self, actions):
-        if not self.silent:
+        if self.verbose > 1:
             print("Step: ...")
         self.total_steps += 1
         self.steps_since_reset += 1
@@ -182,17 +180,17 @@ class NavRep3DEnv(gym.Env):
         # checking ending conditions
         if "clock" in dico:
             if float(dico["clock"]) > self.max_time:
-                if not self.silent:
+                if self.verbose > 0:
                     print("Time limit reached")
                 done = True
 
         if fallen_through_ground:
-            if not self.silent:
+            if self.verbose > 0:
                 print("Fallen through ground")
             done = True
 
         if goal_is_reached:
-            if not self.silent:
+            if self.verbose > 0:
                 print("Goal reached")
             done = True
             reward = 100
@@ -214,7 +212,7 @@ class NavRep3DEnv(gym.Env):
 
 #                 recorder.save_dico('/tmp/recorder/tests_'+str(i), list_save)
 
-        if not self.silent:
+        if self.verbose > 1:
             toc = timer()
             print("Step: {} Hz".format(1. / (toc - tic)))
             print("Clock: {}".format(dico["clock"]))
@@ -258,7 +256,7 @@ class NavRep3DEnv(gym.Env):
         rawData = (GLubyte * len(pixels))(*pixels)
         imageData = pyglet.image.ImageData(width, height, 'RGB', rawData)
 
-        if not self.silent:
+        if self.verbose > 1:
             toc = timer()
             print("Render (fetch): {} Hz".format(1. / (toc - tic)))
             tic = timer()
@@ -302,7 +300,7 @@ class NavRep3DEnv(gym.Env):
                 pyglet.image.get_buffer_manager().get_color_buffer().save(
                     "/tmp/navrep3denv{:05}.png".format(self.total_steps))
 
-        if not self.silent:
+        if self.verbose > 1:
             toc = timer()
             print("Render (display): {} Hz".format(1. / (toc - tic)))
 
@@ -324,7 +322,7 @@ def check_stablebaselines_compat(env):
 
 
 if __name__ == "__main__":
-    env = NavRep3DEnv(silent=False)
+    env = NavRep3DEnv(verbose=1)
 #     check_stablebaselines_compat(env)
 #     debug_env_max_speed(env)
     player = EnvPlayer(env)

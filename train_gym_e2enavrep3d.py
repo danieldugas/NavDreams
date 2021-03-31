@@ -12,7 +12,7 @@ if __name__ == "__main__":
     MILLION = 1000000
     TRAIN_STEPS = 60 * MILLION
     MODELPATH = "SAC_navrep3d"
-    env = NavRep3DEnv(silent=True)
+    env = NavRep3DEnv(verbose=0)
 
     cb = NavRep3DLogCallback(logpath="SAC_navrep3d_log", savepath=MODELPATH, verbose=1)
 

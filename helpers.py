@@ -53,15 +53,11 @@ def get_odom(dico):
             pass
     else:
         odom_xytheta_dxdydtheta = []
-    
-    # for some reason the crowdbotchallenge pose angle theta is not 0 when the robot points in x direction
-    # theta = 0 when the robot points in y, and it goes against the trig direction...
-    # re-frame pose[2] to correct frame
-    wrong_angle = odom_xytheta_dxdydtheta[2]
-    heading_y = np.cos(np.deg2rad(360 - wrong_angle))
-    heading_x = -np.sin(np.deg2rad(360 - wrong_angle))
-    robot_angle = np.arctan2(heading_y, heading_x)
-    odom_xytheta_dxdydtheta[2] = robot_angle
+
+    deg_angle = odom_xytheta_dxdydtheta[2]
+    deg_rotvel = odom_xytheta_dxdydtheta[5]
+    odom_xytheta_dxdydtheta[2] = np.deg2rad(deg_angle)
+    odom_xytheta_dxdydtheta[5] = np.deg2rad(deg_rotvel)
     return np.array(odom_xytheta_dxdydtheta)
 
 # simulation controls and checks

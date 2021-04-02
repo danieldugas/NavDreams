@@ -5,6 +5,7 @@ import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
+from pose2d import apply_tf_to_vel, inverse_pose2d, apply_tf_to_pose
 from pandas import DataFrame
 import gym
 import base64
@@ -13,6 +14,7 @@ import io
 
 import helpers
 import socket_handler
+
 
 class NavRep3DEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
@@ -146,7 +148,6 @@ class NavRep3DEnv(gym.Env):
             arrimg = np.asarray(img)
         if arrimg is None:
             arrimg = np.zeros(self.observation_space.shape, dtype=np.uint8)
-        self.last_image = arrimg
 
         # do cool stuff here
 #                 to_save = {k: dico[k] for k in ('clock', 'crowd', 'odom', 'report')}
@@ -171,6 +172,20 @@ class NavRep3DEnv(gym.Env):
             self.last_odom = odom
             if odom[-1] < 0:
                 fallen_through_ground = True
+            # robotstate obs
+            # shape (n_agents, 5 [grx, gry, vx, vy, vtheta]) - all in base frame
+            baselink_in_world = odom[:3]
+            world_in_baselink = inverse_pose2d(baselink_in_world)
+            robotvel_in_world = odom[3:6]  # TODO: actual robot rot vel?
+            robotvel_in_baselink = apply_tf_to_vel(robotvel_in_world, world_in_baselink)
+            goal_in_world = np.array([GOAL_XY[0], GOAL_XY[1], 0])
+            goal_in_baselink = apply_tf_to_pose(goal_in_world, world_in_baselink)
+            robotstate_obs = np.hstack([goal_in_baselink[:2], robotvel_in_baselink])
+            arrimg = np.copy(arrimg)
+            arrimg[:5,0,0] = robotstate_obs
+            arrimg[:5,0,1] = robotstate_obs
+            arrimg[:5,0,2] = robotstate_obs
+#             obs = (arrimg, robotstate_obs)
         except IndexError:
             print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
@@ -236,6 +251,8 @@ class NavRep3DEnv(gym.Env):
                     np.clip(self.current_scenario*2, 0, 20),
                     time.time(),
                 ]
+
+        self.last_image = arrimg
         return arrimg, reward, done, {}
 
     def close(self):
@@ -327,6 +344,7 @@ def check_stablebaselines_compat(env):
 
 
 if __name__ == "__main__":
+    np.set_printoptions(precision=1, suppress=True)
     env = NavRep3DEnv(verbose=1)
 #     check_stablebaselines_compat(env)
 #     debug_env_max_speed(env)

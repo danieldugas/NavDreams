@@ -15,6 +15,8 @@ import io
 import helpers
 import socket_handler
 
+_H = 120 # 120
+_W = 160 # 160
 
 class NavRep3DEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
@@ -22,7 +24,7 @@ class NavRep3DEnv(gym.Env):
         super(NavRep3DEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(120, 160, 3), dtype=np.uint8)
+            low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8)
         # this
         HOST = '127.0.0.1'
         PORT = 25001

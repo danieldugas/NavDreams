@@ -198,6 +198,11 @@ class NavRep3DEnv(gym.Env):
 
         done = False
         reward = progress * 0.1
+
+        # turn punishment on first episode
+        if self.current_scenario == 0:
+            reward += -0.1 * abs(actions[2])
+
         # checking ending conditions
         if "clock" in dico:
             if float(dico["clock"]) > self.max_time:

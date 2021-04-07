@@ -15,8 +15,8 @@ import io
 import helpers
 import socket_handler
 
-_H = 120 # 120
-_W = 160 # 160
+_H = 36 # 120
+_W = 36 # 160
 
 class NavRep3DEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):

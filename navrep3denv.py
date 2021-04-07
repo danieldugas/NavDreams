@@ -159,6 +159,7 @@ class NavRep3DEnv(gym.Env):
         # avoid crashing if the odom message is corrupted
         goal_is_reached = False
         fallen_through_ground = False
+        flown_off = False
         progress = 0
         GOAL_XY = np.array([-7, 0])
         GOAL_RADIUS = 1.
@@ -171,6 +172,8 @@ class NavRep3DEnv(gym.Env):
             if self.last_odom is not None:
                 last_goal_dist = np.linalg.norm(GOAL_XY - self.last_odom[:2])
                 progress = last_goal_dist - goal_dist
+                if abs(progress) > 10:
+                    flown_off = True
             self.last_odom = odom
             if odom[-1] < 0:
                 fallen_through_ground = True
@@ -196,8 +199,12 @@ class NavRep3DEnv(gym.Env):
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
 
+        # reward
+        reward = 0
+
         done = False
-        reward = progress * 0.1
+        if not flown_off and not fallen_through_ground:
+            reward = progress * 0.1
 
         # turn punishment on first episode
         if self.current_scenario == 0:
@@ -216,6 +223,12 @@ class NavRep3DEnv(gym.Env):
             done = True
             self.difficulty_increase = -1
 
+        if flown_off:
+            if self.verbose > 0:
+                print("Flown off! (progress: {})".format(progress))
+            done = True
+            self.difficulty_increase = -1
+
         if goal_is_reached:
             if self.verbose > 0:
                 print("Goal reached")
@@ -225,6 +238,9 @@ class NavRep3DEnv(gym.Env):
 
         # log reward
         self.episode_reward += reward
+
+        if self.episode_reward >= 200 or self.episode_reward <= -200:
+            raise ValueError("odom: {}, last_odom:{}, progress: {}".format(odom, self.last_odom, progress))
 
         # doing a step
         self.pub = helpers.do_step(self.time_step, self.pub)
@@ -292,6 +308,7 @@ class NavRep3DEnv(gym.Env):
 
         if mode == 'matplotlib':
             from matplotlib import pyplot as plt
+            self.viewer = plt.figure()
             plt.imshow(arrimg)
             plt.ion()
             plt.show()

@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
 
-    model = SAC(CnnPolicy, env, verbose=1, buffer_size=100000)
+    model = SAC(CnnPolicy, env, verbose=1, buffer_size=10000)
     model.learn(total_timesteps=TRAIN_STEPS, callback=cb)
 
     print("Saving model to {}".format(MODELPATH))

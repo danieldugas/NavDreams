@@ -18,11 +18,14 @@ import socket_handler
 _H = 36 # 120
 _W = 36 # 160
 
+MAX_VEL = 1. # m/s
+FLOWN_OFF_VEL = 5. # m/s
+
 class NavRep3DEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
         # gym env definition
         super(NavRep3DEnv, self).__init__()
-        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8)
         # this
@@ -111,10 +114,11 @@ class NavRep3DEnv(gym.Env):
 
         # make sure scenario is loaded
         self.last_image = None
-        while self.last_image is None:
+        done = False
+        while self.last_image is None or done:
             if self.verbose > 0:
                 print("Reset pre-load step")
-            obs, _, _, _ = self.step([0, 0, 0])
+            obs, _, done, _ = self.step([0, 0, 0])
 
         if self.verbose > 0:
             print("Scenario # " + str(self.current_scenario))
@@ -175,6 +179,9 @@ class NavRep3DEnv(gym.Env):
                 if abs(progress) > 10:
                     flown_off = True
             self.last_odom = odom
+            # checks
+            if np.linalg.norm(odom[3:5]) >= FLOWN_OFF_VEL:
+                flown_off = True
             if odom[-1] < 0:
                 fallen_through_ground = True
             # robotstate obs

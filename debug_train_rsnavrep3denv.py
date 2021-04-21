@@ -8,6 +8,8 @@ import gym
 from sb3_callbacks import NavRep3DLogCallback
 from navrep3denv import NavRep3DEnv
 
+np.set_printoptions(suppress=True, precision=2)
+
 class RSNavRep3DEnv(NavRep3DEnv):
     # returns only the robotstate as obs
     def __init__(self, *args, **kwargs):

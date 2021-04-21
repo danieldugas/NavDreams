@@ -27,8 +27,10 @@ class NavRep3DEnv(gym.Env):
         # gym env definition
         super(NavRep3DEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8)
-#         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32)
+        self.observation_space = gym.spaces.Tuple((
+            gym.spaces.Box(low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8),
+            gym.spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32)
+        ))
         # this
         HOST = '127.0.0.1'
         PORT = 25001
@@ -200,7 +202,7 @@ class NavRep3DEnv(gym.Env):
             goal_in_baselink = apply_tf_to_pose(goal_in_world, world_in_baselink)
             robotstate_obs = np.hstack([goal_in_baselink[:2], robotvel_in_baselink])
             # bake robotstate into image state
-            if arrimg is not None:
+            if False:
                 arrimg = np.copy(arrimg)
                 arrimg[:5,0,0] = robotstate_obs
                 arrimg[:5,0,1] = robotstate_obs
@@ -290,12 +292,7 @@ class NavRep3DEnv(gym.Env):
                 ]
 
         self.last_image = arrimg
-        obs = arrimg
-        if False: # DEBUG
-            print(obs)
-            # detect fd up situation after reset
-            if np.allclose(actions, np.array([0,0,0])) and np.any(np.abs(obs) > 100.):
-                print("WTF")
+        obs = (arrimg, robotstate_obs)
         return obs, reward, done, {}
 
     def close(self):

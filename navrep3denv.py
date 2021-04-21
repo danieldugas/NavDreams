@@ -20,14 +20,15 @@ _W = 36 # 160
 
 MAX_VEL = 1. # m/s
 FLOWN_OFF_VEL = 5. # m/s
+OBSERVATION = "BAKED" # BAKED, TUPLE, IMGONLY, RSONLY
 
 class NavRep3DEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
         # gym env definition
         super(NavRep3DEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8)
+        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8)
+#         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32)
         # this
         HOST = '127.0.0.1'
         PORT = 25001
@@ -60,6 +61,7 @@ class NavRep3DEnv(gym.Env):
         self.total_steps = 0
         self.steps_since_reset = None
         self.episode_reward = None
+
         def handler(signal_received, frame):
             # Handle any cleanup here
             print('SIGINT or CTRL-C detected. Exiting gracefully')
@@ -153,7 +155,7 @@ class NavRep3DEnv(gym.Env):
             img = Image.open(io.BytesIO(jpgbytes))
             arrimg = np.asarray(img)
         if arrimg is None:
-            arrimg = np.zeros(self.observation_space.shape, dtype=np.uint8)
+            arrimg = np.zeros((_H, _W, 3), dtype=np.uint8)
 
         # do cool stuff here
 #                 to_save = {k: dico[k] for k in ('clock', 'crowd', 'odom', 'report')}
@@ -164,6 +166,7 @@ class NavRep3DEnv(gym.Env):
         goal_is_reached = False
         fallen_through_ground = False
         flown_off = False
+        robotstate_obs = np.array([0, 0, 0, 0, 0], dtype=np.float32)
         progress = 0
         GOAL_XY = np.array([-7, 0])
         GOAL_RADIUS = 1.
@@ -193,11 +196,12 @@ class NavRep3DEnv(gym.Env):
             goal_in_world = np.array([GOAL_XY[0], GOAL_XY[1], 0])
             goal_in_baselink = apply_tf_to_pose(goal_in_world, world_in_baselink)
             robotstate_obs = np.hstack([goal_in_baselink[:2], robotvel_in_baselink])
-            arrimg = np.copy(arrimg)
-            arrimg[:5,0,0] = robotstate_obs
-            arrimg[:5,0,1] = robotstate_obs
-            arrimg[:5,0,2] = robotstate_obs
-#             obs = (arrimg, robotstate_obs)
+            # bake robotstate into image state
+            if arrimg is not None:
+                arrimg = np.copy(arrimg)
+                arrimg[:5,0,0] = robotstate_obs
+                arrimg[:5,0,1] = robotstate_obs
+                arrimg[:5,0,2] = robotstate_obs
         except IndexError:
             print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
@@ -283,7 +287,13 @@ class NavRep3DEnv(gym.Env):
                 ]
 
         self.last_image = arrimg
-        return arrimg, reward, done, {}
+        obs = arrimg
+        if False: # DEBUG
+            print(obs)
+            # detect fd up situation after reset
+            if np.allclose(actions, np.array([0,0,0])) and np.any(np.abs(obs) > 100.):
+                print("WTF")
+        return obs, reward, done, {}
 
     def close(self):
         socket_handler.stop(self.s)

@@ -42,6 +42,7 @@ class NavRep3DEnv(gym.Env):
         self.current_scenario = 0
         self.difficulty_increase = 0
         self.last_odom = None
+        self.reset_in_progress = False # necessary to differentiate reset pre-steps from normal steps
         # other tools
         self.viewer = None
         self.episode_statistics = None
@@ -114,6 +115,7 @@ class NavRep3DEnv(gym.Env):
         self.steps_since_reset = 0
         self.episode_reward = 0.
 
+        self.reset_in_progress = True
         # make sure scenario is loaded
         self.last_image = None
         done = False
@@ -121,6 +123,7 @@ class NavRep3DEnv(gym.Env):
             if self.verbose > 0:
                 print("Reset pre-load step")
             obs, _, done, _ = self.step([0, 0, 0])
+        self.reset_in_progress = False
 
         if self.verbose > 0:
             print("Scenario # " + str(self.current_scenario))
@@ -250,9 +253,6 @@ class NavRep3DEnv(gym.Env):
         # log reward
         self.episode_reward += reward
 
-        if self.episode_reward >= 200 or self.episode_reward <= -200:
-            raise ValueError("odom: {}, last_odom:{}, progress: {}".format(odom, self.last_odom, progress))
-
         # doing a step
         self.pub = helpers.do_step(self.time_step, self.pub)
 
@@ -272,7 +272,10 @@ class NavRep3DEnv(gym.Env):
             print("Clock: {}".format(dico["clock"]))
 
         # log data
-        if done and self.steps_since_reset > 2:
+        if done and not self.reset_in_progress:
+            if self.episode_reward >= 200 or self.episode_reward <= -200:
+                raise ValueError("odom: {}, last_odom:{}, progress: {}".format(
+                    odom, self.last_odom, progress))
             if self.collect_statistics:
                 self.episode_statistics.loc[len(self.episode_statistics)] = [
                     self.total_steps,

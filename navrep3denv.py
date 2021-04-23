@@ -15,8 +15,8 @@ import io
 import helpers
 import socket_handler
 
-_H = 36 # 120
-_W = 36 # 160
+_H = 64 # 36 # 120
+_W = 64 # 36 # 160
 
 MAX_VEL = 1. # m/s
 FLOWN_OFF_VEL = 5. # m/s

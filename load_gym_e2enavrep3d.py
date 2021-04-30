@@ -1,12 +1,12 @@
 from stable_baselines3 import SAC
 
-from navrep3denv import NavRep3DEnv
+from navrep3dtrainenv import NavRep3DTrainEnv
 
 if __name__ == "__main__":
     MILLION = 1000000
     TRAIN_STEPS = 60 * MILLION
     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dtrainenv_2021_04_06__20_01_12_SAC_E2E_VCARCH_C64_ckpt.zip"
-    env = NavRep3DEnv(verbose=1)
+    env = NavRep3DTrainEnv(verbose=1)
 
     model = SAC.load(MODELPATH)
 

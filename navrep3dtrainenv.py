@@ -20,12 +20,12 @@ _W = 64 # 36 # 160
 
 MAX_VEL = 1. # m/s
 FLOWN_OFF_VEL = 5. # m/s
-OBSERVATION = "BAKED" # BAKED, TUPLE, IMGONLY, RSONLY
+OBSERVATION = "TUPLE" # BAKED, TUPLE, IMGONLY, RSONLY
 
-class NavRep3DEnv(gym.Env):
+class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
         # gym env definition
-        super(NavRep3DEnv, self).__init__()
+        super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
         self.observation_space = gym.spaces.Tuple((
             gym.spaces.Box(low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8),
@@ -361,7 +361,7 @@ class NavRep3DEnv(gym.Env):
             win.flip()
             if save_to_file:
                 pyglet.image.get_buffer_manager().get_color_buffer().save(
-                    "/tmp/navrep3denv{:05}.png".format(self.total_steps))
+                    "/tmp/navrep3dtrainenv{:05}.png".format(self.total_steps))
 
         if self.verbose > 1:
             toc = timer()
@@ -386,7 +386,7 @@ def check_stablebaselines_compat(env):
 
 if __name__ == "__main__":
     np.set_printoptions(precision=1, suppress=True)
-    env = NavRep3DEnv(verbose=1)
+    env = NavRep3DTrainEnv(verbose=1)
 #     check_stablebaselines_compat(env)
 #     debug_env_max_speed(env)
     player = EnvPlayer(env)

@@ -1,5 +1,5 @@
 import os
-from navrep3denv import NavRep3DEnv
+from navrep3dtrainenv import NavRep3DTrainEnv
 from navrep.tools.commonargs import parse_multiproc_args
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
 
@@ -12,7 +12,7 @@ if __name__ == "__main__":
     archive_dir = os.path.expanduser("~/navrep3d/datasets/V/navrep3dtrain")
     if args.dry_run:
         archive_dir = "/tmp/navrep3d/datasets/V/navrep3dtrain"
-    env = NavRep3DEnv(verbose=0, collect_statistics=False)
+    env = NavRep3DTrainEnv(verbose=0, collect_statistics=False)
     generate_vae_dataset(
         env, n_sequences=n_sequences,
         subset_index=args.subproc_id, n_subsets=args.n_subprocs,

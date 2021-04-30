@@ -5,7 +5,7 @@ from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import SAC
 
 from sb3_callbacks import NavRep3DLogCallback
-from navrep3denv import NavRep3DEnv
+from navrep3dtrainenv import NavRep3DTrainEnv
 
 if __name__ == "__main__":
     args, _ = parse_common_args()
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         os.makedirs(DIR)
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
-    env = NavRep3DEnv(verbose=0)
+    env = NavRep3DTrainEnv(verbose=0)
 
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
 

@@ -1,4 +1,4 @@
-from gym import spaces
+from gym import spaces, Env
 import numpy as np
 import os
 
@@ -19,11 +19,11 @@ class NavRep3DTrainEncoder(EnvEncoder):
         )
 
 
-class NavRep3DTrainEncodedEnv(object):
+class NavRep3DTrainEncodedEnv(Env):
     """ takes a (3) action as input
     outputs encoded obs (546) """
     def __init__(self, backend, encoding,
-                 verbose=0, collect_statistics=False,
+                 verbose=0, collect_statistics=True,
                  gpu=False, shared_encoder=None, encoder=None):
         if encoder is None:
             encoder = NavRep3DTrainEncoder(backend, encoding,
@@ -32,6 +32,7 @@ class NavRep3DTrainEncodedEnv(object):
         self.env = NavRep3DTrainEnv(verbose=verbose, collect_statistics=collect_statistics)
         self.action_space = spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.observation_space = self.encoder.observation_space
+        self.episode_statistics = self.env.episode_statistics
 
     def _get_dt(self):
         return self.env._get_dt()

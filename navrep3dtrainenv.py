@@ -21,6 +21,7 @@ _W = 64 # 36 # 160
 MAX_VEL = 1. # m/s
 FLOWN_OFF_VEL = 5. # m/s
 OBSERVATION = "TUPLE" # BAKED, TUPLE, IMGONLY, RSONLY
+rotation_deadzone = None # 0.1
 
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
@@ -138,6 +139,10 @@ class NavRep3DTrainEnv(gym.Env):
         return obs
 
     def step(self, actions):
+        actions = np.array(actions)
+        if rotation_deadzone is not None:
+            actions[2] = 0. if abs(actions[2]) < rotation_deadzone else (
+                (actions[2] - np.sign(actions[2]) * rotation_deadzone) / (1. - rotation_deadzone))
         if self.verbose > 1:
             print("Step: ...")
         self.total_steps += 1
@@ -237,12 +242,14 @@ class NavRep3DTrainEnv(gym.Env):
             if self.verbose > 0:
                 print("Fallen through ground")
             done = True
+            reward = -25
             self.difficulty_increase = -1
 
         if flown_off:
             if self.verbose > 0:
                 print("Flown off! (progress: {})".format(progress))
             done = True
+            reward = -25
             self.difficulty_increase = -1
 
         if goal_is_reached:

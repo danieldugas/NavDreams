@@ -21,10 +21,10 @@ if __name__ == "__main__":
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     ENCODER_ARCH = "_{}_{}_V{}M{}".format(args.backend, args.encoding, _Z, _H)
-    LOGNAME = "navreptrainencodedenv_" + START_TIME + "_PPO" + ENCODER_ARCH
+    LOGNAME = "navrep3dtrainencodedenv_" + START_TIME + "_PPO" + ENCODER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")
-    MODELPATH2 = os.path.join(DIR, "navreptrainencodedenv_latest_PPO_ckpt")
+    MODELPATH2 = os.path.join(DIR, "navrep3dtrainencodedenv_latest_PPO_ckpt")
     if not os.path.exists(DIR):
         os.makedirs(DIR)
     if not os.path.exists(LOGDIR):
@@ -40,7 +40,7 @@ if __name__ == "__main__":
                                   gpu=not args.no_gpu,
                                   shared_encoder=shared_encoder)
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
-    model = PPO("MlpPolicy", env, verbose=0)
+    model = PPO("MlpPolicy", env, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS+1, callback=cb)
     obs = env.reset()
 

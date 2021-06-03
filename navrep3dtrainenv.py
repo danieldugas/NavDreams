@@ -157,6 +157,8 @@ class NavRep3DTrainEnv(gym.Env):
         # getting dict from raw data
         dico = helpers.raw_data_to_dict(raw)
 
+        walls = helpers.get_walls(dico)
+
 #             print(dico)
         arrimg = None
         if dico["camera"] != 'JPG':

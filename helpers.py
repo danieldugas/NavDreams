@@ -27,6 +27,17 @@ def raw_data_to_dict(received):
 
     return dico
 
+def get_walls(dico):
+    walls = np.array([])
+    raise
+    if "walls" in dico:
+        try:
+            _,vertxy = dico['walls'].split(' ', 1)
+            walls = np.array(list(map(float,vertxy.split(' ')))).reshape((-1, 4, 2))
+        except ValueError:
+            return np.array([])
+    return walls
+
 def get_crowd(dico):
     crowd = np.array([])
     if "crowd" in dico:

@@ -29,7 +29,6 @@ def raw_data_to_dict(received):
 
 def get_walls(dico):
     walls = np.array([])
-    raise
     if "walls" in dico:
         try:
             _,vertxy = dico['walls'].split(' ', 1)

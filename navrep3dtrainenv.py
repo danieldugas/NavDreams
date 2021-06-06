@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from sys import exit
+import traceback
 from tqdm import tqdm
 import time
 import numpy as np
@@ -23,6 +24,10 @@ FLOWN_OFF_VEL = 5. # m/s
 OBSERVATION = "TUPLE" # BAKED, TUPLE, IMGONLY, RSONLY
 rotation_deadzone = None # 0.1
 
+# for now, goal is fixed
+GOAL_XY = np.array([-7, 0])
+GOAL_RADIUS = 1.
+
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True):
         # gym env definition
@@ -45,6 +50,8 @@ class NavRep3DTrainEnv(gym.Env):
         self.current_scenario = 0
         self.difficulty_increase = 0
         self.last_odom = None
+        self.last_crowd = None
+        self.last_walls = None
         self.reset_in_progress = False # necessary to differentiate reset pre-steps from normal steps
         # other tools
         self.viewer = None
@@ -157,7 +164,17 @@ class NavRep3DTrainEnv(gym.Env):
         # getting dict from raw data
         dico = helpers.raw_data_to_dict(raw)
 
-        walls = helpers.get_walls(dico)
+        try:
+            self.last_walls = helpers.get_walls(dico)
+        except Exception as e: # noqa
+            traceback.print_exc()
+            self.last_walls = None
+
+        try:
+            self.last_crowd = helpers.get_crowd(dico)
+        except Exception as e: # noqa
+            traceback.print_exc()
+            self.last_crowd = None
 
 #             print(dico)
         arrimg = None
@@ -180,8 +197,6 @@ class NavRep3DTrainEnv(gym.Env):
         flown_off = False
         robotstate_obs = np.array([0, 0, 0, 0, 0], dtype=np.float32)
         progress = 0
-        GOAL_XY = np.array([-7, 0])
-        GOAL_RADIUS = 1.
         try:
             odom = helpers.get_odom(dico)
             # goal
@@ -217,7 +232,6 @@ class NavRep3DTrainEnv(gym.Env):
         except IndexError:
             print("Warning: odom message is corrupted")
         # @Fabien: how do I get crowd velocities?
-#         crowd = helpers.get_crowd(dico)
 
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
@@ -309,7 +323,7 @@ class NavRep3DTrainEnv(gym.Env):
         time.sleep(1)
 
     def render(self, mode='human', close=False,
-               save_to_file=False):
+               image_only=False, save_to_file=False):
         tic = timer()
         if close:
             if self.viewer is not None:
@@ -341,8 +355,9 @@ class NavRep3DTrainEnv(gym.Env):
             plt.pause(0.1)
         elif mode == 'human':
             # Window and viewport size
-            WINDOW_W = width
-            WINDOW_H = height
+            _256 = 256
+            WINDOW_W = _256
+            WINDOW_H = _256
             VP_W = WINDOW_W
             VP_H = WINDOW_H
             from gym.envs.classic_control import rendering
@@ -363,7 +378,96 @@ class NavRep3DTrainEnv(gym.Env):
             win.dispatch_events()
             win.clear()
             gl.glViewport(0, 0, VP_W, VP_H)
+            image_in_vp = rendering.Transform()
+            image_in_vp.set_scale(VP_W / width, VP_H / height)
+            # Render top-down
+            if not image_only:
+                image_in_vp.set_translation(2, _256 - 2 - width)
+                image_in_vp.set_scale(1, 1)
+                topdown_in_vp = rendering.Transform()
+                topdown_in_vp.set_scale(10, 10)
+                topdown_in_vp.set_translation(_256 // 2, _256 // 2)
+                topdown_in_vp.set_rotation(-np.pi/2.)
+                # colors
+                bgcolor = np.array([0.4, 0.8, 0.4])
+                obstcolor = np.array([0.3, 0.3, 0.3])
+                goalcolor = np.array([1., 1., 0.3])
+                nosecolor = np.array([0.3, 0.3, 0.3])
+                agentcolor = np.array([0., 1., 1.])
+                robotcolor = np.array([1., 1., 1.])
+                # Green background
+                gl.glBegin(gl.GL_QUADS)
+                gl.glColor4f(bgcolor[0], bgcolor[1], bgcolor[2], 1.0)
+                gl.glVertex3f(0, VP_H, 0)
+                gl.glVertex3f(VP_W, VP_H, 0)
+                gl.glVertex3f(VP_W, 0, 0)
+                gl.glVertex3f(0, 0, 0)
+                gl.glEnd()
+                topdown_in_vp.enable()
+                # Map closed obstacles ---
+                if self.last_walls is not None:
+                    for wall in self.last_walls:
+                        gl.glBegin(gl.GL_LINE_LOOP)
+                        gl.glColor4f(obstcolor[0], obstcolor[1], obstcolor[2], 1)
+                        for vert in wall:
+                            gl.glVertex3f(vert[0], vert[1], 0)
+                        gl.glEnd()
+                # Agent body
+                def make_circle(c, r, res=10):
+                    thetas = np.linspace(0, 2*np.pi, res+1)[:-1]
+                    verts = np.zeros((res, 2))
+                    verts[:,0] = c[0] + r * np.cos(thetas)
+                    verts[:,1] = c[1] + r * np.sin(thetas)
+                    return verts
+                def gl_render_agent(px, py, angle, r, color):
+                    # Agent as Circle
+                    poly = make_circle((px, py), r)
+                    gl.glBegin(gl.GL_POLYGON)
+                    gl.glColor4f(color[0], color[1], color[2], 1)
+                    for vert in poly:
+                        gl.glVertex3f(vert[0], vert[1], 0)
+                    gl.glEnd()
+                    # Direction triangle
+                    xnose = px + r * np.cos(angle)
+                    ynose = py + r * np.sin(angle)
+                    xright = px + 0.3 * r * -np.sin(angle)
+                    yright = py + 0.3 * r * np.cos(angle)
+                    xleft = px - 0.3 * r * -np.sin(angle)
+                    yleft = py - 0.3 * r * np.cos(angle)
+                    gl.glBegin(gl.GL_TRIANGLES)
+                    gl.glColor4f(nosecolor[0], nosecolor[1], nosecolor[2], 1)
+                    gl.glVertex3f(xnose, ynose, 0)
+                    gl.glVertex3f(xright, yright, 0)
+                    gl.glVertex3f(xleft, yleft, 0)
+                    gl.glEnd()
+                if self.last_odom is not None:
+                    gl_render_agent(self.last_odom[0], self.last_odom[1], self.last_odom[2], 0.3, robotcolor)
+                if self.last_crowd is not None:
+                    for n, agent in enumerate(self.last_crowd):
+                        gl_render_agent(agent[1], agent[2], 0, 0.3, agentcolor)
+                # Goal markers
+                xgoal, ygoal = GOAL_XY
+                r = GOAL_RADIUS
+                gl.glBegin(gl.GL_TRIANGLES)
+                gl.glColor4f(goalcolor[0], goalcolor[1], goalcolor[2], 1)
+                triangle = make_circle((xgoal, ygoal), r, res=3)
+                for vert in triangle:
+                    gl.glVertex3f(vert[0], vert[1], 0)
+                gl.glEnd()
+                topdown_in_vp.disable()
+            # Render image
+            image_in_vp.enable()
+            # black background
+            gl.glBegin(gl.GL_QUADS)
+            gl.glColor4f(1, 1, 1, 1.0)
+            gl.glVertex3f(0, height, 0)
+            gl.glVertex3f(width, height, 0)
+            gl.glVertex3f(width, 0, 0)
+            gl.glVertex3f(0, 0, 0)
+            gl.glEnd()
+            # image
             imageData.blit(0,0)
+            image_in_vp.disable()
             # Text
             self.score_label.text = "R {:.1f}".format(self.episode_reward)
             self.score_label.draw()

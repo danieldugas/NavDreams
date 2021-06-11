@@ -29,7 +29,8 @@ GOAL_XY = np.array([-7, 0])
 GOAL_RADIUS = 1.
 
 class NavRep3DTrainEnv(gym.Env):
-    def __init__(self, verbose=0, collect_statistics=True):
+    def __init__(self, verbose=0, collect_statistics=True,
+                 debug_export_every_n_episodes=0):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -41,6 +42,7 @@ class NavRep3DTrainEnv(gym.Env):
         HOST = '127.0.0.1'
         PORT = 25001
         self.collect_statistics = collect_statistics
+        self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
         self.time_step = 0.2
         self.sleep_time = -1
@@ -52,6 +54,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.last_odom = None
         self.last_crowd = None
         self.last_walls = None
+        self.last_action = None
         self.reset_in_progress = False # necessary to differentiate reset pre-steps from normal steps
         # other tools
         self.viewer = None
@@ -70,6 +73,7 @@ class NavRep3DTrainEnv(gym.Env):
                     "wall_time",
                 ])
         self.total_steps = 0
+        self.total_episodes = 0
         self.steps_since_reset = None
         self.episode_reward = None
 
@@ -133,6 +137,10 @@ class NavRep3DTrainEnv(gym.Env):
             if self.verbose > 0:
                 print("Reset pre-load step")
             obs, _, done, _ = self.step([0, 0, 0])
+            if done:
+                if self.verbose > 0:
+                    print("sending reset signal")
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
         self.reset_in_progress = False
 
         if self.verbose > 0:
@@ -146,6 +154,7 @@ class NavRep3DTrainEnv(gym.Env):
         return obs
 
     def step(self, actions):
+        self.last_action = actions
         actions = np.array(actions)
         if rotation_deadzone is not None:
             actions[2] = 0. if abs(actions[2]) < rotation_deadzone else (
@@ -301,6 +310,7 @@ class NavRep3DTrainEnv(gym.Env):
             if self.episode_reward >= 200 or self.episode_reward <= -200:
                 raise ValueError("odom: {}, last_odom:{}, progress: {}".format(
                     odom, self.last_odom, progress))
+            self.total_episodes += 1
             if self.collect_statistics:
                 self.episode_statistics.loc[len(self.episode_statistics)] = [
                     self.total_steps,
@@ -313,6 +323,11 @@ class NavRep3DTrainEnv(gym.Env):
                     np.clip(self.current_scenario*2, 0, 20),
                     time.time(),
                 ]
+
+        # export episode frames for debugging
+        if self.debug_export_every_n_episodes > 0:
+            if self.total_episodes % self.debug_export_every_n_episodes == 0:
+                self.render(save_to_file=True)
 
         self.last_image = arrimg
         obs = (arrimg, robotstate_obs)
@@ -469,7 +484,13 @@ class NavRep3DTrainEnv(gym.Env):
             imageData.blit(0,0)
             image_in_vp.disable()
             # Text
-            self.score_label.text = "R {:.1f}".format(self.episode_reward)
+            self.score_label.text = "{}R {:.1f} A {:.1f} {:.1f} {:.1f}".format(
+                '*' if self.reset_in_progress else '',
+                self.episode_reward,
+                self.last_action[0],
+                self.last_action[1],
+                self.last_action[2],
+            )
             self.score_label.draw()
             win.flip()
             if save_to_file:

@@ -91,15 +91,7 @@ class NavRep3DTrainEnv(gym.Env):
         return self.viewer
 
     def reset(self):
-        self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
-
-        # send a few packet to be sure it is launched
-        for _ in range(5):
-            to_send = helpers.publish_all(self.pub)
-            _ = socket_handler.send_and_receive(self.s, to_send)
-            self.pub = helpers.do_step(self.time_step, self.pub)
-            time.sleep(self.time_step)
-
+        # change scenario if necessary
         if self.current_scenario is not None:
             if self.difficulty_increase == 1:
                 if self.current_scenario >= 9:
@@ -121,26 +113,46 @@ class NavRep3DTrainEnv(gym.Env):
         else:
             self.current_scenario = 0
 
-        # wait for sim to load new scenario
-        time.sleep(1)
-
-        # reset variables
-        self.last_odom = None
-        self.steps_since_reset = 0
-        self.episode_reward = 0.
-
         self.reset_in_progress = True
-        # make sure scenario is loaded
-        self.last_image = None
-        done = False
-        while self.last_image is None or done:
+        i = 0
+        while True:
+            i += 1
+            # reset sim
+            self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
+
+            # send a few packet to be sure it is launched
+            for _ in range(5):
+                to_send = helpers.publish_all(self.pub)
+                _ = socket_handler.send_and_receive(self.s, to_send)
+                self.pub = helpers.do_step(self.time_step, self.pub)
+                time.sleep(self.time_step)
+
+            # wait for sim to load new scenario
+            time.sleep(1)
+
+            # reset variables
+            self.last_odom = None
+            self.steps_since_reset = 0
+            self.episode_reward = 0.
+
+            # double check that the new scenario is loaded correctly (doesn't return done or weirdness)
+            self.last_image = None
+            done = False
             if self.verbose > 0:
                 print("Reset pre-load step")
             obs, _, done, _ = self.step([0, 0, 0])
             if done:
                 if self.verbose > 0:
                     print("sending reset signal")
+                # we want to make sure the next step won't result in "done" being True
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+                time.sleep(1)
+                self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
+                self.episode_reward = 0.
+                continue
+            if self.last_image is None:
+                continue
+            break
         self.reset_in_progress = False
 
         if self.verbose > 0:
@@ -326,6 +338,7 @@ class NavRep3DTrainEnv(gym.Env):
 
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:
+            print("{} {}".format(self.total_steps, self.total_episodes), end="\r", flush=True)
             if self.total_episodes % self.debug_export_every_n_episodes == 0:
                 self.render(save_to_file=True)
 

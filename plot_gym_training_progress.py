@@ -82,6 +82,10 @@ def plot_training_progress(logdirs, scenario="navrep3dtrain", x_axis="total_step
             ylabel = "num_walls"
             ylim = [-1, 22]
             rewards = scenario_S["num_walls"].values
+        elif y_axis == "progress":
+            ylabel = "total steps [million]"
+            ylim = [-1, 10]
+            rewards = scenario_S["total_steps"].values / MILLION
         else:
             raise NotImplementedError
         y = rewards

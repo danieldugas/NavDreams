@@ -12,6 +12,7 @@ import gym
 import base64
 from PIL import Image
 import io
+from CMap2D import CMap2D
 
 import helpers
 import socket_handler
@@ -27,6 +28,8 @@ rotation_deadzone = None # 0.1
 # for now, goal is fixed
 GOAL_XY = np.array([-7, 0])
 GOAL_RADIUS = 1.
+
+ROBOT_RADIUS = 0.3
 
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
@@ -132,6 +135,9 @@ class NavRep3DTrainEnv(gym.Env):
 
             # reset variables
             self.last_odom = None
+            self.last_walls = None
+            self.last_map = None
+            self.last_sdf = None
             self.steps_since_reset = 0
             self.episode_reward = 0.
 
@@ -160,6 +166,9 @@ class NavRep3DTrainEnv(gym.Env):
 
         # reset variables again (weird things may have happened in the meantime, screwing up logging)
         self.last_odom = None
+        self.last_walls = None
+        self.last_map = None
+        self.last_sdf = None
         self.steps_since_reset = 0
         self.episode_reward = 0.
 
@@ -216,6 +225,7 @@ class NavRep3DTrainEnv(gym.Env):
         goal_is_reached = False
         fallen_through_ground = False
         flown_off = False
+        colliding_object = False
         robotstate_obs = np.array([0, 0, 0, 0, 0], dtype=np.float32)
         progress = 0
         try:
@@ -235,6 +245,9 @@ class NavRep3DTrainEnv(gym.Env):
                 flown_off = True
             if odom[-1] < 0:
                 fallen_through_ground = True
+            # collision
+            if self.last_walls is not None:
+                colliding_object = self.check_wall_collisions(odom, self.last_walls)
             # robotstate obs
             # shape (n_agents, 5 [grx, gry, vx, vy, vtheta]) - all in base frame
             baselink_in_world = odom[:3]
@@ -274,6 +287,13 @@ class NavRep3DTrainEnv(gym.Env):
                 if self.verbose > 0:
                     print("Time limit reached")
                 done = True
+
+        if colliding_object:
+            if self.verbose > 0:
+                print("Colliding static obstacle")
+            done = True
+            reward = -25
+            self.difficulty_increase = -1
 
         if fallen_through_ground:
             if self.verbose > 0:
@@ -469,7 +489,7 @@ class NavRep3DTrainEnv(gym.Env):
                     gl.glVertex3f(xleft, yleft, 0)
                     gl.glEnd()
                 if self.last_odom is not None:
-                    gl_render_agent(self.last_odom[0], self.last_odom[1], self.last_odom[2], 0.3, robotcolor)
+                    gl_render_agent(self.last_odom[0], self.last_odom[1], self.last_odom[2], ROBOT_RADIUS, robotcolor)
                 if self.last_crowd is not None:
                     for n, agent in enumerate(self.last_crowd):
                         gl_render_agent(agent[1], agent[2], 0, 0.3, agentcolor)
@@ -513,6 +533,22 @@ class NavRep3DTrainEnv(gym.Env):
         if self.verbose > 1:
             toc = timer()
             print("Render (display): {} Hz".format(1. / (toc - tic)))
+
+    def check_wall_collisions(self, odom, walls):
+        if self.last_sdf is None:
+            map_ = CMap2D()
+            map_.from_closed_obst_vertices(walls, resolution=0.1)
+            self.last_map = map_
+            self.last_sdf = map_.as_sdf()
+        # TODO: use SDF? probably faster
+        ij = self.last_map.xy_to_ij(odom[:2][None, :], clip_if_outside=True)[0]
+#         from matplotlib import pyplot as plt
+#         from CMap2D import gridshow
+#         plt.ion()
+#         gridshow(self.last_sdf)
+#         plt.scatter(ij[0], ij[1])
+#         plt.pause(0.1)
+        return self.last_sdf[ij[0], ij[1]] < ROBOT_RADIUS
 
 def debug_env_max_speed(env, render=False):
     env.reset()

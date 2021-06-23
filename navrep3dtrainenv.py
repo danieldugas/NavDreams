@@ -52,7 +52,6 @@ class NavRep3DTrainEnv(gym.Env):
         self.max_time = 180.0
         self.s = socket_handler.init_socket(HOST, PORT)
         # variables
-        self.current_scenario = 0
         self.difficulty_increase = 0
         self.last_odom = None
         self.last_crowd = None
@@ -95,26 +94,23 @@ class NavRep3DTrainEnv(gym.Env):
 
     def reset(self):
         # change scenario if necessary
-        if self.current_scenario is not None:
-            if self.difficulty_increase == 1:
-                if self.current_scenario >= 9:
-                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-                else:
-                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
-                    self.current_scenario += 1
-                self.difficulty_increase = 0
-            elif self.difficulty_increase == -1:
-                if self.current_scenario == 0:
-                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-                else:
-                    socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.previous()))
-                    self.current_scenario -= 1
-                self.difficulty_increase = 0
+        if self.verbose > 0:
+            print("Scenario # {} complete.".format(self.infer_current_scenario()))
+        if self.difficulty_increase == 1:
+            if self.infer_current_scenario() < 9:
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
             else:
-                # same scenario
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+            self.difficulty_increase = 0
+        elif self.difficulty_increase == -1:
+            if self.infer_current_scenario() > 0:
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.previous()))
+            else:
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+            self.difficulty_increase = 0
         else:
-            self.current_scenario = 0
+            # same scenario
+            socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
 
         self.reset_in_progress = True
         i = 0
@@ -162,7 +158,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.reset_in_progress = False
 
         if self.verbose > 0:
-            print("Scenario # " + str(self.current_scenario))
+            print("Started scenario # " + str(self.infer_current_scenario()))
 
         # reset variables again (weird things may have happened in the meantime, screwing up logging)
         self.last_odom = None
@@ -279,7 +275,7 @@ class NavRep3DTrainEnv(gym.Env):
             reward = progress * 0.1
 
         # turn punishment on first episode
-        if self.current_scenario == 0:
+        if self.infer_current_scenario() == 0:
             reward += -0.1 * abs(actions[2])
 
         # checking ending conditions
@@ -352,8 +348,8 @@ class NavRep3DTrainEnv(gym.Env):
                     self.steps_since_reset,
                     goal_is_reached,
                     self.episode_reward,
-                    np.clip(self.current_scenario, 0, 5),
-                    np.clip(self.current_scenario*2, 0, 20),
+                    np.clip(self.infer_current_scenario(), 0, 5),
+                    np.clip(self.infer_current_scenario()*2, 0, 20),
                     time.time(),
                 ]
             if difficulty_increase is not None:
@@ -522,7 +518,7 @@ class NavRep3DTrainEnv(gym.Env):
             # Text
             self.score_label.text = "{} S {} R {:.1f} A {:.1f} {:.1f} {:.1f}".format(
                 '*' if self.reset_in_progress else '',
-                self.current_scenario,
+                self.infer_current_scenario(),
                 self.episode_reward,
                 self.last_action[0],
                 self.last_action[1],
@@ -553,6 +549,11 @@ class NavRep3DTrainEnv(gym.Env):
 #         plt.scatter(ij[0], ij[1])
 #         plt.pause(0.1)
         return self.last_sdf[ij[0], ij[1]] < ROBOT_RADIUS
+
+    def infer_current_scenario(self):
+        if self.last_walls is None:
+            return -1
+        return int((len(self.last_walls) - 4) / 2)
 
 def debug_env_max_speed(env, render=False):
     env.reset()

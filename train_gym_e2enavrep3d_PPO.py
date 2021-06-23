@@ -27,7 +27,7 @@ if __name__ == "__main__":
         os.makedirs(DIR)
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
-    env = NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=100)
+    env = NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=1)
 
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
 

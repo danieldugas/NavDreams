@@ -222,6 +222,7 @@ class NavRep3DTrainEnv(gym.Env):
 
         # @Fabien: how do I get the true goal?
         # avoid crashing if the odom message is corrupted
+        difficulty_increase = None
         goal_is_reached = False
         fallen_through_ground = False
         flown_off = False
@@ -293,28 +294,28 @@ class NavRep3DTrainEnv(gym.Env):
                 print("Colliding static obstacle")
             done = True
             reward = -25
-            self.difficulty_increase = -1
+            difficulty_increase = -1
 
         if fallen_through_ground:
             if self.verbose > 0:
                 print("Fallen through ground")
             done = True
             reward = -25
-            self.difficulty_increase = -1
+            difficulty_increase = -1
 
         if flown_off:
             if self.verbose > 0:
                 print("Flown off! (progress: {})".format(progress))
             done = True
             reward = -25
-            self.difficulty_increase = -1
+            difficulty_increase = -1
 
         if goal_is_reached:
             if self.verbose > 0:
                 print("Goal reached")
             done = True
             reward = 100
-            self.difficulty_increase = 1
+            difficulty_increase = 1
 
         # log reward
         self.episode_reward += reward
@@ -355,6 +356,8 @@ class NavRep3DTrainEnv(gym.Env):
                     np.clip(self.current_scenario*2, 0, 20),
                     time.time(),
                 ]
+            if difficulty_increase is not None:
+                self.difficulty_increase = difficulty_increase
 
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:
@@ -517,8 +520,9 @@ class NavRep3DTrainEnv(gym.Env):
             imageData.blit(0,0)
             image_in_vp.disable()
             # Text
-            self.score_label.text = "{}R {:.1f} A {:.1f} {:.1f} {:.1f}".format(
+            self.score_label.text = "{} S {} R {:.1f} A {:.1f} {:.1f} {:.1f}".format(
                 '*' if self.reset_in_progress else '',
+                self.current_scenario,
                 self.episode_reward,
                 self.last_action[0],
                 self.last_action[1],

@@ -13,6 +13,7 @@ import base64
 from PIL import Image
 import io
 from CMap2D import CMap2D
+import subprocess
 
 import helpers
 import socket_handler
@@ -31,6 +32,8 @@ GOAL_RADIUS = 1.
 
 ROBOT_RADIUS = 0.3
 
+REBOOT_EVERY_N_EPISODES = 100
+
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0):
@@ -44,13 +47,14 @@ class NavRep3DTrainEnv(gym.Env):
         # this
         HOST = '127.0.0.1'
         PORT = 25001
+        self.socket_host = HOST
+        self.socket_port = PORT
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
         self.time_step = 0.2
         self.sleep_time = -1
         self.max_time = 180.0
-        self.s = socket_handler.init_socket(HOST, PORT)
         # variables
         self.difficulty_increase = 0
         self.last_odom = None
@@ -58,6 +62,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.last_walls = None
         self.last_action = None
         self.reset_in_progress = False # necessary to differentiate reset pre-steps from normal steps
+        self.unity_process = None
         # other tools
         self.viewer = None
         self.episode_statistics = None
@@ -79,12 +84,25 @@ class NavRep3DTrainEnv(gym.Env):
         self.steps_since_reset = None
         self.episode_reward = None
 
+        self._reboot_unity()
+
         def handler(signal_received, frame):
             # Handle any cleanup here
             print('SIGINT or CTRL-C detected. Exiting gracefully')
             socket_handler.stop(self.s)
             exit(0)
 #         signal(SIGINT, handler)
+
+    def _reboot_unity(self):
+        if self.unity_process is not None:
+            # TODO close socket, close unity
+            socket_handler.stop(self.s)
+            self.unity_process.wait()
+        self.unity_process = subprocess.Popen(["./build.x86_64", "-port", str(self.socket_port)],
+                                              cwd="/home/daniel/Code/cbsim/CrowdBotUnity",
+                                              )
+        time.sleep(5.0)
+        self.s = socket_handler.init_socket(self.socket_host, self.socket_port)
 
     def _get_dt(self):
         return self.time_step
@@ -93,6 +111,9 @@ class NavRep3DTrainEnv(gym.Env):
         return self.viewer
 
     def reset(self):
+        if REBOOT_EVERY_N_EPISODES > 0 and self.total_episodes > 0:
+            if self.total_episodes % REBOOT_EVERY_N_EPISODES == 0:
+                self._reboot_unity()
         # change scenario if necessary
         if self.verbose > 0:
             print("Scenario # {} complete.".format(self.infer_current_scenario()))

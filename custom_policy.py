@@ -6,7 +6,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-from navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
 
 class NavRep3DTrainEnvFlattened(NavRep3DTrainEnv):
     # returns only the robotstate as obs
@@ -17,6 +17,19 @@ class NavRep3DTrainEnvFlattened(NavRep3DTrainEnv):
 
     def step(self, actions):
         obs, reward, done, info = super(NavRep3DTrainEnvFlattened, self).step(actions)
+        # image: channels first, normalized flattened. vector: same
+        obs = np.concatenate([(np.moveaxis(obs[0], -1, 0) / 255.).flatten(), (obs[1]).flatten()], axis=0)
+        return obs, reward, done, info
+
+class NavRep3DTrainEnvDiscreteFlattened(NavRep3DTrainEnvDiscrete):
+    # returns only the robotstate as obs
+    def __init__(self, *args, **kwargs):
+        super(NavRep3DTrainEnvDiscreteFlattened, self).__init__(*args, **kwargs)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(
+            np.prod(self.observation_space[0].shape)+self.observation_space[1].shape[0],), dtype=np.float32)
+
+    def step(self, actions):
+        obs, reward, done, info = super(NavRep3DTrainEnvDiscreteFlattened, self).step(actions)
         # image: channels first, normalized flattened. vector: same
         obs = np.concatenate([(np.moveaxis(obs[0], -1, 0) / 255.).flatten(), (obs[1]).flatten()], axis=0)
         return obs, reward, done, info

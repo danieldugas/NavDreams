@@ -47,6 +47,7 @@ class NavRep3DTrainEnv(gym.Env):
             gym.spaces.Box(low=0, high=255, shape=(_H, _W, 3), dtype=np.uint8),
             gym.spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32)
         ))
+        self.zero_action = np.array([0,0,0])
         # this
         HOST = '127.0.0.1'
         self.socket_host = HOST
@@ -168,7 +169,7 @@ class NavRep3DTrainEnv(gym.Env):
             done = False
             if self.verbose > 0:
                 print("Reset pre-load step")
-            obs, _, done, _ = self.step([0, 0, 0])
+            obs, _, done, _ = self.step(self.zero_action)
             if done:
                 if self.verbose > 0:
                     print("sending reset signal")
@@ -608,6 +609,31 @@ def debug_env_max_speed(env, render=False):
             env.reset()
             n_episodes += 1
     env.close()
+
+class NavRep3DTrainEnvDiscrete(NavRep3DTrainEnv):
+    def __init__(self, **kwargs):
+        super(NavRep3DTrainEnvDiscrete, self).__init__(**kwargs)
+        self.action_space = gym.spaces.Discrete(4)
+        self.zero_action = 0
+
+    def step(self, actions):
+        """ actions
+        0: wait
+        1: forward
+        2: left
+        3: right
+        """
+        if actions is None:
+            actions = 0
+        if actions == 0:
+            cont_actions = np.array([0, 0, 0])
+        elif actions == 1:
+            cont_actions = np.array([1, 0, 0])
+        elif actions == 2:
+            cont_actions = np.array([0, 0, 0.5])
+        elif actions == 3:
+            cont_actions = np.array([0, 0,-0.5])
+        return super(NavRep3DTrainEnvDiscrete, self).step(cont_actions)
 
 def check_stablebaselines_compat(env):
     from stable_baselines.common.env_checker import check_env

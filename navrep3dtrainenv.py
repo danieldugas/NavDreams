@@ -613,25 +613,22 @@ def debug_env_max_speed(env, render=False):
 class NavRep3DTrainEnvDiscrete(NavRep3DTrainEnv):
     def __init__(self, **kwargs):
         super(NavRep3DTrainEnvDiscrete, self).__init__(**kwargs)
-        self.action_space = gym.spaces.Discrete(4)
+        self.action_space = gym.spaces.Discrete(3)
         self.zero_action = 0
 
     def step(self, actions):
         """ actions
-        0: wait
-        1: forward
-        2: left
-        3: right
+        0: forward
+        1: left
+        2: right
         """
         if actions is None:
-            actions = 0
+            actions = 1
         if actions == 0:
-            cont_actions = np.array([0, 0, 0])
-        elif actions == 1:
             cont_actions = np.array([1, 0, 0])
-        elif actions == 2:
+        elif actions == 1:
             cont_actions = np.array([0, 0, 0.5])
-        elif actions == 3:
+        elif actions == 2:
             cont_actions = np.array([0, 0,-0.5])
         return super(NavRep3DTrainEnvDiscrete, self).step(cont_actions)
 

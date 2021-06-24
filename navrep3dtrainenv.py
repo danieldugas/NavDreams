@@ -14,6 +14,7 @@ from PIL import Image
 import io
 from CMap2D import CMap2D
 import subprocess
+from fire import Fire
 
 import helpers
 import socket_handler
@@ -28,15 +29,17 @@ rotation_deadzone = None # 0.1
 
 # for now, goal is fixed
 GOAL_XY = np.array([-7, 0])
-GOAL_RADIUS = 1.
+GOAL_RADIUS = 0.5
 
 ROBOT_RADIUS = 0.3
+AGENT_RADIUS = 0.33
 
 REBOOT_EVERY_N_EPISODES = 100
 
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
-                 debug_export_every_n_episodes=0):
+                 debug_export_every_n_episodes=0, port=25001,
+                 unity_player_dir="/home/daniel/Code/cbsim/CrowdBotUnity"):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -46,15 +49,15 @@ class NavRep3DTrainEnv(gym.Env):
         ))
         # this
         HOST = '127.0.0.1'
-        PORT = 25001
         self.socket_host = HOST
-        self.socket_port = PORT
+        self.socket_port = port
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
         self.time_step = 0.2
         self.sleep_time = -1
         self.max_time = 180.0
+        self.unity_player_dir = unity_player_dir
         # variables
         self.difficulty_increase = 0
         self.last_odom = None
@@ -94,14 +97,16 @@ class NavRep3DTrainEnv(gym.Env):
 #         signal(SIGINT, handler)
 
     def _reboot_unity(self):
+        # close unity player and socket
         if self.unity_process is not None:
-            # TODO close socket, close unity
             socket_handler.stop(self.s)
             self.unity_process.wait()
-        self.unity_process = subprocess.Popen(["./build.x86_64", "-port", str(self.socket_port)],
-                                              cwd="/home/daniel/Code/cbsim/CrowdBotUnity",
-                                              )
-        time.sleep(5.0)
+        # start unity player and connect
+        if self.unity_player_dir is not None:
+            self.unity_process = subprocess.Popen(["./build.x86_64", "-port", str(self.socket_port)],
+                                                  cwd=self.unity_player_dir,
+                                                  )
+            time.sleep(5.0)
         self.s = socket_handler.init_socket(self.socket_host, self.socket_port)
 
     def _get_dt(self):
@@ -217,8 +222,10 @@ class NavRep3DTrainEnv(gym.Env):
             traceback.print_exc()
             self.last_walls = None
 
+        crowd = None
         try:
-            self.last_crowd = helpers.get_crowd(dico)
+            crowd = helpers.get_crowd(dico)
+            self.last_crowd = crowd
         except Exception as e: # noqa
             traceback.print_exc()
             self.last_crowd = None
@@ -244,13 +251,14 @@ class NavRep3DTrainEnv(gym.Env):
         fallen_through_ground = False
         flown_off = False
         colliding_object = False
+        colliding_crowd = False
         robotstate_obs = np.array([0, 0, 0, 0, 0], dtype=np.float32)
         progress = 0
         try:
             odom = helpers.get_odom(dico)
             # goal
             goal_dist = np.linalg.norm(GOAL_XY - odom[:2])
-            goal_is_reached = (goal_dist < GOAL_RADIUS)
+            goal_is_reached = (goal_dist < (GOAL_RADIUS + ROBOT_RADIUS))
             # progress
             if self.last_odom is not None:
                 last_goal_dist = np.linalg.norm(GOAL_XY - self.last_odom[:2])
@@ -266,6 +274,12 @@ class NavRep3DTrainEnv(gym.Env):
             # collision
             if self.last_walls is not None:
                 colliding_object = self.check_wall_collisions(odom, self.last_walls)
+            # agent distances
+            if crowd is not None:
+                if len(crowd) > 0:
+                    mindist = np.min(np.linalg.norm(crowd[:,1:3] - odom[:2][None, :], axis=-1))
+                    if mindist < (AGENT_RADIUS + ROBOT_RADIUS):
+                        colliding_crowd = True
             # robotstate obs
             # shape (n_agents, 5 [grx, gry, vx, vy, vtheta]) - all in base frame
             baselink_in_world = odom[:3]
@@ -283,7 +297,6 @@ class NavRep3DTrainEnv(gym.Env):
                 arrimg[:5,0,2] = robotstate_obs
         except IndexError:
             print("Warning: odom message is corrupted")
-        # @Fabien: how do I get crowd velocities?
 
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
@@ -309,6 +322,13 @@ class NavRep3DTrainEnv(gym.Env):
         if colliding_object:
             if self.verbose > 0:
                 print("Colliding static obstacle")
+            done = True
+            reward = -25
+            difficulty_increase = -1
+
+        if colliding_crowd:
+            if self.verbose > 0:
+                print("Colliding agent")
             done = True
             reward = -25
             difficulty_increase = -1
@@ -509,10 +529,11 @@ class NavRep3DTrainEnv(gym.Env):
                     gl.glVertex3f(xleft, yleft, 0)
                     gl.glEnd()
                 if self.last_odom is not None:
-                    gl_render_agent(self.last_odom[0], self.last_odom[1], self.last_odom[2], ROBOT_RADIUS, robotcolor)
+                    gl_render_agent(self.last_odom[0], self.last_odom[1], self.last_odom[2],
+                                    ROBOT_RADIUS, robotcolor)
                 if self.last_crowd is not None:
                     for n, agent in enumerate(self.last_crowd):
-                        gl_render_agent(agent[1], agent[2], 0, 0.3, agentcolor)
+                        gl_render_agent(agent[1], agent[2], 0, AGENT_RADIUS, agentcolor)
                 # Goal markers
                 xgoal, ygoal = GOAL_XY
                 r = GOAL_RADIUS
@@ -595,7 +616,7 @@ def check_stablebaselines_compat(env):
 
 if __name__ == "__main__":
     np.set_printoptions(precision=1, suppress=True)
-    env = NavRep3DTrainEnv(verbose=1)
+    env = Fire(NavRep3DTrainEnv)
 #     check_stablebaselines_compat(env)
 #     debug_env_max_speed(env)
     player = EnvPlayer(env)

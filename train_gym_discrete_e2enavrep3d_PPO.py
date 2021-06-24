@@ -20,7 +20,7 @@ if __name__ == "__main__":
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     CONTROLLER_ARCH = "_VCARCH_C64"
-    LOGNAME = "navrep3dtrainenv_" + START_TIME + "_PPO" + "_E2E" + CONTROLLER_ARCH
+    LOGNAME = "navrep3dtrainenv_" + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")
     if not os.path.exists(DIR):

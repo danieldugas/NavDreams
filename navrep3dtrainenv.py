@@ -598,6 +598,14 @@ class NavRep3DTrainEnv(gym.Env):
             return -1
         return int((len(self.last_walls) - 4) / 2)
 
+def check_running_unity_backends():
+    import os
+    from builtins import input
+    if os.system('pgrep build.x86') == 0:
+        print("Processes detected which might be unity players:")
+        os.system('ps aux | grep build.x86') # display port numbers
+        input("Are you sure you want to continue? (Ctrl-c: stop, Enter: continue)")
+
 def debug_env_max_speed(env, render=False):
     env.reset()
     n_episodes = 0

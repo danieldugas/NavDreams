@@ -3,13 +3,16 @@ from navrep.tools.commonargs import parse_common_args
 from datetime import datetime
 from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 from sb3_callbacks import NavRep3DLogCallback
-from navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3dtrainenv import NavRep3DTrainEnv, check_running_unity_backends
 from custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
 
 if __name__ == "__main__":
     args, _ = parse_common_args()
+
+    check_running_unity_backends()
 
     MILLION = 1000000
     TRAIN_STEPS = 60 * MILLION
@@ -27,7 +30,16 @@ if __name__ == "__main__":
         os.makedirs(DIR)
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
-    env = NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=1)
+
+    if True:
+        env = DummyVecEnv([
+            lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=170, port=25002),
+            lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=0, port=25003),
+            lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=0, port=25004),
+            lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=0, port=25005),
+        ])
+    else:
+        env = NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=100)
 
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
 

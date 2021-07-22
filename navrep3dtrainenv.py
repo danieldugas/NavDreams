@@ -39,7 +39,7 @@ REBOOT_EVERY_N_EPISODES = 100
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
-                 unity_player_dir="/home/daniel/Code/cbsim/CrowdBotUnity"):
+                 unity_player_dir="/home/daniel/Code/cbsim/navrep3d/LFS/executables"):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)

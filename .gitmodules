@@ -1,0 +1,3 @@
+[submodule "LFS"]
+	path = LFS
+	url = git@github.com:ethz-asl/navrep3d_lfs

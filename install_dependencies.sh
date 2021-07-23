@@ -9,10 +9,17 @@
 # cd Python-RVO2
 # pip install .
 #
+set -x
+set -e
+rm -rf ~/cbc3env
 virtualenv ~/cbc3env --python=python3.6
 source ~/cbc3env/bin/activate
+pip install --upgrade pip # fixes ubuntu 20 pip pep517 error
 
-pip install matplotlib numpy cython ipython pyyaml snakeviz stable-baselines3 pyglet navrep fire
+sudo apt install -y build-essential python3-dev cmake # needed to compile some of the pip packages
+
+pip install numpy cython
+pip install matplotlib ipython pyyaml snakeviz stable-baselines3 pyglet navrep fire
 cd lib_dwa
 pip install .
 cd ..

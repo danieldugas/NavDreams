@@ -233,12 +233,13 @@ class NavRep3DTrainEnv(gym.Env):
 
 #             print(dico)
         arrimg = None
-        if dico["camera"] != 'JPG':
+        if dico["camera"] != '':
 #                 jpgbytes = base64.decodestring(dico["camera"])
             jpgbytes = base64.b64decode(dico["camera"])
             img = Image.open(io.BytesIO(jpgbytes))
             arrimg = np.asarray(img)
         if arrimg is None:
+            print("Warning: image message is corrupted")
             arrimg = np.zeros((_H, _W, 3), dtype=np.uint8)
 
         # do cool stuff here

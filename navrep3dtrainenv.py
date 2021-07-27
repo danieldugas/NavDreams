@@ -579,6 +579,8 @@ class NavRep3DTrainEnv(gym.Env):
             print("Render (display): {} Hz".format(1. / (toc - tic)))
 
     def check_wall_collisions(self, odom, walls):
+        if len(walls) == 0:
+            return False
         if self.last_sdf is None:
             map_ = CMap2D()
             map_.from_closed_obst_vertices(walls, resolution=0.1)

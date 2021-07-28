@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from sys import exit
 import traceback
 from tqdm import tqdm
@@ -36,10 +37,13 @@ AGENT_RADIUS = 0.33
 
 REBOOT_EVERY_N_EPISODES = 100
 
+HOMEDIR = os.path.expanduser("~")
+DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
+
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
-                 unity_player_dir="/home/daniel/Code/cbsim/navrep3d/LFS/executables"):
+                 unity_player_dir=DEFAULT_UNITY_EXE):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -602,7 +606,6 @@ class NavRep3DTrainEnv(gym.Env):
         return int((len(self.last_walls) - 4) / 2)
 
 def check_running_unity_backends():
-    import os
     from builtins import input
     if os.system('pgrep build.x86') == 0:
         print("Processes detected which might be unity players:")

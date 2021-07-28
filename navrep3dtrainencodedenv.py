@@ -23,13 +23,15 @@ class NavRep3DTrainEncodedEnv(Env):
     """ takes a (3) action as input
     outputs encoded obs (546) """
     def __init__(self, backend, encoding,
-                 verbose=0, collect_statistics=True,
+                 verbose=0, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
                  gpu=False, shared_encoder=None, encoder=None):
         if encoder is None:
             encoder = NavRep3DTrainEncoder(backend, encoding,
                                            gpu=gpu, encoder_to_share_model_with=shared_encoder)
         self.encoder = encoder
-        self.env = NavRep3DTrainEnv(verbose=verbose, collect_statistics=collect_statistics)
+        self.env = NavRep3DTrainEnv(verbose=verbose, collect_statistics=collect_statistics,
+                                    debug_export_every_n_episodes=debug_export_every_n_episodes,
+                                    port=port)
         self.action_space = spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.observation_space = self.encoder.observation_space
         self.episode_statistics = self.env.episode_statistics

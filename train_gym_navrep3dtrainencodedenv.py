@@ -5,6 +5,7 @@ from stable_baselines3 import PPO
 
 from navrep3dtrainencodedenv import NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder
 from sb3_callbacks import NavRep3DLogCallback
+from stable_baselines3.common.vec_env import DummyVecEnv
 from navrep.tools.commonargs import parse_common_args
 
 if __name__ == "__main__":
@@ -35,10 +36,26 @@ if __name__ == "__main__":
     if TRAIN_STEPS is None:
         TRAIN_STEPS = 60 * MILLION
 
-    env = NavRep3DTrainEncodedEnv(args.backend, args.encoding,
-                                  verbose=0,
-                                  gpu=not args.no_gpu,
-                                  shared_encoder=shared_encoder)
+    if True:
+        env = DummyVecEnv([
+            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
+                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
+                                            debug_export_every_n_episodes=170, port=25002),
+            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
+                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
+                                            debug_export_every_n_episodes=0, port=25003),
+            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
+                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
+                                            debug_export_every_n_episodes=0, port=25004),
+            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
+                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
+                                            debug_export_every_n_episodes=0, port=25005),
+        ])
+    else:
+        env = NavRep3DTrainEncodedEnv(args.backend, args.encoding,
+                                      verbose=0,
+                                      gpu=not args.no_gpu,
+                                      shared_encoder=shared_encoder)
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
     model = PPO("MlpPolicy", env, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS+1, callback=cb)

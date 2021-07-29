@@ -416,8 +416,7 @@ class NavRep3DTrainEnv(gym.Env):
         socket_handler.stop(self.s)
         time.sleep(1)
 
-    def render(self, mode='human', close=False,
-               image_only=False, save_to_file=False):
+    def render(self, mode='human', close=False, save_to_file=False):
         tic = timer()
         if close:
             if self.viewer is not None:
@@ -447,7 +446,8 @@ class NavRep3DTrainEnv(gym.Env):
             plt.ion()
             plt.show()
             plt.pause(0.1)
-        elif mode == 'human':
+        elif mode in ['human', 'image_only']:
+            image_only = mode == 'image_only'
             # Window and viewport size
             _256 = 256
             WINDOW_W = _256
@@ -650,11 +650,26 @@ def check_stablebaselines_compat(env):
     from stable_baselines.common.env_checker import check_env
     check_env(env)
 
+# separate main function to define the script-relevant arguments used by Fire
+def main(
+    # NavRep3DTrainEnv args
+    verbose=1, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
+    unity_player_dir=DEFAULT_UNITY_EXE,
+    # Player args
+    render_mode='human', step_by_step=False,
+    # Task args
+    check_compat=False, profile=False,
+):
+    np.set_printoptions(precision=1, suppress=True)
+    env = NavRep3DTrainEnv(verbose, collect_statistics, debug_export_every_n_episodes, port, unity_player_dir)
+    if check_compat:
+        check_stablebaselines_compat(env)
+    elif profile:
+        debug_env_max_speed(env)
+    else:
+        player = EnvPlayer(env, render_mode, step_by_step)
+        player.run()
+
 
 if __name__ == "__main__":
-    np.set_printoptions(precision=1, suppress=True)
-    env = Fire(NavRep3DTrainEnv)
-#     check_stablebaselines_compat(env)
-#     debug_env_max_speed(env)
-    player = EnvPlayer(env)
-    player.run()
+    Fire(main)

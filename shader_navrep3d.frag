@@ -28,7 +28,7 @@ float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
 float sdPlane( vec3 p )
 {
-	return p.y;
+    return p.y;
 }
 
 float sdSphere( vec3 p, float s )
@@ -75,34 +75,68 @@ float sdCylinder( vec3 p, vec2 h )
 //------------------------------------------------------------------
 vec2 opU( vec2 d1, vec2 d2 )
 {
-	return (d1.x<d2.x) ? d1 : d2;
+    return (d1.x<d2.x) ? d1 : d2;
+}
+
+vec3 traj( int index, float time ) {
+    // robot
+    vec3 p = vec3(0.);
+    float l = sin(time) / 2. + 0.5; // [0, 1], oscillating
+    float l2 = cos(time) / 2. + 0.5; // [0, 1], oscillating (offset)
+    if ( index == 0 ) { // robot
+        vec3 p0 = vec3( 0.0,0.05,0.7);
+        vec3 p1 = vec3( 0.0,0.05,-0.7);
+        p = p0 * l2 + p1 * (1. - l2 );
+    }
+    if ( index == 1 ) { // human 1
+        vec3 p0 = vec3( 0.4,0.15,-0.6);
+        vec3 p1 = vec3(-0.6,0.15, 0.7);
+        p = p0 * l + p1 * (1. - l );
+    }
+    if ( index == 2 ) { // human 1
+        vec3 p0 = vec3(-0.4,0.15, 0.9);
+        vec3 p1 = vec3( 0.6,0.15,-0.7);
+        p = p0 * l + p1 * (1. - l );
+    }
+    if ( index == 3 ) { // human 1
+        vec3 p0 = vec3(-0.4,0.15, 0.0);
+        vec3 p1 = vec3( 0.0,0.15,-0.5);
+        vec3 p2 = vec3( 0.4,0.15, 0.0);
+        vec3 pa = p0 * l + p1 * (1. - l );
+        vec3 pb = p1 * l + p2 * (1. - l );
+        p = pa * l + pb * (1. - l );
+    }
+    return p;
 }
 
 //------------------------------------------------------------------
-vec2 map( in vec3 pos )
+vec2 map( in vec3 pos, in float time )
 {
     vec2 res = vec2( 1e10, 0.0 );
-    res = opU( res, vec2( sdSphere(    pos-vec3(0.0,0.1, -0.7), 0.05 ), 16.9 ) );
+    res = opU( res, vec2( sdCylinder(    pos-traj(0, time), vec2(0.05,0.05) ), 3.292 ) );
+    res = opU( res, vec2( sdCylinder(    pos-traj(1, time), vec2(0.05,0.15) ), 8.840 ) );
+    res = opU( res, vec2( sdCylinder(    pos-traj(2, time), vec2(0.05,0.15) ), 8.840 ) );
+    res = opU( res, vec2( sdCylinder(    pos-traj(3, time), vec2(0.05,0.15) ), 8.840 ) );
     res = opU( res, vec2( sdBoundingBox( pos-vec3( 0.0,1., 0.0), vec3(1., 1., 1.), 0.005 ), 16.9 ) );
-    res = opU( res, vec2( sdHollowBox(         pos-vec3( 0.,0.1, 0.2), vec3(0.2,0.1,0.1), 0.005 ), 14.104 ) );
+    res = opU( res, vec2( sdHollowBox(   pos-vec3( 0.5,0.1, 0.2), vec3(0.2,0.1,0.1), 0.005 ), 14.104 ) );
+    res = opU( res, vec2( sdHollowBox(   pos-vec3(-0.5,0.1, -0.4), vec3(0.15,0.1,0.15), 0.005 ), 14.104 ) );
     //res = opU( res, vec2( sdCapsule(     pos-vec3( 1.0,0.00,-1.0),vec3(-0.1,0.1,-0.1), vec3(0.2,0.4,0.2), 0.1  ), 31.9 ) );
-	res = opU( res, vec2( sdCylinder(    pos-vec3( 0.0,0.15,0.0), vec2(0.05,0.15) ), 8.840 ) );
-    res = opU( res, vec2( sdCylinder(    pos-vec3( 0.0,0.05,0.7), vec2(0.05,0.05) ), 3.292 ) );
+    res = opU( res, vec2( sdSphere(    pos-vec3(0.0,0.1, -0.7), 0.05 ), 16.9 ) );
     return res;
 }
 
-vec2 iBox( in vec3 ro, in vec3 rd, in vec3 rad ) 
+vec2 iBox( in vec3 ro, in vec3 rd, in vec3 rad )
 {
     vec3 m = 1.0/rd;
     vec3 n = m*ro;
     vec3 k = abs(m)*rad;
     vec3 t1 = -n - k;
     vec3 t2 = -n + k;
-	return vec2( max( max( t1.x, t1.y ), t1.z ),
-	             min( min( t2.x, t2.y ), t2.z ) );
+    return vec2( max( max( t1.x, t1.y ), t1.z ),
+                 min( min( t2.x, t2.y ), t2.z ) );
 }
 
-vec2 raycast( in vec3 ro, in vec3 rd )
+vec2 raycast( in vec3 ro, in vec3 rd, in float time )
 {
     vec2 res = vec2(-1.0,-1.0);
 
@@ -117,8 +151,8 @@ vec2 raycast( in vec3 ro, in vec3 rd )
         res = vec2( tp1, 1.0 );
     }
     //else return res;
-    
-    // raymarch primitives   
+
+    // raymarch primitives
     vec2 tb = vec2(tmin, tmax);//iBox( ro-vec3(0.0,0.4,-0.5), rd, vec3(10.,10.,10.) );
     if( tb.x<tb.y && tb.y>0.0 && tb.x<tmax)
     {
@@ -130,10 +164,10 @@ vec2 raycast( in vec3 ro, in vec3 rd )
         for( int i=0; i<70; i++ )
         {
             if (t > tmax) {break;}
-            vec2 h = map( ro+rd*t );
+            vec2 h = map( ro+rd*t , time );
             if( abs(h.x)<(0.00001*t) )
-            { 
-                res = vec2(t,h.y); 
+            {
+                res = vec2(t,h.y);
                 break;
             }
             t += h.x;
@@ -143,7 +177,7 @@ vec2 raycast( in vec3 ro, in vec3 rd )
 }
 
 // http://iquilezles.org/www/articles/rmshadows/rmshadows.htm
-float calcSoftshadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
+float calcSoftshadow( in vec3 ro, in vec3 rd, in float mint, in float tmax , in float time)
 {
     // bounding volume
     //float tp = (0.8-ro.y)/rd.y; if( tp>0.0 ) tmax = min( tmax, tp );
@@ -152,7 +186,7 @@ float calcSoftshadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
     float t = mint * 1.;
     for( int i=0; i<100; i++ )
     {
-		float h = map( ro + rd*t ).x;
+        float h = map( ro + rd*t , time ).x;
         float s = clamp(16.0*h/t,0.0,1.0);
         res = min( res, s*s*(3.0-2.0*s) );
         t += clamp( h, 0.02, 0.2 );
@@ -162,22 +196,22 @@ float calcSoftshadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
 }
 
 // http://iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
-vec3 calcNormal( in vec3 pos )
+vec3 calcNormal( in vec3 pos , in float time )
 {
 vec2 e = vec2(1.0,-1.0)*0.5773*0.0005;
-    return normalize( e.xyy*map( pos + e.xyy ).x + 
-					  e.yyx*map( pos + e.yyx ).x + 
-					  e.yxy*map( pos + e.yxy ).x + 
-					  e.xxx*map( pos + e.xxx ).x );
+    return normalize( e.xyy*map( pos + e.xyy, time ).x +
+                      e.yyx*map( pos + e.yyx, time ).x +
+                      e.yxy*map( pos + e.yxy, time ).x +
+                      e.xxx*map( pos + e.xxx, time ).x );
 }
-float calcAO( in vec3 pos, in vec3 nor )
+float calcAO( in vec3 pos, in vec3 nor, in float time )
 {
-	float occ = 0.0;
+    float occ = 0.0;
     float sca = 1.0;
     for( int i=0; i<5; i++ )
     {
         float h = 0.01 + 0.12*float(i)/4.0;
-        float d = map( pos + h*nor ).x;
+        float d = map( pos + h*nor, time ).x;
         occ += (h-d)*sca;
         sca *= 0.95;
         if( occ>0.35 ) break;
@@ -193,28 +227,28 @@ float checkersGradBox( in vec2 p, in vec2 dpdx, in vec2 dpdy )
     // analytical integral (box filter)
     vec2 i = 2.0*(abs(fract((p-0.5*w)*0.5)-0.5)-abs(fract((p+0.5*w)*0.5)-0.5))/w;
     // xor pattern
-    return 0.5 - 0.5*i.x*i.y;                  
+    return 0.5 - 0.5*i.x*i.y;
 }
 
-vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy )
-{ 
+vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in float time )
+{
     // background
     vec3 col = vec3(0.7, 0.7, 0.9) - max(rd.y,0.0)*0.3;
-    
+
     // raycast scene
-    vec2 res = raycast(ro,rd);
+    vec2 res = raycast(ro,rd,time);
     float t = res.x;
-	float m = res.y;
+    float m = res.y;
     if( m>-0.5 )
     {
         vec3 pos = ro + t*rd;
-        vec3 nor = (m<1.5) ? vec3(0.0,1.0,0.0) : calcNormal( pos );
+        vec3 nor = (m<1.5) ? vec3(0.0,1.0,0.0) : calcNormal( pos, time );
         vec3 ref = reflect( rd, nor );
-        
-        // material        
+
+        // material
         col = 0.2 + 0.2*sin( m*2.0 + vec3(0.0,1.0,2.0) );
         float ks = 1.0;
-        
+
         if( m<1.5 )
         {
             // project pixel footprint into the plane
@@ -228,9 +262,9 @@ vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy )
         }
 
         // lighting
-        float occ = calcAO( pos, nor );
-        
-		vec3 lin = vec3(0.0);
+        float occ = calcAO( pos, nor, time );
+
+        vec3 lin = vec3(0.0);
 
         // sun
         {
@@ -238,8 +272,8 @@ vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy )
             vec3  hal = normalize( lig-rd );
             float dif = clamp( dot( nor, lig ), 0.0, 1.0 );
           //if( dif>0.0001 )
-        	      dif *= calcSoftshadow( pos, lig, 0.02, 4.5 );
-			float spe = pow( clamp( dot( nor, hal ), 0.0, 1.0 ),16.0);
+                  dif *= calcSoftshadow( pos, lig, 0.02, 4.5, time );
+            float spe = pow( clamp( dot( nor, hal ), 0.0, 1.0 ),16.0);
                   spe *= dif;
                   spe *= 0.04+0.96*pow(clamp(1.0-dot(hal,lig),0.0,1.0),5.0);
             lin += col*2.20*dif*vec3(1.30,1.00,0.70);
@@ -253,37 +287,37 @@ vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy )
                   spe *= dif;
                   spe *= 0.04+0.96*pow(clamp(1.0+dot(nor,rd),0.0,1.0), 5.0 );
           //if( spe>0.001 )
-                  spe *= calcSoftshadow( pos, ref, 0.02, 2.5 );
+                  spe *= calcSoftshadow( pos, ref, 0.02, 2.5, time );
             lin += col*0.60*dif*vec3(0.40,0.60,1.15);
             lin +=     2.00*spe*vec3(0.40,0.60,1.30)*ks;
         }
         // back
         {
-        	float dif = clamp( dot( nor, normalize(vec3(0.5,0.0,0.6))), 0.0, 1.0 )*clamp( 1.0-pos.y,0.0,1.0);
+            float dif = clamp( dot( nor, normalize(vec3(0.5,0.0,0.6))), 0.0, 1.0 )*clamp( 1.0-pos.y,0.0,1.0);
                   dif *= occ;
-        	lin += col*0.55*dif*vec3(0.25,0.25,0.25);
+            lin += col*0.55*dif*vec3(0.25,0.25,0.25);
         }
         // sss
         {
             float dif = pow(clamp(1.0+dot(nor,rd),0.0,1.0),2.0);
                   dif *= occ;
-        	lin += col*0.25*dif*vec3(1.00,1.00,1.00);
+            lin += col*0.25*dif*vec3(1.00,1.00,1.00);
         }
-        
-		col = lin;
+
+        col = lin;
 
         col = mix( col, vec3(0.7,0.7,0.9), 1.0-exp( -0.0001*t*t*t ) );
     }
 
-	return vec3( clamp(col,0.0,1.0) );
+    return vec3( clamp(col,0.0,1.0) );
 }
 
 mat3 setCamera( in vec3 ro, in vec3 ta, float cr )
 {
-	vec3 cw = normalize(ta-ro);
-	vec3 cp = vec3(sin(cr), cos(cr),0.0);
-	vec3 cu = normalize( cross(cw,cp) );
-	vec3 cv =          ( cross(cu,cw) );
+    vec3 cw = normalize(ta-ro);
+    vec3 cp = vec3(sin(cr), cos(cr),0.0);
+    vec3 cu = normalize( cross(cw,cp) );
+    vec3 cv =          ( cross(cu,cw) );
     return mat3( cu, cv, cw );
 }
 
@@ -291,7 +325,7 @@ void shader( out vec4 fragColor, in vec2 fragCoord, in vec2 mo, in float time, i
 {
     const int AA = 2;
 
-    // camera	
+    // camera
     float zoom = 1.5;
     vec3 ta = vec3( 0.0, -0., -0.0 );
     vec3 ro = ta + 1./zoom*vec3( 4.5*cos(0.1*time + 7.0*mo.x), 1.3 + 2.0*mo.y, 4.5*sin(0.1*time + 7.0*mo.x) );
@@ -307,11 +341,11 @@ void shader( out vec4 fragColor, in vec2 fragCoord, in vec2 mo, in float time, i
         // pixel coordinates
         vec2 o = vec2(float(m),float(n)) / float(AA) - 0.5;
         vec2 p = (2.0*(fragCoord+o)-resolution.xy)/resolution.y;
- 
+
 
         // focal length
         const float fl = 2.5;
-        
+
         // ray direction
         vec3 rd = ca * normalize( vec3(p,fl) );
 
@@ -320,14 +354,14 @@ void shader( out vec4 fragColor, in vec2 fragCoord, in vec2 mo, in float time, i
         vec2 py = (2.0*(fragCoord+vec2(0.0,1.0))-resolution.xy)/resolution.y;
         vec3 rdx = ca * normalize( vec3(px,fl) );
         vec3 rdy = ca * normalize( vec3(py,fl) );
-        
-        // render	
-        vec3 col = render( ro, rd, rdx, rdy );
+
+        // render
+        vec3 col = render( ro, rd, rdx, rdy, time );
 
         // gain
         // col = col*3.0/(2.5+col);
-        
-		// gamma
+
+        // gamma
         col = pow( col, vec3(0.4545) );
 
         tot += col;
@@ -335,7 +369,7 @@ void shader( out vec4 fragColor, in vec2 fragCoord, in vec2 mo, in float time, i
     }
     tot /= float(AA*AA);
 
-    
+
     fragColor = vec4( tot, 1.0 );
 
 
@@ -359,12 +393,12 @@ void main() {
     float time = u_time;
     vec2 mo = u_mouse.xy/u_resolution;
     vec2 resolution = u_resolution;
-    
+
     shader( fragColor, fragCoord, mo, time, resolution );
 
     gl_FragColor = fragColor;
     vec2 st = gl_FragCoord.xy/u_resolution;
-	//gl_FragColor = vec4(st.x,st.y,0.0,1.0);
+    //gl_FragColor = vec4(st.x,st.y,0.0,1.0);
 }
 
 // uncomment this line for shadertoy

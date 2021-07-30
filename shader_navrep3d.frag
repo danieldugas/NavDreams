@@ -257,7 +257,7 @@ vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in float time )
 
             float f = checkersGradBox( 3.0*pos.xz, 3.0*dpdx.xz, 3.0*dpdy.xz );
             //col = 0.15 + f*vec3(0.05);
-            col = vec3(0., 1., 0.);
+            col = vec3(0., 0.4, 0.);  // ground color
             ks = 0.4;
         }
 

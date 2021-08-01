@@ -3,7 +3,7 @@ from navrep.tools.commonargs import parse_common_args
 from datetime import datetime
 from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, check_running_unity_backends
@@ -32,7 +32,7 @@ if __name__ == "__main__":
         os.makedirs(LOGDIR)
 
     if True:
-        env = DummyVecEnv([
+        env = SubprocVecEnv([
             lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=170, port=25002),
             lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=0, port=25003),
             lambda: NavRep3DTrainEnvFlattened(verbose=0, debug_export_every_n_episodes=0, port=25004),

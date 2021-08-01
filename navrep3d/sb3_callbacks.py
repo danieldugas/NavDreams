@@ -3,9 +3,8 @@ import time
 from pandas import DataFrame
 from navrep.tools.sb_eval_callback import save_log, print_statistics, save_model_if_improved
 
-from stable_baselines3.common.vec_env import VecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
-
 
 class NavRep3DLogCallback(BaseCallback):
     """
@@ -36,11 +35,18 @@ class NavRep3DLogCallback(BaseCallback):
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
             # get episode_statistics
             env = self.training_env
-            if isinstance(self.training_env, VecEnv):
+            if isinstance(self.training_env, DummyVecEnv):
                 S = DataFrame()
                 for env in self.training_env.envs:
                     S = S.append(env.episode_statistics, ignore_index=True)
                 S["total_steps"] *= len(self.training_env.envs)
+                S = S.sort_values(by="total_steps", ignore_index=True)
+            elif isinstance(self.training_env, SubprocVecEnv):
+                S = DataFrame()
+                episode_statistics_list = self.training_env.get_attr("episode_statistics")
+                for episode_statistics in episode_statistics_list:
+                    S = S.append(episode_statistics, ignore_index=True)
+                S["total_steps"] *= self.training_env.num_envs
                 S = S.sort_values(by="total_steps", ignore_index=True)
             else:
                 S = env.episode_statistics

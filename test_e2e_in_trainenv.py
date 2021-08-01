@@ -1,6 +1,7 @@
 from navrep.tools.commonargs import parse_common_args
 from stable_baselines3 import PPO
-from custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
+
+from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
 
 if __name__ == "__main__":
     args, _ = parse_common_args()

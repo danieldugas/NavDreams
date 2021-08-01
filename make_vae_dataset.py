@@ -1,7 +1,8 @@
 import os
-from navrep3dtrainenv import NavRep3DTrainEnv
 from navrep.tools.commonargs import parse_multiproc_args
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
+
+from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
 
 if __name__ == "__main__":
     args, _ = parse_multiproc_args()

@@ -15,7 +15,7 @@ from navrep.models.vae1dlstm import VAE1DLSTM, VAE1DLSTMConfig
 from navrep.models.vaelstm import VAELSTM, VAELSTMConfig
 from navrep.tools.wdataset import scans_to_lidar_obs
 
-from navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
 
 PUNISH_SPIN = True
 

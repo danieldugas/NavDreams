@@ -4,8 +4,8 @@ from datetime import datetime
 from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import SAC
 
-from sb3_callbacks import NavRep3DLogCallback
-from navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3d.sb3_callbacks import NavRep3DLogCallback
+from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
 
 if __name__ == "__main__":
     args, _ = parse_common_args()

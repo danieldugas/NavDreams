@@ -2,8 +2,8 @@ from gym import spaces, Env
 import numpy as np
 import os
 
-from navrep3dtrainenv import NavRep3DTrainEnv
-from encodedenv3d import EnvEncoder
+from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3d.encodedenv3d import EnvEncoder
 
 class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding,

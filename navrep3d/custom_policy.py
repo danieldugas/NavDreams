@@ -6,7 +6,7 @@ import torch.nn as nn
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-from navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
+from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
 
 class NavRep3DTrainEnvFlattened(NavRep3DTrainEnv):
     # returns only the robotstate as obs

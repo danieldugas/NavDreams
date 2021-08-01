@@ -2,11 +2,11 @@ from datetime import datetime
 import os
 
 from stable_baselines3 import PPO
-
-from navrep3dtrainencodedenv import NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder
-from sb3_callbacks import NavRep3DLogCallback
 from stable_baselines3.common.vec_env import DummyVecEnv
 from navrep.tools.commonargs import parse_common_args
+
+from navrep3d.navrep3dtrainencodedenv import NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder
+from navrep3d.sb3_callbacks import NavRep3DLogCallback
 
 if __name__ == "__main__":
     args, _ = parse_common_args()

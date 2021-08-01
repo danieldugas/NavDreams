@@ -5,9 +5,9 @@ from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-from sb3_callbacks import NavRep3DLogCallback
-from navrep3dtrainenv import NavRep3DTrainEnv, check_running_unity_backends
-from custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
+from navrep3d.sb3_callbacks import NavRep3DLogCallback
+from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, check_running_unity_backends
+from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
 
 if __name__ == "__main__":
     args, _ = parse_common_args()

@@ -17,8 +17,8 @@ from CMap2D import CMap2D
 import subprocess
 from fire import Fire
 
-import helpers
-import socket_handler
+import navrep3d.helpers as helpers
+import navrep3d.socket_handler as socket_handler
 
 _H = 64 # 36 # 120
 _W = 64 # 36 # 160
@@ -39,6 +39,7 @@ REBOOT_EVERY_N_EPISODES = 100
 
 HOMEDIR = os.path.expanduser("~")
 DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
+# TODO: RELEASE - make a tool which downloads LFS files
 
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,

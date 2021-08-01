@@ -1,6 +1,3 @@
-// Author:
-// Title:
-
 #ifdef GL_ES
 precision mediump float;
 #endif
@@ -8,17 +5,6 @@ precision mediump float;
 // The MIT License
 // Copyright © 2013 Inigo Quilez
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// A list of useful distance function to simple primitives. All
-// these functions (except for ellipsoid) return an exact
-// euclidean distance, meaning they produce a better SDF than
-// what you'd get if you were constructing them from boolean
-// operations.
-
-// List of other 3D SDFs: https://www.shadertoy.com/playlist/43cXRl
-//
-// and http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
-
 
 //------------------------------------------------------------------
 
@@ -72,11 +58,11 @@ float sdCylinder( vec3 p, vec2 h )
     return min(max(d.x,d.y),0.0) + length(max(d,0.0));
 }
 
-float sdLine( vec3 p, vec3 o, vec3 d, float l ) {
-    // p: sdf pos to evaluate. o: ray origin. d: ray direction. l: ray length.
+float sdLine( vec3 p, vec3 o, vec3 d, float l0, float l ) {
+    // p: sdf pos to evaluate. o: ray origin. d: ray direction. l0: start length. l: ray length.
     vec3 dp = p - o;
     // closest point on ray
-    float t = clamp(dot( dp, d ), 0., l);
+    float t = clamp(dot( dp, d ), l0, l);
     vec3 cp = o + t * d;
     // distance to closest point
     return length(p - cp);
@@ -131,7 +117,7 @@ vec2 mapnorobot( in vec3 pos, in float time )
     res = opU( res, vec2( sdHollowBox(   pos-vec3(-0.5,0.1, -0.4), vec3(0.15,0.1,0.15), 0.005 ), 14.104 ) );
     //res = opU( res, vec2( sdCapsule(     pos-vec3( 1.0,0.00,-1.0),vec3(-0.1,0.1,-0.1), vec3(0.2,0.4,0.2), 0.1  ), 31.9 ) );
     res = opU( res, vec2( sdSphere(    pos-vec3(0.0,0.1, -0.7), 0.05 ), 16.9 ) );
-    res = opU( res, vec2( sdHollowBox( pos, vec3(1., 0.1, 1.), 0.005 ), 16.9 ));
+    res = opU( res, vec2( sdHollowBox( pos, vec3(1., 0.1, 1.), 0.01 ), 16.9 ));
 
     return res;
 }
@@ -146,11 +132,12 @@ vec2 map( in vec3 pos, in float time )
 }
 
 
-float[10] laserlengths;
+#define NLASERS 20
+float[NLASERS] laserlengths;
 void precompute_laser_lengths( in float time)
 {
     float res = 1e10 ;
-    const int N = 10;
+    const int N = NLASERS;
     for( int i=0; i<N; i++ )
     {
         float theta = float(i) / float(N) * 2. * 3.1416;
@@ -159,21 +146,21 @@ void precompute_laser_lengths( in float time)
         // cast ray to find laser length
         float l = 0.06;
         float lmax = 2.;
-        for( int j=0; j<12; j++ )
+        for( int j=0; j<24; j++ )
         {
             float h = mapnorobot( orig + dir*l , time ).x;
-            h = min(h, sdHollowBox( orig + dir*l, vec3(1., 0.1, 1.), 0.005 ));
+            //h = min(h, sdHollowBox( orig + dir*l, vec3(1., 0.1, 1.), 0.005 ));
             l += clamp( h, 0.02, 0.2 );
             if( h<0.004 || l>lmax ) break;
         }
-        laserlengths[i] = l;
+        laserlengths[i] = l * 0.98;
     }
 }
 
 float lasermap( in vec3 pos, in float time )
 {
     float res = 1e10 ;
-    const int N = 10;
+    const int N = NLASERS;
     for( int i=0; i<N; i++ )
     {
         float theta = float(i) / float(N) * 2. * 3.1416;
@@ -181,7 +168,7 @@ float lasermap( in vec3 pos, in float time )
         vec3 orig = traj(0, time);
         // cast ray to find laser length
         float l = laserlengths[i];
-        res = min( res, sdLine(    pos, orig, dir, l ) );
+        res = min( res, sdLine(    pos, orig, dir, 0.06, l ) );
     }
     return res;
 }
@@ -235,7 +222,7 @@ vec2 raycast( in vec3 ro, in vec3 rd, in float time )
             }
             // detect laser
             float hl = lasermap( ro+rd*t, time );
-            if( abs(hl)<(0.002*t) )
+            if( abs(hl)<(0.0015*t) )
             {
                 res = vec2(t,4.8);
                 break;
@@ -331,6 +318,10 @@ vec3 render( in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in float time )
             ks = 0.4;
         }
 
+        if( m == 4.8 ) { // laser
+            return vec3(1.0,0.,0.);
+        }
+
         if ( true ) {
         // lighting
         float occ = calcAO( pos, nor, time );
@@ -395,12 +386,18 @@ mat3 setCamera( in vec3 ro, in vec3 ta, float cr )
 
 void shader( out vec4 fragColor, in vec2 fragCoord, in vec2 mo, in float time, in vec2 resolution )
 {
-    const int AA = 2;
+    const int AA = 1;
 
     // camera
     float zoom = 1.5;
     vec3 ta = vec3( 0.0, -0., -0.0 );
     vec3 ro = ta + 1./zoom*vec3( 4.5*cos(0.1*time + 7.0*mo.x), 1.3 + 2.0*mo.y, 4.5*sin(0.1*time + 7.0*mo.x) );
+    float s = sin(time * 0.5) / 2. + 0.5;
+    float s4 = s*s*s*s;
+    float phi = 1.5707 * s4 + 0.4 * (1.-s4);
+    float theta = 1.5707 * s + 2.4 * (1.-s);
+    float R = 6. * s4 + 3. * (1.-s4);
+    ro = vec3(R*cos(phi)*cos(theta), R*sin(phi), 0.001+R*cos(phi)*sin(theta));
     // ro = vec3(0.1, 4., 0.1);
     // camera-to-world transformation
     mat3 ca = setCamera( ro, ta, 0.0 );
@@ -414,7 +411,6 @@ void shader( out vec4 fragColor, in vec2 fragCoord, in vec2 mo, in float time, i
         // pixel coordinates
         vec2 o = vec2(float(m),float(n)) / float(AA) - 0.5;
         vec2 p = (2.0*(fragCoord+o)-resolution.xy)/resolution.y;
-
 
         // focal length
         const float fl = 2.5;

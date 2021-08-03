@@ -2,10 +2,10 @@ from datetime import datetime
 import os
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
 from navrep.tools.commonargs import parse_common_args
 
-from navrep3d.navrep3dtrainencodedenv import NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder
+from navrep3d.navrep3dtrainencodedenv import (NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder,
+                                              SubprocVecNavRep3DEncodedEnv)
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 
 if __name__ == "__main__":
@@ -37,20 +37,9 @@ if __name__ == "__main__":
         TRAIN_STEPS = 60 * MILLION
 
     if True:
-        env = DummyVecEnv([
-            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
-                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
-                                            debug_export_every_n_episodes=170, port=25002),
-            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
-                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
-                                            debug_export_every_n_episodes=0, port=25003),
-            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
-                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
-                                            debug_export_every_n_episodes=0, port=25004),
-            lambda: NavRep3DTrainEncodedEnv(args.backend, args.encoding, verbose=0,
-                                            gpu=not args.no_gpu, shared_encoder=shared_encoder,
-                                            debug_export_every_n_episodes=0, port=25005),
-        ])
+        N_ENVS = 4
+        env = SubprocVecNavRep3DEncodedEnv(args.backend, args.encoding, N_ENVS,
+                                           debug_export_every_n_episodes=170)
     else:
         env = NavRep3DTrainEncodedEnv(args.backend, args.encoding,
                                       verbose=0,

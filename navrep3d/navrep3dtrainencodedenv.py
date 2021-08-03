@@ -108,13 +108,20 @@ class SubprocVecNavRep3DEncodedEnv(SubprocVecEnv):
             for k in range(n_envs)
         ]
         super(SubprocVecNavRep3DEncodedEnv, self).__init__(env_init_funcs)
+        self.simulator_obs_space = self.observation_space
+        self.encoder_obs_space = self.encoders[0].observation_space
+        self.observation_space = self.encoder_obs_space
 
     def step_async(self, actions):
         super(SubprocVecNavRep3DEncodedEnv, self).step_async(actions)
         self.last_actions = actions
 
     def step_wait(self):
+        # hack: vecenv expects the simulator obs space to be set.
+        # RL algo expects obs space to be the encoded obs space
+        self.observation_space = self.simulator_obs_space
         obs, rews, dones, infos = super(SubprocVecNavRep3DEncodedEnv, self).step_wait()
+        self.observation_space = self.encoder_obs_space
         h = [encoder._encode_obs((imob, rsob), a)
              for imob, rsob, a, encoder in zip(obs[0], obs[1], self.last_actions, self.encoders)]
         return np.stack(h), rews, dones, infos
@@ -122,7 +129,9 @@ class SubprocVecNavRep3DEncodedEnv(SubprocVecEnv):
     def reset(self):
         for encoder in self.encoders:
             encoder.reset()
+        self.observation_space = self.simulator_obs_space
         obs = super(SubprocVecNavRep3DEncodedEnv, self).reset()
+        self.observation_space = self.encoder_obs_space
         h = [encoder._encode_obs((imob, rsob), np.array([0,0,0]))
              for imob, rsob, encoder in zip(obs[0], obs[1], self.encoders)]
         return np.stack(h)

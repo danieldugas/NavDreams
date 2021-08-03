@@ -1,11 +1,10 @@
 import os
 from navrep.tools.commonargs import parse_common_args
 from datetime import datetime
-from stable_baselines3.sac.policies import CnnPolicy
+from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import PPO
 
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
 from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvDiscreteFlattened
 
 if __name__ == "__main__":
@@ -27,7 +26,16 @@ if __name__ == "__main__":
         os.makedirs(DIR)
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
-    env = NavRep3DTrainEnvDiscreteFlattened(verbose=0, debug_export_every_n_episodes=1)
+
+    if True:
+        env = SubprocVecEnv([
+            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=170, port=25002),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=0, port=25003),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=0, port=25004),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=0, port=25005),
+        ])
+    else:
+        env = NavRep3DTrainEnvDiscreteFlattened(verbose=0, debug_export_every_n_episodes=170)
 
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
 

@@ -540,7 +540,7 @@ class NavRep3DTrainEnv(gym.Env):
                                     ROBOT_RADIUS, robotcolor)
                 if self.last_crowd is not None:
                     for n, agent in enumerate(self.last_crowd):
-                        gl_render_agent(agent[1], agent[2], 0, AGENT_RADIUS, agentcolor)
+                        gl_render_agent(agent[1], agent[2], agent[3], AGENT_RADIUS, agentcolor)
                 # Goal markers
                 xgoal, ygoal = GOAL_XY
                 r = GOAL_RADIUS

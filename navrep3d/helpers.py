@@ -1,5 +1,6 @@
 #inputs and outputs
 import numpy as np
+import traceback
 
 def publish_all(dico):
     to_publish = []
@@ -34,6 +35,7 @@ def get_walls(dico):
             _,vertxy = dico['walls'].split(' ', 1)
             walls = np.array(list(map(float,vertxy.split(' ')))).reshape((-1, 4, 2))
         except ValueError:
+            traceback.print_exc()
             return np.array([])
     return walls
 
@@ -41,11 +43,19 @@ def get_crowd(dico):
     crowd = np.array([])
     if "crowd" in dico:
         try:
+            if dico['crowd'] == "id pose":
+                return np.array([])
             _,_,crowd = dico['crowd'].split(' ', 2)
             crowd = crowd.replace('(', '')
             crowd = crowd.replace(')', '')
-            crowd = np.array(list(map(float,crowd.split(' ')))).reshape((-1,3))
+            crowd = np.array(list(map(float,crowd.split(' ')))).reshape((-1,4))
+            # unity agent x axis is lateral right -> -90 degrees to get anterior axis
+            # unity rotation is in degrees -> deg2rad
+            # unity rotation is counter-trigonometric-angle -> minus sign
+            crowd[:, 3] = -np.deg2rad(crowd[:, 3]-90)
         except ValueError:
+            print(dico['crowd'])
+            traceback.print_exc()
             return np.array([])
     return crowd
 
@@ -60,6 +70,7 @@ def get_odom(dico):
         try:
             odom_xytheta_dxdydtheta = list(map(float, dico['odom'].split(" ")[1:]))
         except ValueError:
+            traceback.print_exc()
             pass
     else:
         odom_xytheta_dxdydtheta = []

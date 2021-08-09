@@ -40,24 +40,27 @@ def get_walls(dico):
     return walls
 
 def get_crowd(dico):
-    crowd = np.array([])
+    ITEMS = ["id", "x", "y", "theta"]
+    N_ITEMS = len(ITEMS)
+    THETA_IDX = ITEMS.index("theta")
     if "crowd" in dico:
         try:
             if dico['crowd'] == "id pose":
-                return np.array([])
-            _,_,crowd = dico['crowd'].split(' ', 2)
+                return None
+            _,_,crowd = dico['crowd'].split(' ', 2) # removes "id pose" at beginning
             crowd = crowd.replace('(', '')
             crowd = crowd.replace(')', '')
-            crowd = np.array(list(map(float,crowd.split(' ')))).reshape((-1,4))
+            crowd = np.array(list(map(float,crowd.split(' ')))).reshape((-1,N_ITEMS))
             # unity agent x axis is lateral right -> -90 degrees to get anterior axis
             # unity rotation is in degrees -> deg2rad
             # unity rotation is counter-trigonometric-angle -> minus sign
-            crowd[:, 3] = -np.deg2rad(crowd[:, 3]-90)
+            crowd[:, THETA_IDX] = -np.deg2rad(crowd[:, THETA_IDX]-90)
+            return crowd
         except ValueError:
             print(dico['crowd'])
             traceback.print_exc()
-            return np.array([])
-    return crowd
+            return None
+    return None
 
 def get_clock(dico):
     clock = -1

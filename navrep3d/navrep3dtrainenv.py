@@ -64,6 +64,8 @@ class NavRep3DTrainEnv(gym.Env):
         self.sleep_time = -1
         self.max_time = 180.0
         self.unity_player_dir = unity_player_dir
+        self.output_lidar = False
+        self.render_legs_in_lidar = True
         # variables
         self.difficulty_increase = 0
         self.last_odom = None
@@ -92,6 +94,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.total_episodes = 0
         self.steps_since_reset = None
         self.episode_reward = None
+        self.converter_cmap2d = None
 
         self._reboot_unity()
 
@@ -165,9 +168,14 @@ class NavRep3DTrainEnv(gym.Env):
             self.last_odom = None
             self.last_walls = None
             self.last_map = None
+            self.last_crowd = None
             self.last_sdf = None
             self.steps_since_reset = 0
             self.episode_reward = 0.
+            self.distances_travelled_in_base_frame = {}
+            self.flat_contours = None
+            self.lidar_scan = None
+            self.lidar_angles = None
 
             # double check that the new scenario is loaded correctly (doesn't return done or weirdness)
             self.last_image = None
@@ -196,9 +204,14 @@ class NavRep3DTrainEnv(gym.Env):
         self.last_odom = None
         self.last_walls = None
         self.last_map = None
+        self.last_crowd = None
         self.last_sdf = None
         self.steps_since_reset = 0
         self.episode_reward = 0.
+        self.distances_travelled_in_base_frame = {}
+        self.flat_contours = None
+        self.lidar_scan = None
+        self.lidar_angles = None
 
         return obs
 
@@ -229,12 +242,21 @@ class NavRep3DTrainEnv(gym.Env):
             self.last_walls = None
 
         crowd = None
+        crowd_vel = None
         try:
             crowd = helpers.get_crowd(dico)
+            crowd_vel = self._infer_crowd_vel(crowd, self.last_crowd)
             self.last_crowd = crowd
         except Exception as e: # noqa
             traceback.print_exc()
             self.last_crowd = None
+
+        try:
+            odom = helpers.get_odom(dico)
+            x, y, th, vx, vy, vth, z = odom
+        except IndexError:
+            traceback.print_exc()
+            print("Warning: odom message is corrupted")
 
 #             print(dico)
         arrimg = None
@@ -246,6 +268,9 @@ class NavRep3DTrainEnv(gym.Env):
         if arrimg is None:
             print("Warning: image message is corrupted")
             arrimg = np.zeros((_H, _W, 3), dtype=np.uint8)
+
+        if self.output_lidar:
+            self.raytrace_lidar(odom[:3], self.last_walls, crowd, crowd_vel)
 
         # do cool stuff here
 #                 to_save = {k: dico[k] for k in ('clock', 'crowd', 'odom', 'report')}
@@ -261,49 +286,46 @@ class NavRep3DTrainEnv(gym.Env):
         colliding_crowd = False
         robotstate_obs = np.array([0, 0, 0, 0, 0], dtype=np.float32)
         progress = 0
-        try:
-            odom = helpers.get_odom(dico)
-            # goal
-            goal_dist = np.linalg.norm(GOAL_XY - odom[:2])
-            goal_is_reached = (goal_dist < (GOAL_RADIUS + ROBOT_RADIUS))
-            # progress
-            if self.last_odom is not None:
-                last_goal_dist = np.linalg.norm(GOAL_XY - self.last_odom[:2])
-                progress = last_goal_dist - goal_dist
-                if abs(progress) > 10:
-                    flown_off = True
-            self.last_odom = odom
-            # checks
-            if np.linalg.norm(odom[3:5]) >= FLOWN_OFF_VEL:
+
+        # goal
+        goal_dist = np.linalg.norm(GOAL_XY - odom[:2])
+        goal_is_reached = (goal_dist < (GOAL_RADIUS + ROBOT_RADIUS))
+        # progress
+        if self.last_odom is not None:
+            last_goal_dist = np.linalg.norm(GOAL_XY - self.last_odom[:2])
+            progress = last_goal_dist - goal_dist
+            if abs(progress) > 10:
                 flown_off = True
-            if odom[-1] < 0:
-                fallen_through_ground = True
-            # collision
-            if self.last_walls is not None:
-                colliding_object = self.check_wall_collisions(odom, self.last_walls)
-            # agent distances
-            if crowd is not None:
-                if len(crowd) > 0:
-                    mindist = np.min(np.linalg.norm(crowd[:,1:3] - odom[:2][None, :], axis=-1))
-                    if mindist < (AGENT_RADIUS + ROBOT_RADIUS):
-                        colliding_crowd = True
-            # robotstate obs
-            # shape (n_agents, 5 [grx, gry, vx, vy, vtheta]) - all in base frame
-            baselink_in_world = odom[:3]
-            world_in_baselink = inverse_pose2d(baselink_in_world)
-            robotvel_in_world = odom[3:6]  # TODO: actual robot rot vel?
-            robotvel_in_baselink = apply_tf_to_vel(robotvel_in_world, world_in_baselink)
-            goal_in_world = np.array([GOAL_XY[0], GOAL_XY[1], 0])
-            goal_in_baselink = apply_tf_to_pose(goal_in_world, world_in_baselink)
-            robotstate_obs = np.hstack([goal_in_baselink[:2], robotvel_in_baselink])
-            # bake robotstate into image state
-            if False:
-                arrimg = np.copy(arrimg)
-                arrimg[:5,0,0] = robotstate_obs
-                arrimg[:5,0,1] = robotstate_obs
-                arrimg[:5,0,2] = robotstate_obs
-        except IndexError:
-            print("Warning: odom message is corrupted")
+        self.last_odom = odom
+        # checks
+        if np.linalg.norm(odom[3:5]) >= FLOWN_OFF_VEL:
+            flown_off = True
+        if odom[-1] < 0:
+            fallen_through_ground = True
+        # collision
+        if self.last_walls is not None:
+            colliding_object = self.check_wall_collisions(odom, self.last_walls)
+        # agent distances
+        if crowd is not None:
+            if len(crowd) > 0:
+                mindist = np.min(np.linalg.norm(crowd[:,1:3] - odom[:2][None, :], axis=-1))
+                if mindist < (AGENT_RADIUS + ROBOT_RADIUS):
+                    colliding_crowd = True
+        # robotstate obs
+        # shape (n_agents, 5 [grx, gry, vx, vy, vtheta]) - all in base frame
+        baselink_in_world = odom[:3]
+        world_in_baselink = inverse_pose2d(baselink_in_world)
+        robotvel_in_world = odom[3:6]  # TODO: actual robot rot vel?
+        robotvel_in_baselink = apply_tf_to_vel(robotvel_in_world, world_in_baselink)
+        goal_in_world = np.array([GOAL_XY[0], GOAL_XY[1], 0])
+        goal_in_baselink = apply_tf_to_pose(goal_in_world, world_in_baselink)
+        robotstate_obs = np.hstack([goal_in_baselink[:2], robotvel_in_baselink])
+        # bake robotstate into image state
+        if False:
+            arrimg = np.copy(arrimg)
+            arrimg[:5,0,0] = robotstate_obs
+            arrimg[:5,0,1] = robotstate_obs
+            arrimg[:5,0,2] = robotstate_obs
 
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
@@ -490,6 +512,7 @@ class NavRep3DTrainEnv(gym.Env):
                 nosecolor = np.array([0.3, 0.3, 0.3])
                 agentcolor = np.array([0., 1., 1.])
                 robotcolor = np.array([1., 1., 1.])
+                lidarcolor = np.array([1., 0., 0.])
                 # Green background
                 gl.glBegin(gl.GL_QUADS)
                 gl.glColor4f(bgcolor[0], bgcolor[1], bgcolor[2], 1.0)
@@ -499,6 +522,26 @@ class NavRep3DTrainEnv(gym.Env):
                 gl.glVertex3f(0, 0, 0)
                 gl.glEnd()
                 topdown_in_vp.enable()
+                # LIDAR
+                if self.lidar_scan is not None and self.last_odom is not None:
+                    px, py, angle, _, _, _, _ = self.last_odom
+                    # LIDAR rays
+                    scan = self.lidar_scan
+                    lidar_angles = self.lidar_angles
+                    x_ray_ends = px + scan * np.cos(lidar_angles)
+                    y_ray_ends = py + scan * np.sin(lidar_angles)
+                    is_in_fov = np.cos(lidar_angles - angle) >= 0.78
+                    for ray_idx in range(len(scan)):
+                        end_x = x_ray_ends[ray_idx]
+                        end_y = y_ray_ends[ray_idx]
+                        gl.glBegin(gl.GL_LINE_LOOP)
+                        if is_in_fov[ray_idx]:
+                            gl.glColor4f(1., 1., 0., 0.1)
+                        else:
+                            gl.glColor4f(lidarcolor[0], lidarcolor[1], lidarcolor[2], 0.1)
+                        gl.glVertex3f(px, py, 0)
+                        gl.glVertex3f(end_x, end_y, 0)
+                        gl.glEnd()
                 # Map closed obstacles ---
                 if self.last_walls is not None:
                     for wall in self.last_walls:
@@ -582,6 +625,94 @@ class NavRep3DTrainEnv(gym.Env):
         if self.verbose > 1:
             toc = timer()
             print("Render (display): {} Hz".format(1. / (toc - tic)))
+
+    def _infer_crowd_vel(self, crowd, last_crowd):
+        """ infer vx, vy, vtheta for crowd in sim frame """
+        if crowd is None:
+            return None
+        crowd_vel = np.zeros_like(crowd)
+        # for each human, get vel in base frame
+        crowd_vel[:, 0] = crowd[:, 0] # ids
+        # dig up rotational velocity from past states log
+        if last_crowd is None:
+            crowd_vel[:, 1] = 0 # vx
+            crowd_vel[:, 2] = 0 # vy
+            crowd_vel[:, 3] = 0 # vth
+        else:
+            # paranoid check that ids are matching
+            for (id_, x, y, th), (last_id, last_x, last_y, last_th) in zip(crowd, last_crowd):
+                if id_ != last_id:
+                    print("Warning: changing crowd ids are not supported.")
+            crowd_vel[:, 1] = (crowd[:, 1] - last_crowd[:, 1]) / self._get_dt() # vx
+            crowd_vel[:, 2] = (crowd[:, 2] - last_crowd[:, 2]) / self._get_dt() # vy
+            crowd_vel[:, 3] = (crowd[:, 3] - last_crowd[:, 3]) / self._get_dt() # vth
+        return crowd_vel
+
+    def _update_dist_travelled(self, crowd, crowd_vel):
+        """ update dist travel var used for animating legs """
+        if crowd is None:
+            return
+        # for each human, get vel in base frame
+        for (id_, x, y, th), (_, vx, vy, vrot) in zip(crowd, crowd_vel):
+            # transform world vel to base vel
+            baselink_in_world = np.array([x, y, th])
+            world_in_baselink = inverse_pose2d(baselink_in_world)
+            vel_in_world_frame = np.array([vx, vy, vrot])
+            vel_in_baselink_frame = apply_tf_to_vel(vel_in_world_frame, world_in_baselink)
+            if id_ in self.distances_travelled_in_base_frame:
+                self.distances_travelled_in_base_frame[id_] += vel_in_baselink_frame * self._get_dt()
+            else:
+                self.distances_travelled_in_base_frame[id_] = vel_in_baselink_frame * self._get_dt()
+
+    def raytrace_lidar(self, robot_xytheta, contours, crowd, crowd_vel):
+        from CMap2D import flatten_contours, render_contours_in_lidar, CMap2D, CSimAgent
+        # inputs
+        x, y, th = robot_xytheta
+        # constants
+        n_angles = 1080
+        MAX_RANGE = 25.
+        kLidarAngleIncrement = 0.00581718236208
+        kLidarMergedMinAngle = 0
+        kLidarMergedMaxAngle = 6.27543783188 + kLidarAngleIncrement
+        # preprocessing if necessary
+        self._update_dist_travelled(crowd, crowd_vel)
+        if self.flat_contours is None and contours is not None:
+            self.flat_contours = flatten_contours([list(polygon) for polygon in contours])
+        if self.converter_cmap2d is None:
+            self.converter_cmap2d = CMap2D()
+            self.converter_cmap2d.set_resolution(1.)
+        # self inputs
+        flat_contours = self.flat_contours
+        distances_travelled_in_base_frame = self.distances_travelled_in_base_frame
+        converter_cmap2d = self.converter_cmap2d
+        # raytrace
+        lidar_pos = np.array([x, y, th], dtype=np.float32)
+        ranges = np.ones((n_angles,), dtype=np.float32) * MAX_RANGE
+        angles = np.linspace(kLidarMergedMinAngle,
+                             kLidarMergedMaxAngle-kLidarAngleIncrement,
+                             n_angles) + lidar_pos[2]
+        if contours is not None:
+            render_contours_in_lidar(ranges, angles, flat_contours, lidar_pos[:2])
+        # agents
+        if crowd is not None:
+            other_agents = []
+            for (a_id, a_x, a_y, a_th), (_, a_vx, a_vy, a_vrot) in zip(crowd, crowd_vel):
+                pos = np.array([a_x, a_y, a_th], dtype=np.float32)
+                if a_id in distances_travelled_in_base_frame:
+                    dist = distances_travelled_in_base_frame[a_id].astype(np.float32)
+                else:
+                    raise ValueError("id not found in distances travelled")
+                vel = np.array([a_vx, a_vy], dtype=np.float32)
+                if self.render_legs_in_lidar:
+                    agent = CSimAgent(pos, dist, vel)
+                else:
+                    agent = CSimAgent(pos, dist, vel, type_="trunk", radius=AGENT_RADIUS)
+                other_agents.append(agent)
+            # apply through converter map (res 1., origin 0,0 -> i,j == x,y)
+            converter_cmap2d.render_agents_in_lidar(ranges, angles, other_agents, lidar_pos[:2])
+        # output
+        self.lidar_scan = ranges
+        self.lidar_angles = angles
 
     def check_wall_collisions(self, odom, walls):
         if len(walls) == 0:

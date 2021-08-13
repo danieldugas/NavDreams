@@ -44,7 +44,7 @@ DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
-                 unity_player_dir=DEFAULT_UNITY_EXE):
+                 unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64"):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -56,6 +56,7 @@ class NavRep3DTrainEnv(gym.Env):
         # this
         HOST = '127.0.0.1'
         self.socket_host = HOST
+        self.build_name = build_name
         self.socket_port = port
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
@@ -112,7 +113,7 @@ class NavRep3DTrainEnv(gym.Env):
             self.unity_process.wait()
         # start unity player and connect
         if self.unity_player_dir is not None:
-            self.unity_process = subprocess.Popen(["./build.x86_64", "-port", str(self.socket_port)],
+            self.unity_process = subprocess.Popen([self.build_name, "-port", str(self.socket_port)],
                                                   cwd=self.unity_player_dir,
                                                   )
             time.sleep(5.0)
@@ -238,6 +239,7 @@ class NavRep3DTrainEnv(gym.Env):
         try:
             self.last_walls = helpers.get_walls(dico)
         except Exception as e: # noqa
+            print(dico["walls"])
             traceback.print_exc()
             self.last_walls = None
 
@@ -786,14 +788,15 @@ def check_stablebaselines_compat(env):
 def main(
     # NavRep3DTrainEnv args
     verbose=1, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
-    unity_player_dir=DEFAULT_UNITY_EXE,
+    unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64",
     # Player args
     render_mode='human', step_by_step=False,
     # Task args
     check_compat=False, profile=False,
 ):
     np.set_printoptions(precision=1, suppress=True)
-    env = NavRep3DTrainEnv(verbose, collect_statistics, debug_export_every_n_episodes, port, unity_player_dir)
+    env = NavRep3DTrainEnv(verbose, collect_statistics, debug_export_every_n_episodes, port,
+                           unity_player_dir, build_name)
     if check_compat:
         check_stablebaselines_compat(env)
     elif profile:

@@ -44,7 +44,8 @@ DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
-                 unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64"):
+                 unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64",
+                 start_with_random_rot=True):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -67,6 +68,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.unity_player_dir = unity_player_dir
         self.output_lidar = False
         self.render_legs_in_lidar = True
+        self.start_with_random_rot = start_with_random_rot
         # variables
         self.difficulty_increase = 0
         self.last_odom = None
@@ -153,7 +155,8 @@ class NavRep3DTrainEnv(gym.Env):
         while True:
             i += 1
             # reset sim
-            self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
+            random_rot = 360*np.random.random() if self.start_with_random_rot else 0
+            self.pub = {'clock': 0, 'vel_cmd': (0, 0, random_rot), 'sim_control': 'i'}
 
             # send a few packet to be sure it is launched
             for _ in range(5):
@@ -228,11 +231,16 @@ class NavRep3DTrainEnv(gym.Env):
         self.steps_since_reset += 1
         tic = timer()
 
+        # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
+        self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
+
         time_in = time.time()
         # making the raw string to send from the dict
         to_send = helpers.publish_all(self.pub)
         # sending and receiving raw data
         raw = socket_handler.send_and_receive(self.s, to_send)
+        # update time in self.pub
+        self.pub = helpers.do_step(self.time_step, self.pub)
         # getting dict from raw data
         dico = helpers.raw_data_to_dict(raw)
 
@@ -329,9 +337,6 @@ class NavRep3DTrainEnv(gym.Env):
             arrimg[:5,0,1] = robotstate_obs
             arrimg[:5,0,2] = robotstate_obs
 
-        # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
-        self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
-
         # reward
         reward = 0
 
@@ -387,9 +392,6 @@ class NavRep3DTrainEnv(gym.Env):
 
         # log reward
         self.episode_reward += reward
-
-        # doing a step
-        self.pub = helpers.do_step(self.time_step, self.pub)
 
         time_out = time.time()
 

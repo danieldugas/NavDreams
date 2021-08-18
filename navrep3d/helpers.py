@@ -1,4 +1,3 @@
-#inputs and outputs
 import numpy as np
 import traceback
 
@@ -7,7 +6,7 @@ def publish_all(dico):
     for key, value in dico.items():
         to_publish.append(publish(key,value))
     return ''.join(to_publish)
-        
+
 def publish(topic, value):
     if type(value) is tuple:
         return topic+"={};".format(" ".join(map(str,value)))
@@ -38,6 +37,17 @@ def get_walls(dico):
             traceback.print_exc()
             return np.array([])
     return walls
+
+def get_trialinfo(dico):
+    if "trial" in dico:
+        try:
+            name = dico["trial"]
+            return name
+        except: # noqa
+            print(dico["trial"])
+            traceback.print_exc()
+            return None
+    return None
 
 def get_crowd(dico):
     ITEMS = ["id", "x", "y", "theta"]
@@ -98,22 +108,22 @@ def check_ending_conditions(max_time, min_x, dico):
     if "clock" in dico:
         if float(dico["clock"]) > max_time:
             return True
-        
+
     if "odom" in dico:
         try:
             _, rest = dico["odom"].split(' ',1)
             odom_x, _ = rest.split(' ',1)
             if float(odom_x) < min_x:
                 return True
-        except ValueError as ve:
+        except ValueError as ve: # noqa
             pass
-        except IndexError as ie:
+        except IndexError as ie: # noqa
             pass
 
     return False
 
 def sim_control(input):
-    return { "clock" : 0 , "sim_control" : input }
+    return {"clock" : 0 , "sim_control" : input}
 
 def reset():
     return sim_control('r')

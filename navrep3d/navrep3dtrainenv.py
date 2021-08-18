@@ -41,6 +41,9 @@ HOMEDIR = os.path.expanduser("~")
 DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
 # TODO: RELEASE - make a tool which downloads LFS files
 
+MINDIF = 1.
+MAXDIF = 10.
+
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
@@ -70,11 +73,12 @@ class NavRep3DTrainEnv(gym.Env):
         self.render_legs_in_lidar = True
         self.start_with_random_rot = start_with_random_rot
         # variables
-        self.difficulty_increase = 0
+        self.target_difficulty = 1.
         self.last_odom = None
         self.last_crowd = None
         self.last_walls = None
         self.last_action = None
+        self.last_trialinfo = None
         self.reset_in_progress = False # necessary to differentiate reset pre-steps from normal steps
         self.unity_process = None
         # other tools
@@ -133,22 +137,19 @@ class NavRep3DTrainEnv(gym.Env):
                 self._reboot_unity()
         # change scenario if necessary
         if self.verbose > 0:
-            print("Scenario # {} complete.".format(self.infer_current_scenario()))
-        if self.difficulty_increase == 1:
-            if self.infer_current_scenario() < 9:
-                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.next()))
-            else:
-                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-            self.difficulty_increase = 0
-        elif self.difficulty_increase == -1:
-            if self.infer_current_scenario() > 0:
-                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.previous()))
-            else:
-                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-            self.difficulty_increase = 0
-        else:
-            # same scenario
+            print("Scenario # {} complete. Loading {}".format(
+                self.infer_current_scenario(), self.target_difficulty))
+        target_difficulty = int(self.target_difficulty)
+        if self.infer_current_scenario() == -1:
             socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+        else:
+            delta = target_difficulty - self.infer_current_scenario()
+            for i in range(abs(delta)):
+                direction = helpers.next() if delta > 0 else helpers.previous()
+                socket_handler.send_and_receive(self.s, helpers.publish_all(direction))
+            if delta == 0:
+                socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
+        time.sleep(self.time_step)
 
         self.reset_in_progress = True
         i = 0
@@ -174,6 +175,7 @@ class NavRep3DTrainEnv(gym.Env):
             self.last_map = None
             self.last_crowd = None
             self.last_sdf = None
+            self.last_trialinfo = None
             self.steps_since_reset = 0
             self.episode_reward = 0.
             self.distances_travelled_in_base_frame = {}
@@ -189,7 +191,7 @@ class NavRep3DTrainEnv(gym.Env):
             obs, _, done, _ = self.step(self.zero_action)
             if done:
                 if self.verbose > 0:
-                    print("sending reset signal")
+                    print("simulator reports done: re-trying to send reset signal")
                 # we want to make sure the next step won't result in "done" being True
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
                 time.sleep(1)
@@ -197,6 +199,8 @@ class NavRep3DTrainEnv(gym.Env):
                 self.episode_reward = 0.
                 continue
             if self.last_image is None:
+                if self.verbose > 0:
+                    print("No image received: re-trying to send reset signal")
                 continue
             break
         self.reset_in_progress = False
@@ -210,6 +214,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.last_map = None
         self.last_crowd = None
         self.last_sdf = None
+        self.last_trialinfo = None
         self.steps_since_reset = 0
         self.episode_reward = 0.
         self.distances_travelled_in_base_frame = {}
@@ -250,6 +255,8 @@ class NavRep3DTrainEnv(gym.Env):
             print(dico["walls"])
             traceback.print_exc()
             self.last_walls = None
+
+        self.last_trialinfo = helpers.get_trialinfo(dico)
 
         crowd = None
         crowd_vel = None
@@ -388,7 +395,7 @@ class NavRep3DTrainEnv(gym.Env):
                 print("Goal reached")
             done = True
             reward = 100
-            difficulty_increase = 1
+            difficulty_increase = 0.5
 
         # log reward
         self.episode_reward += reward
@@ -427,7 +434,8 @@ class NavRep3DTrainEnv(gym.Env):
                     time.time(),
                 ]
             if difficulty_increase is not None:
-                self.difficulty_increase = difficulty_increase
+                self.target_difficulty += difficulty_increase
+                self.target_difficulty = np.clip(self.target_difficulty, MINDIF, MAXDIF)
 
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:
@@ -737,9 +745,19 @@ class NavRep3DTrainEnv(gym.Env):
         return self.last_sdf[ij[0], ij[1]] < ROBOT_RADIUS
 
     def infer_current_scenario(self):
-        if self.last_walls is None:
+        if self.last_trialinfo is None:
             return -1
-        return int((len(self.last_walls) - 4) / 2)
+        try:
+            name, ext = os.path.splitext(os.path.basename(self.last_trialinfo))
+            _, number = name.split('navreptrain')
+            return int(number)
+        except: # noqa
+            print(self.last_trialinfo)
+            traceback.print_exc()
+        return -1
+#         if self.last_walls is None:
+#             return -1
+#         return int((len(self.last_walls) - 4) / 2)
 
 def check_running_unity_backends():
     from builtins import input

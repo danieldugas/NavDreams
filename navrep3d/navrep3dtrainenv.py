@@ -778,6 +778,22 @@ def debug_env_max_speed(env, render=False):
             n_episodes += 1
     env.close()
 
+def convert_discrete_to_continuous_action(action):
+    """ actions
+    0: forward
+    1: left
+    2: right
+    """
+    if action == 0:
+        cont_actions = np.array([1, 0, 0])
+    elif action == 1:
+        cont_actions = np.array([0, 0, 0.5])
+    elif action == 2:
+        cont_actions = np.array([0, 0,-0.5])
+    else:
+        raise ValueError
+    return cont_actions
+
 class NavRep3DTrainEnvDiscrete(NavRep3DTrainEnv):
     def __init__(self, **kwargs):
         super(NavRep3DTrainEnvDiscrete, self).__init__(**kwargs)
@@ -785,19 +801,9 @@ class NavRep3DTrainEnvDiscrete(NavRep3DTrainEnv):
         self.zero_action = 0
 
     def step(self, actions):
-        """ actions
-        0: forward
-        1: left
-        2: right
-        """
         if actions is None:
             actions = 1
-        if actions == 0:
-            cont_actions = np.array([1, 0, 0])
-        elif actions == 1:
-            cont_actions = np.array([0, 0, 0.5])
-        elif actions == 2:
-            cont_actions = np.array([0, 0,-0.5])
+        cont_actions = convert_discrete_to_continuous_action(actions)
         return super(NavRep3DTrainEnvDiscrete, self).step(cont_actions)
 
 def check_stablebaselines_compat(env):

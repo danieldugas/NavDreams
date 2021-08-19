@@ -429,8 +429,8 @@ class NavRep3DTrainEnv(gym.Env):
                     self.steps_since_reset,
                     goal_is_reached,
                     self.episode_reward,
-                    np.clip(self.infer_current_scenario(), 0, 5),
-                    np.clip(self.infer_current_scenario()*2, 0, 20),
+                    np.clip(self.infer_current_scenario()-1, 0, 5),
+                    np.clip((self.infer_current_scenario()-1)*2, 0, 20),
                     time.time(),
                 ]
             if difficulty_increase is not None:

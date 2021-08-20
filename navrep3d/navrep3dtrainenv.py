@@ -448,7 +448,11 @@ class NavRep3DTrainEnv(gym.Env):
         return obs, reward, done, {}
 
     def close(self):
+        if self.viewer is not None:
+            self.viewer.close()
         socket_handler.stop(self.s)
+        if self.unity_process is not None:
+            self.unity_process.wait()
         time.sleep(1)
 
     def render(self, mode='human', close=False, save_to_file=False):

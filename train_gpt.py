@@ -14,11 +14,11 @@ import torch
 import torch.optim as optim
 from torch.utils.data.dataloader import DataLoader
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
+from fire import Fire
 
 from navrep.models.gpt import GPT, GPTConfig, save_checkpoint, set_seed
 from navrep.tools.wdataset import WorldModelDataset
 from navrep.tools.test_worldmodel import mse
-from navrep.tools.commonargs import parse_common_args
 
 def gpt_worldmodel_error(gpt, test_dataset_folder, device):
     sequence_size = gpt.module.block_size
@@ -57,21 +57,28 @@ def gpt_worldmodel_error(gpt, test_dataset_folder, device):
 _Z = _H = 64
 _S = 32  # sequence length
 
-if __name__ == "__main__":
-    args, _ = parse_common_args()
-
+def main(max_steps=222222, dataset="S", dry_run=False):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
-    if True: # args.environment == "navrep3dtrain":
-        dataset_dir = os.path.expanduser("~/navrep3d/datasets/V/navrep3dtrain")
+    if dataset == "S":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")]
         data_regen = None # "navrep3dtrain"
         log_path = os.path.expanduser(
-            "~/navrep3d/logs/W/navrep3dtrain_gpt_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d/models/W/navrep3dtraingpt")
+            "~/navrep3d_W/logs/W/transformer_S_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_S_step")
+    elif dataset == "SC":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity")]
+        data_regen = None # "navrep3dtrain"
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/transformer_SC_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SC_step")
     else:
-        raise NotImplementedError(args.environment)
+        raise NotImplementedError(dataset)
 
-    if args.dry_run:
+    if dry_run:
         log_path = log_path.replace(os.path.expanduser("~/navrep3d"), "/tmp/navrep3d")
         checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navrep3d"), "/tmp/navrep3d")
 
@@ -102,9 +109,6 @@ if __name__ == "__main__":
 
     # training params
     # optimization parameters
-    max_steps = args.n
-    if max_steps is None:
-        max_steps = 222222
     max_epochs = max_steps  # don't stop based on epoch
     batch_size = 128
     learning_rate = 6e-4
@@ -221,8 +225,7 @@ if __name__ == "__main__":
                         ax1.imshow(np.moveaxis(y.cpu().numpy()[0, 5 + i], 0, -1))
                         ax2.imshow(np.moveaxis(y_pred.detach().cpu().numpy()[0, 5 + i], 0, -1))
                         ax2.set_xlabel("Done {}".format(dones.cpu()[0, 5 + 1]))
-                    plt.savefig(os.path.expanduser(
-                        "~/tmp_navrep3d/gpt_step{:07}.png").format(global_step))
+                    plt.savefig(plot_path + "{:07}.png".format(global_step))
 
         lidar_e = None
         state_e = None
@@ -250,3 +253,7 @@ if __name__ == "__main__":
 
         if global_step >= max_steps:
             break
+
+
+if __name__ == "__main__":
+    Fire(main)

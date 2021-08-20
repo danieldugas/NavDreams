@@ -395,7 +395,7 @@ class NavRep3DTrainEnv(gym.Env):
                 print("Goal reached")
             done = True
             reward = 100
-            difficulty_increase = 0.5
+            difficulty_increase = 1.
 
         # log reward
         self.episode_reward += reward

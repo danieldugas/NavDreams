@@ -7,7 +7,7 @@ import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
-from pose2d import apply_tf_to_vel, inverse_pose2d, apply_tf_to_pose
+from pose2d import apply_tf_to_vel, inverse_pose2d, apply_tf_to_pose, apply_tf
 from pandas import DataFrame
 import gym
 import base64
@@ -249,12 +249,22 @@ class NavRep3DTrainEnv(gym.Env):
         # getting dict from raw data
         dico = helpers.raw_data_to_dict(raw)
 
-        try:
-            self.last_walls = helpers.get_walls(dico)
-        except Exception as e: # noqa
-            print(dico["walls"])
-            traceback.print_exc()
-            self.last_walls = None
+        if self.build_name == "./office.x86_64":
+            if self.last_walls is None:
+                import pkg_resources
+                navrep_dir = pkg_resources.resource_filename('navrep', '')
+                map_dir = os.path.join(navrep_dir, "../maps")
+                map2d = CMap2D(map_dir, "unity_scene_map", silent=True)
+                walls = map2d.as_closed_obst_vertices()
+                T = np.array([11.6, -0.2, 0]) # Transform found by eyeballing walls in camera/top-down
+                self.last_walls = [apply_tf(np.array(verts), T).tolist() for verts in walls]
+        else:
+            try:
+                self.last_walls = helpers.get_walls(dico)
+            except Exception as e: # noqa
+                print(dico["walls"])
+                traceback.print_exc()
+                self.last_walls = None
 
         self.last_trialinfo = helpers.get_trialinfo(dico)
 
@@ -738,7 +748,6 @@ class NavRep3DTrainEnv(gym.Env):
             map_.from_closed_obst_vertices(walls, resolution=0.1)
             self.last_map = map_
             self.last_sdf = map_.as_sdf()
-        # TODO: use SDF? probably faster
         ij = self.last_map.xy_to_ij(odom[:2][None, :], clip_if_outside=True)[0]
 #         from matplotlib import pyplot as plt
 #         from CMap2D import gridshow
@@ -753,7 +762,7 @@ class NavRep3DTrainEnv(gym.Env):
             return -1
         try:
             name, ext = os.path.splitext(os.path.basename(self.last_trialinfo))
-            _, number = name.split('navreptrain')
+            number = name[-2:]
             return int(number)
         except: # noqa
             print(self.last_trialinfo)

@@ -170,6 +170,7 @@ class NavRep3DTrainEnv(gym.Env):
             time.sleep(1)
 
             # reset variables
+            self.goal_xy = GOAL_XY
             self.last_odom = None
             self.last_walls = None
             self.last_map = None
@@ -209,6 +210,7 @@ class NavRep3DTrainEnv(gym.Env):
             print("Started scenario # " + str(self.infer_current_scenario()))
 
         # reset variables again (weird things may have happened in the meantime, screwing up logging)
+        self.goal_xy = GOAL_XY
         self.last_odom = None
         self.last_walls = None
         self.last_map = None
@@ -267,6 +269,10 @@ class NavRep3DTrainEnv(gym.Env):
                 self.last_walls = None
 
         self.last_trialinfo = helpers.get_trialinfo(dico)
+        
+        goal = helpers.get_goal(dico)
+        if goal is not None:
+            self.goal_xy = goal[:2]
 
         crowd = None
         crowd_vel = None
@@ -315,11 +321,11 @@ class NavRep3DTrainEnv(gym.Env):
         progress = 0
 
         # goal
-        goal_dist = np.linalg.norm(GOAL_XY - odom[:2])
+        goal_dist = np.linalg.norm(self.goal_xy - odom[:2])
         goal_is_reached = (goal_dist < (GOAL_RADIUS + ROBOT_RADIUS))
         # progress
         if self.last_odom is not None:
-            last_goal_dist = np.linalg.norm(GOAL_XY - self.last_odom[:2])
+            last_goal_dist = np.linalg.norm(self.goal_xy - self.last_odom[:2])
             progress = last_goal_dist - goal_dist
             if abs(progress) > 10:
                 flown_off = True
@@ -344,7 +350,7 @@ class NavRep3DTrainEnv(gym.Env):
         world_in_baselink = inverse_pose2d(baselink_in_world)
         robotvel_in_world = odom[3:6]  # TODO: actual robot rot vel?
         robotvel_in_baselink = apply_tf_to_vel(robotvel_in_world, world_in_baselink)
-        goal_in_world = np.array([GOAL_XY[0], GOAL_XY[1], 0])
+        goal_in_world = np.array([self.goal_xy[0], self.goal_xy[1], 0])
         goal_in_baselink = apply_tf_to_pose(goal_in_world, world_in_baselink)
         robotstate_obs = np.hstack([goal_in_baselink[:2], robotvel_in_baselink])
         # bake robotstate into image state
@@ -611,7 +617,7 @@ class NavRep3DTrainEnv(gym.Env):
                     for n, agent in enumerate(self.last_crowd):
                         gl_render_agent(agent[1], agent[2], agent[3], AGENT_RADIUS, agentcolor)
                 # Goal markers
-                xgoal, ygoal = GOAL_XY
+                xgoal, ygoal = self.goal_xy
                 r = GOAL_RADIUS
                 gl.glBegin(gl.GL_TRIANGLES)
                 gl.glColor4f(goalcolor[0], goalcolor[1], goalcolor[2], 1)

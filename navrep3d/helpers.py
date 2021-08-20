@@ -27,6 +27,16 @@ def raw_data_to_dict(received):
 
     return dico
 
+def get_goal(dico):
+    if "goal" in dico:
+        try:
+            goal = np.array(list(map(float,dico["goal"].split(' '))))
+            return goal
+        except ValueError:
+            traceback.print_exc()
+            return None
+    return None
+
 def get_walls(dico):
     walls = np.array([])
     if "walls" in dico:

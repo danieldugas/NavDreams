@@ -17,7 +17,7 @@ class NavRep3DTrainEncoder(EnvEncoder):
         elif variant == "SNew": # new pretrained gpt
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
         elif variant == "SC":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
         else:
             raise NotImplementedError
         super(NavRep3DTrainEncoder, self).__init__(

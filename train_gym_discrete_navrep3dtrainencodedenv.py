@@ -1,38 +1,27 @@
 from datetime import datetime
 import os
+from fire import Fire
 
 from stable_baselines3 import PPO
-from navrep.tools.commonargs import parse_common_args
 
 from navrep3d.navrep3dtrainencodedenv import (NavRep3DTrainEncoder,
                                               SubprocVecNavRep3DEncodedEnvDiscrete)
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 
-if __name__ == "__main__":
-    args, _ = parse_common_args()
+MILLION = 1000000
 
-    variant = "S"
-    backend = args.backend
-
-    # reuse the backend arg to choose variant
-    if args.backend == "SC":
-        variant = "SC"
-        args.backend = "GPT"
-    if args.backend == "SNew":
-        variant = "SNew"
-        args.backend = "GPT"
-
-    shared_encoder = NavRep3DTrainEncoder(backend, args.encoding, variant, gpu=not args.no_gpu)
+def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=60*MILLION):
+    shared_encoder = NavRep3DTrainEncoder(backend, encoding, variant, gpu=not no_gpu)
     _Z = shared_encoder._Z
     _H = shared_encoder._H
 
     DIR = os.path.expanduser("~/navrep3d/models/gym")
     LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")
-    if args.dry_run:
+    if dry_run:
         DIR = "/tmp/navrep3d/models/gym"
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(args.backend, args.encoding, _Z, _H, variant)
+    ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(backend, encoding, _Z, _H, variant)
     LOGNAME = "navrep3dtrainencodedenv_" + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")
@@ -42,19 +31,18 @@ if __name__ == "__main__":
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
 
-    MILLION = 1000000
-    TRAIN_STEPS = args.n
+    TRAIN_STEPS = n
     if TRAIN_STEPS is None:
         TRAIN_STEPS = 60 * MILLION
 
     if True:
         N_ENVS = 4
-        env = SubprocVecNavRep3DEncodedEnvDiscrete(args.backend, args.encoding, N_ENVS,
+        env = SubprocVecNavRep3DEncodedEnvDiscrete(backend, encoding, variant, N_ENVS,
                                                    debug_export_every_n_episodes=170)
 #     else:
-#         env = NavRep3DTrainEncodedEnv(args.backend, args.encoding,
+#         env = NavRep3DTrainEncodedEnv(backend, encoding,
 #                                       verbose=0,
-#                                       gpu=not args.no_gpu,
+#                                       gpu=not no_gpu,
 #                                       shared_encoder=shared_encoder)
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
     model = PPO("MlpPolicy", env, verbose=1)
@@ -80,3 +68,7 @@ if __name__ == "__main__":
 
     print("exiting.")
     exit()
+
+
+if __name__ == "__main__":
+    Fire(main)

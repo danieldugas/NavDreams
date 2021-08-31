@@ -11,7 +11,18 @@ from navrep3d.sb3_callbacks import NavRep3DLogCallback
 if __name__ == "__main__":
     args, _ = parse_common_args()
 
-    shared_encoder = NavRep3DTrainEncoder(args.backend, args.encoding, gpu=not args.no_gpu)
+    variant = "S"
+    backend = args.backend
+
+    # reuse the backend arg to choose variant
+    if args.backend == "SC":
+        variant = "SC"
+        args.backend = "GPT"
+    if args.backend == "SNew":
+        variant = "SNew"
+        args.backend = "GPT"
+
+    shared_encoder = NavRep3DTrainEncoder(backend, args.encoding, variant, gpu=not args.no_gpu)
     _Z = shared_encoder._Z
     _H = shared_encoder._H
 
@@ -21,7 +32,7 @@ if __name__ == "__main__":
         DIR = "/tmp/navrep3d/models/gym"
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    ENCODER_ARCH = "_{}_{}_V{}M{}".format(args.backend, args.encoding, _Z, _H)
+    ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(args.backend, args.encoding, _Z, _H, variant)
     LOGNAME = "navrep3dtrainencodedenv_" + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")

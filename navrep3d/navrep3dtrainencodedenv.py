@@ -9,18 +9,23 @@ from navrep3d.navrep3dtrainenv import NavRep3DTrainEnvDiscrete, convert_discrete
 from navrep3d.encodedenv3d import EnvEncoder
 
 class NavRep3DTrainEncoder(EnvEncoder):
-    def __init__(self, backend, encoding,
+    def __init__(self, backend, encoding, variant="S",
                  gpu=False, encoder_to_share_model_with=None):
+        assert backend == "GPT"
+        if variant == "S": # the pretrained gpt from june
+            gpt_model_path = os.path.expanduser("~/navrep3d/models/W/navrep3dtraingpt")
+        elif variant == "SNew": # new pretrained gpt
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
+        elif variant == "SC":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
+        else:
+            raise NotImplementedError
         super(NavRep3DTrainEncoder, self).__init__(
             backend, encoding,
-            rnn_model_path=os.path.expanduser("~/navrep3d/models/M/navrep3dtrainrnn.json"),
-            vae_model_path=os.path.expanduser("~/navrep3d/models/V/navrep3dtrainvae.json"),
-            gpt_model_path=os.path.expanduser("~/navrep3d/models/W/navrep3dtraingpt"),
-            vaelstm_model_path=os.path.expanduser("~/navrep3d/models/W/navrep3dtrainvaelstm"),
+            gpt_model_path=gpt_model_path,
             gpu=gpu,
             encoder_to_share_model_with=None,
         )
-
 
 class NavRep3DTrainEncodedEnv(Env):
     """ takes a (3) action as input
@@ -140,7 +145,7 @@ class SubprocVecNavRep3DEncodedEnv(SubprocVecEnv):
 class SubprocVecNavRep3DEncodedEnvDiscrete(SubprocVecEnv):
     """ Same as SubprocVecNavRep3DEncodedEnv but using discrete actions.
     Could have been a wrapper instead, but fear of spaghetti-code outweighed DRY """
-    def __init__(self, backend, encoding, n_envs,
+    def __init__(self, backend, encoding, variant, n_envs,
                  verbose=0, collect_statistics=True, debug_export_every_n_episodes=0,
                  gpu=False, ):
         # create multiple encoder objects (to store distinct sequences) but with single encoding model
@@ -148,7 +153,7 @@ class SubprocVecNavRep3DEncodedEnvDiscrete(SubprocVecEnv):
         shared_encoder = None
         for i in range(n_envs):
             self.encoders.append(
-                NavRep3DTrainEncoder(backend, encoding, gpu=gpu,
+                NavRep3DTrainEncoder(backend, encoding, variant, gpu=gpu,
                                      encoder_to_share_model_with=shared_encoder)
             )
             if i == 0:

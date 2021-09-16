@@ -9,7 +9,12 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")
         if dry_run:
             archive_dir = "/tmp/navrep3d/datasets/V/navrep3dtrain"
-        build_name = None
+        build_name = "./build.x86_64"
+    elif env == "Salt":
+        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")
+        if dry_run:
+            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dalt"
+        build_name = "./alternate.x86_64"
     elif env == "CC": # City
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity")
         if dry_run:

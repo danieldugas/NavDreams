@@ -66,6 +66,12 @@ def main(max_steps=222222, dataset="S", dry_run=False):
             "~/navrep3d_W/logs/W/transformer_S_train_log_{}.csv".format(START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_S_step")
+    elif dataset == "Salt":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")]
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/transformer_Salt_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_Salt_step")
     elif dataset == "SC":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
@@ -103,8 +109,10 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         def _partial_regen(self, n_new_sequences=1):
             from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
             from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
-            if self.regen in ["S", "SC"]:
+            if self.regen in ["S", "SC", "Salt"]:
                 build_name = "./build.x86_64"
+                if self.regen == "Salt":
+                    build_name = "./alternate.x86_64"
                 if self.regen == "SC" and np.random.random() > 0.33:
                     build_name = "./city.x86_64" if np.random.random() < 0.5 else "./office.x86_64"
                 env = NavRep3DTrainEnv(verbose=0, collect_statistics=False,

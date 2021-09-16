@@ -11,15 +11,15 @@
 #
 set -x
 set -e
-rm -rf ~/cbc3env
-virtualenv ~/cbc3env --python=python3.6
-source ~/cbc3env/bin/activate
+rm -rf ~/n3denv
+virtualenv ~/n3denv --python=python3.6
+source ~/n3denv/bin/activate
 pip install --upgrade pip # fixes ubuntu 20 pip pep517 error
 
 sudo apt install -y build-essential python3-dev cmake # needed to compile some of the pip packages
 
 pip install numpy cython
-pip install matplotlib ipython pyyaml snakeviz stable-baselines3 pyglet navrep fire
+pip install matplotlib ipython pyyaml snakeviz stable-baselines3 pyglet navrep fire jedi==0.17
 cd lib_dwa
 pip install .
 cd ..

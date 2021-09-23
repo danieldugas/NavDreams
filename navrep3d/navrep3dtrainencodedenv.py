@@ -18,6 +18,10 @@ class NavRep3DTrainEncoder(EnvEncoder):
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
         elif variant == "SC":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
+        elif variant == "Salt":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+        elif variant == "Random":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
         else:
             raise NotImplementedError
         super(NavRep3DTrainEncoder, self).__init__(

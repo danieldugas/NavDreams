@@ -80,6 +80,13 @@ def main(max_steps=222222, dataset="S", dry_run=False):
             "~/navrep3d_W/logs/W/transformer_SC_train_log_{}.csv".format(START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SC_step")
+    elif dataset == "Random":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")]
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/transformer_Random_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_Random_step")
+        max_steps = 0
     else:
         raise NotImplementedError(dataset)
 
@@ -290,6 +297,9 @@ def main(max_steps=222222, dataset="S", dry_run=False):
 
         if global_step >= max_steps:
             break
+
+    lidar_e, state_e = gpt_worldmodel_error(model, dataset_dir, device)
+    save_checkpoint(model, checkpoint_path)
 
 
 if __name__ == "__main__":

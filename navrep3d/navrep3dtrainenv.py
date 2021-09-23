@@ -286,6 +286,10 @@ class NavRep3DTrainEnv(gym.Env):
 
         try:
             odom = helpers.get_odom(dico)
+            if self.last_odom is None:
+                odom[3:6] = 0
+            else:
+                odom[3:6] = (odom[:3] - self.last_odom[:3]) / self.time_step
             x, y, th, vx, vy, vth, z = odom
         except IndexError:
             traceback.print_exc()
@@ -461,6 +465,8 @@ class NavRep3DTrainEnv(gym.Env):
 
         self.last_image = arrimg
         obs = (arrimg, robotstate_obs)
+        if np.any(np.isnan(robotstate_obs)):
+            raise ValueError("nan values in robotstate")
         return obs, reward, done, {}
 
     def close(self):
@@ -793,6 +799,7 @@ def debug_env_max_speed(env, render=False):
         if i % 10 == 0 and render:
             env.render()
         if done:
+            env.target_difficulty = np.random.randint(1,10)
             env.reset()
             n_episodes += 1
     env.close()

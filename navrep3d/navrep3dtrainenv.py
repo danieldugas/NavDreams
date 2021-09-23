@@ -44,6 +44,12 @@ DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
 MINDIF = 1.
 MAXDIF = 10.
 
+def angle_difference(a, b):
+    """ returns smallest angle a - b """
+    delta = a - b
+    delta = (delta + np.pi) % (2.*np.pi) - np.pi
+    return delta
+
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
@@ -290,6 +296,7 @@ class NavRep3DTrainEnv(gym.Env):
                 odom[3:6] = 0
             else:
                 odom[3:6] = (odom[:3] - self.last_odom[:3]) / self.time_step
+                odom[5] = angle_difference(odom[2], self.last_odom[2]) / self.time_step
             x, y, th, vx, vy, vth, z = odom
         except IndexError:
             traceback.print_exc()

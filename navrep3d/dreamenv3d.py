@@ -35,7 +35,7 @@ BLOCK_SIZE = 32  # sequence length (context)
 class DreamEnv(object):
     """ Generic class for generating dreams from trained world models """
     def __init__(self,
-                 gpt_model_path=os.path.expanduser("~/navrep3d/models/W/navrep3dtraingpt"),
+                 gpt_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_S"),
                  gpu=False,
                  ):
         self.observation_space = gym.spaces.Tuple((
@@ -72,6 +72,7 @@ class DreamEnv(object):
         image_nobs, goal_state = self._sample_zero_state()
         self.gpt_sequence = [dict(obs=image_nobs, state=goal_state, action=None)]
         self.latest_image_nobs = image_nobs
+        self.last_action = np.array([0,0,0])
         self.zero_state = (image_nobs, goal_state)
 
     def close(self):
@@ -104,6 +105,7 @@ class DreamEnv(object):
 
         # store for rendering
         self.latest_image_nobs = img_npred
+        self.last_action = action * 1.
 
         img_pred = self._unnormalize_obs(img_npred)
         obs = (img_pred, goal_pred)
@@ -130,6 +132,10 @@ class DreamEnv(object):
         if self.viewer is None:
             self.viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
             self.rendering_iteration = 0
+            self.score_label = pyglet.text.Label(
+                '0000', font_size=8,
+                x=20, y=WINDOW_H*2.5/40.00, anchor_x='left', anchor_y='center',
+                color=(255,255,255,255))
         # Render in pyglet
         win = self.viewer.window
         win.switch_to()
@@ -163,6 +169,13 @@ class DreamEnv(object):
                     gl.glVertex3f(cell_x+        0, cell_y+        0, 0)  # noqa
                     gl.glEnd()
             w_offset += _W + padding
+        # Text
+        self.score_label.text = "A {:.1f} {:.1f} {:.1f}".format(
+            self.last_action[0],
+            self.last_action[1],
+            self.last_action[2],
+        )
+        self.score_label.draw()
         if save_to_file:
             pyglet.image.get_buffer_manager().get_color_buffer().save(
                 "/tmp/dreamenv3d_{:04d}.png".format(self.rendering_iteration))

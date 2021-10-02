@@ -122,12 +122,17 @@ def main(max_steps=222222, dataset="S", dry_run=False):
                     build_name = "./alternate.x86_64"
                 if self.regen == "SC" and np.random.random() > 0.33:
                     build_name = "./city.x86_64" if np.random.random() < 0.5 else "./office.x86_64"
-                env = NavRep3DTrainEnv(verbose=0, collect_statistics=False,
-                                       build_name=build_name, port=25005)
-                policy = SemiRandomMomentumPolicy()
-                data = generate_vae_dataset(
-                    env, n_sequences=n_new_sequences, policy=policy,
-                    render=False, archive_dir=None)
+                try:
+                    env = NavRep3DTrainEnv(verbose=0, collect_statistics=False,
+                                           build_name=build_name, port=25005+np.random.randint(10))
+                    policy = SemiRandomMomentumPolicy()
+                    data = generate_vae_dataset(
+                        env, n_sequences=n_new_sequences, policy=policy,
+                        render=False, archive_dir=None)
+                except IOError:
+                    print("Failed to regenerate dataset. retrying.")
+                    self._partial_regen(n_new_sequences=n_new_sequences)
+                    return
                 if self.pre_convert_obs:
                     data["obs"] = scans_to_lidar_obs(
                         data["scans"], self.lidar_mode, self.rings_def, self.channel_first)

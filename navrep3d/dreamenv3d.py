@@ -35,7 +35,7 @@ BLOCK_SIZE = 32  # sequence length (context)
 class DreamEnv(object):
     """ Generic class for generating dreams from trained world models """
     def __init__(self,
-                 gpt_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_S"),
+                 gpt_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt"),
                  gpu=False,
                  ):
         self.observation_space = gym.spaces.Tuple((

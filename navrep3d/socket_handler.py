@@ -25,13 +25,13 @@ def send_and_receive(s, data, end_char="@"):
             chunk = s.recv(4096).decode("utf-8")
         else:
             print("recv timed out. retrying")
+            retries += 1
+            if retries > 100:
+                raise IOError("Maximum retries reached while waiting to receive from remote {}".format(s))
             continue
         fragments.append(chunk)
         if chunk[-1:] == end_char:
             break
-        retries += 1
-        if retries > 100:
-            raise IOError("Maximum retries reached while waiting to receive from remote {}".format(s))
     # print("Received")
     raw = ''.join(fragments)
     return raw

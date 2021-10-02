@@ -54,7 +54,7 @@ class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
                  unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64",
-                 start_with_random_rot=True):
+                 start_with_random_rot=True, tolerate_corruption=True):
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -71,6 +71,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
+        self.tolerate_corruption = tolerate_corruption
         self.time_step = 0.2
         self.sleep_time = -1
         self.max_time = 180.0
@@ -311,7 +312,10 @@ class NavRep3DTrainEnv(gym.Env):
             arrimg = np.asarray(img)
         if arrimg is None:
             print("Warning: image message is corrupted")
-            arrimg = np.zeros((_H, _W, 3), dtype=np.uint8)
+            if self.tolerate_corruption:
+                arrimg = np.zeros((_H, _W, 3), dtype=np.uint8)
+            else:
+                raise IOError("Image message is corrupted")
 
         if self.output_lidar:
             self.raytrace_lidar(odom[:3], self.last_walls, crowd, crowd_vel)

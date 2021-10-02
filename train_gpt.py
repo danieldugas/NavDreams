@@ -124,7 +124,8 @@ def main(max_steps=222222, dataset="S", dry_run=False):
                     build_name = "./city.x86_64" if np.random.random() < 0.5 else "./office.x86_64"
                 try:
                     env = NavRep3DTrainEnv(verbose=0, collect_statistics=False,
-                                           build_name=build_name, port=25005+np.random.randint(10))
+                                           build_name=build_name, port=25005+np.random.randint(10),
+                                           tolerate_corruption=False)
                     policy = SemiRandomMomentumPolicy()
                     data = generate_vae_dataset(
                         env, n_sequences=n_new_sequences, policy=policy,

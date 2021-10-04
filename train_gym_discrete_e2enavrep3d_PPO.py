@@ -6,8 +6,10 @@ from stable_baselines3 import PPO
 
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvDiscreteFlattened
+from navrep3d.auto_debug import enable_auto_debug
 
 if __name__ == "__main__":
+    enable_auto_debug()
     args, _ = parse_common_args()
 
     MILLION = 1000000

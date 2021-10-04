@@ -20,6 +20,8 @@ from navrep.models.gpt import GPT, GPTConfig, save_checkpoint, set_seed
 from navrep.tools.wdataset import WorldModelDataset, scans_to_lidar_obs
 from navrep.tools.test_worldmodel import mse
 
+from navrep3d.auto_debug import enable_auto_debug
+
 def gpt_worldmodel_error(gpt, test_dataset_folder, device):
     sequence_size = gpt.module.block_size
     batch_size = 128
@@ -309,4 +311,5 @@ def main(max_steps=222222, dataset="S", dry_run=False):
 
 
 if __name__ == "__main__":
+    enable_auto_debug()
     Fire(main)

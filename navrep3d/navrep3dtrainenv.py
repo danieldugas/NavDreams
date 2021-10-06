@@ -485,7 +485,7 @@ class NavRep3DTrainEnv(gym.Env):
             self.viewer.close()
         socket_handler.stop(self.s)
         if self.unity_process is not None:
-            self.unity_process.wait()
+            self.unity_process.wait(timeout=10)
         time.sleep(1)
 
     def render(self, mode='human', close=False, save_to_file=False):

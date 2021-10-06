@@ -132,7 +132,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
                     data = generate_vae_dataset(
                         env, n_sequences=n_new_sequences, policy=policy,
                         render=False, archive_dir=None)
-                except IOError:
+                except:
                     print("Failed to regenerate dataset. retrying.")
                     self._partial_regen(n_new_sequences=n_new_sequences)
                     return

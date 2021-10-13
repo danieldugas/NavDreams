@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import os
 import numpy as np
-from fire import Fire
+from strictfire import StrictFire
 
 def main(
     logdir="~/navrep3d_W",
@@ -34,5 +34,5 @@ def main(
 
 
 if __name__ == "__main__":
-    Fire(main)
+    StrictFire(main)
 

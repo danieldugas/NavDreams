@@ -186,10 +186,10 @@ class DreamEnv(object):
 
 
 if __name__ == "__main__":
-    from fire import Fire
+    from strictfire import StrictFire
     from navrep.tools.envplayer import EnvPlayer
     np.set_printoptions(precision=1, suppress=True)
-#     env = Fire(DreamEnv)
+#     env = StrictFire(DreamEnv)
     env = DreamEnv()
     player = EnvPlayer(env)
     player.run()

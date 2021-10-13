@@ -15,7 +15,7 @@ from PIL import Image
 import io
 from CMap2D import CMap2D
 import subprocess
-from fire import Fire
+from strictfire import StrictFire
 
 import navrep3d.helpers as helpers
 import navrep3d.socket_handler as socket_handler
@@ -258,7 +258,8 @@ class NavRep3DTrainEnv(gym.Env):
         # getting dict from raw data
         dico = helpers.raw_data_to_dict(raw)
 
-        if self.build_name == "./office.x86_64":
+        OFFICE_USE_ORIGINAL_WALLS = False
+        if OFFICE_USE_ORIGINAL_WALLS and self.build_name == "./office.x86_64":
             if self.last_walls is None:
                 import pkg_resources
                 navrep_dir = pkg_resources.resource_filename('navrep', '')
@@ -847,7 +848,7 @@ def check_stablebaselines_compat(env):
     from stable_baselines.common.env_checker import check_env
     check_env(env)
 
-# separate main function to define the script-relevant arguments used by Fire
+# separate main function to define the script-relevant arguments used by StrictFire
 def main(
     # NavRep3DTrainEnv args
     verbose=1, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
@@ -870,4 +871,4 @@ def main(
 
 
 if __name__ == "__main__":
-    Fire(main)
+    StrictFire(main)

@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from fire import Fire
+from strictfire import StrictFire
 
 from stable_baselines3 import PPO
 
@@ -73,4 +73,4 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
 
 if __name__ == "__main__":
     enable_auto_debug()
-    Fire(main)
+    StrictFire(main)

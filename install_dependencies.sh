@@ -19,7 +19,7 @@ pip install --upgrade pip # fixes ubuntu 20 pip pep517 error
 sudo apt install -y build-essential python3-dev cmake # needed to compile some of the pip packages
 
 pip install numpy cython
-pip install matplotlib ipython pyyaml snakeviz stable-baselines3 pyglet navrep fire jedi==0.17
+pip install matplotlib ipython pyyaml snakeviz stable-baselines3 pyglet navrep strictfire jedi==0.17
 cd lib_dwa
 pip install .
 cd ..

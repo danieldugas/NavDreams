@@ -14,7 +14,7 @@ import torch
 import torch.optim as optim
 from torch.utils.data.dataloader import DataLoader
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
-from fire import Fire
+from strictfire import StrictFire
 
 from navrep.models.gpt import GPT, GPTConfig, save_checkpoint, set_seed
 from navrep.tools.wdataset import WorldModelDataset, scans_to_lidar_obs
@@ -312,4 +312,4 @@ def main(max_steps=222222, dataset="S", dry_run=False):
 
 if __name__ == "__main__":
     enable_auto_debug()
-    Fire(main)
+    StrictFire(main)

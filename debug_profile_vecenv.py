@@ -1,5 +1,5 @@
 import numpy as np
-from fire import Fire
+from strictfire import StrictFire
 from stable_baselines3.common.vec_env import VecEnv, SubprocVecEnv, DummyVecEnv
 from typing import Any, Callable, List, Optional, Sequence, Type, Union
 import gym
@@ -23,7 +23,7 @@ def debug_env_max_speed(env, n=2000, render=False):
             n_episodes += 1
     env.close()
 
-# separate main function to define the script-relevant arguments used by Fire
+# separate main function to define the script-relevant arguments used by StrictFire
 def main(
     # NavRep3DTrainEnv args
     verbose=1, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
@@ -49,4 +49,4 @@ def main(
 
 
 if __name__ == "__main__":
-    Fire(main)
+    StrictFire(main)

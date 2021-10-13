@@ -1,5 +1,5 @@
 import os
-from fire import Fire
+from strictfire import StrictFire
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
 
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
@@ -41,4 +41,4 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
 
 
 if __name__ == "__main__":
-    Fire(main)
+    StrictFire(main)

@@ -44,6 +44,7 @@ def get_walls(dico):
             _,vertxy = dico['walls'].split(' ', 1)
             walls = np.array(list(map(float,vertxy.split(' ')))).reshape((-1, 4, 2))
         except ValueError:
+            print(dico["walls"])
             traceback.print_exc()
             return np.array([])
     return walls

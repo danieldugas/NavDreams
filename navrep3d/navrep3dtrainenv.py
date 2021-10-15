@@ -73,7 +73,6 @@ class NavRep3DTrainEnv(gym.Env):
         self.verbose = verbose
         self.tolerate_corruption = tolerate_corruption
         self.time_step = 0.2
-        self.sleep_time = -1
         self.max_time = 180.0
         self.unity_player_dir = unity_player_dir
         self.output_lidar = False
@@ -129,7 +128,7 @@ class NavRep3DTrainEnv(gym.Env):
             self.unity_process = subprocess.Popen([self.build_name, "-port", str(self.socket_port)],
                                                   cwd=self.unity_player_dir,
                                                   )
-            time.sleep(5.0)
+            time.sleep(10.0) # long, but necessary on some machines
         self.s = socket_handler.init_socket(self.socket_host, self.socket_port)
 
     def _get_dt(self):
@@ -156,7 +155,7 @@ class NavRep3DTrainEnv(gym.Env):
                 socket_handler.send_and_receive(self.s, helpers.publish_all(direction))
             if delta == 0:
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-        time.sleep(self.time_step)
+#         time.sleep(self.time_step)
 
         self.reset_in_progress = True
         i = 0
@@ -171,10 +170,10 @@ class NavRep3DTrainEnv(gym.Env):
                 to_send = helpers.publish_all(self.pub)
                 _ = socket_handler.send_and_receive(self.s, to_send)
                 self.pub = helpers.do_step(self.time_step, self.pub)
-                time.sleep(self.time_step)
+#                 time.sleep(self.time_step)
 
             # wait for sim to load new scenario
-            time.sleep(1)
+#             time.sleep(1)
 
             # reset variables
             self.goal_xy = GOAL_XY
@@ -202,7 +201,7 @@ class NavRep3DTrainEnv(gym.Env):
                     print("simulator reports done: re-trying to send reset signal")
                 # we want to make sure the next step won't result in "done" being True
                 socket_handler.send_and_receive(self.s, helpers.publish_all(helpers.reset()))
-                time.sleep(1)
+#                 time.sleep(1)
                 self.pub = {'clock': 0, 'vel_cmd': (0, 0, 0), 'sim_control': 'i'}
                 self.episode_reward = 0.
                 continue
@@ -433,14 +432,6 @@ class NavRep3DTrainEnv(gym.Env):
         self.episode_reward += reward
 
         time_out = time.time()
-
-        if self.sleep_time > 0:
-            time.sleep(self.sleep_time)
-        elif time_out < time_in + self.time_step:
-            pass
-#             time.sleep(time_in + self.time_step - time_out)
-
-#                 recorder.save_dico('/tmp/recorder/tests_'+str(i), list_save)
 
         if self.verbose > 1:
             toc = timer()

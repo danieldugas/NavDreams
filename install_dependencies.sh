@@ -27,5 +27,8 @@ git clone git@github.com:danieldugas/Python-RVO2.git
 cd Python-RVO2
 pip install .
 
+# ROS (useful if extracting rosbag)
+# pip install --extra-index-url https://rospypi.github.io/simple/ rospy rosbag tf tf2_ros
+
 # on RTX 3070 (sm_86)
 # pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html

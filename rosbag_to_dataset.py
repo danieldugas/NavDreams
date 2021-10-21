@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import traceback
 import rosbag
 from cv_bridge import CvBridge
 import cv2
@@ -7,16 +8,16 @@ from pose2d import Pose2D, apply_tf, inverse_pose2d
 import tf_bag
 import rospy
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 
 bridge = CvBridge()
 
-bag_path = "~/irl_tests/hg_icra_round2.bag"
-# bag_path = "~/LIANsden/proto_round_rosbags/daniel_manip_spray.bag"
-bag_path = os.path.expanduser(bag_path)
+# bag_path = "~/irl_tests/hg_icra_round2.bag"
+bag_path = "~/LIANsden/proto_round_rosbags/daniel_manip_spray.bag"
 
-archive_dir = "~/navrep3d_W/datasets/V/rosbag",
+archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 
 DT = 0.2
 FIXED_FRAME = "gmap"
@@ -34,16 +35,19 @@ cmd_vel_enabled_topic = '/oculus/cmd_vel_enabled'
 topics = [cmd_vel_enabled_topic, odom_topic, cmd_vel_topic, image_topic]
 goal_topic = "/move_base_simple/goal"
 
+bag_path = os.path.expanduser(bag_path)
 os.system('rosbag info {} | grep -e {} -e {} -e {}'.format(
     bag_path, odom_topic, cmd_vel_topic, image_topic))
 
-# sync concept
+# sync concept: pick closest at each dt
 # | | | | | | | | odom
 #  |     |     |  image
 #    | |    |  |  cmd_vel
 # |   |   |   |   dt
 
+print("Loading bag...")
 bag = rosbag.Bag(bag_path)
+print("Initializing Tf Transformer...")
 bag_transformer = tf_bag.BagTfTransformer(bag)
 
 start_time = bag.get_start_time()
@@ -61,11 +65,11 @@ nextvels = np.zeros_like(vels)
 images_eps_min = np.ones((steps,)) * DT / 2.
 odom_eps_min = np.ones((steps,)) * DT / 2.
 
-for topic, msg, t in bag.read_messages(topics=topics):
+for topic, msg, t in tqdm(bag.read_messages(topics=topics)):
 
     ts = t.to_sec()
     floatstep = (ts - start_time) / DT  # how many steps have passed since bag start
-    closest_step = int(np.clip(np.round(floatstep), 0, steps))
+    closest_step = int(np.clip(np.round(floatstep), 0, steps-1))
     eps = np.abs(ts - times[closest_step])
 
     if topic == odom_topic:
@@ -79,8 +83,10 @@ for topic, msg, t in bag.read_messages(topics=topics):
             cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
             cv_resized = cv2.resize(cv_image, resize_dim)
             images[closest_step] = cv_resized
-missing_images = np.any(np.isnan(images.reshape((len(images), -1))), axis=-1)
 nextvels[:-1] = vels[1:] # assume vel is action at previous timestep
+missing_images = np.any(np.isnan(images.reshape((len(images), -1))), axis=-1)
+missing_vels = np.any(np.isnan(vels), axis=-1)
+missing_nextvels = np.any(np.isnan(nextvels), axis=-1)
 
 # apply received goal messages to all future steps
 goals_in_fix = np.ones((steps, 2)) * np.nan
@@ -102,12 +108,18 @@ for topic, msg, t in bag.read_messages(topics=[goal_topic]):
 # add true robot position information to all steps
 robot_in_fix = np.ones((steps, 3)) * np.nan
 close_to_goal = np.zeros((steps,))
+missing_pos = np.zeros((steps,))
 for step, time in enumerate(times):
-    p2_rob_in_fix = Pose2D(bag_transformer.lookupTransform(
-        FIXED_FRAME, ROBOT_FRAME, rospy.Time(time)))
+    try:
+        p2_rob_in_fix = Pose2D(bag_transformer.lookupTransform(
+            FIXED_FRAME, ROBOT_FRAME, rospy.Time(time)))
+    except: # noqa
+        traceback.print_exc()
+        missing_pos[step] = 1
+        continue
     robot_in_fix[step] = p2_rob_in_fix
     if not np.any(np.isnan(goals_in_fix[step])):
-        close_to_goal[step] = np.linalg.norm(robot_in_fix - goals_in_fix[step]) < GOAL_REACHED_DIST
+        close_to_goal[step] = np.linalg.norm(robot_in_fix[step, :2] - goals_in_fix[step]) < GOAL_REACHED_DIST
 
 # cut into sequence of length > 10
 # show each sequence in plot
@@ -118,7 +130,8 @@ sequence_ends = np.zeros((steps,))
 current_sequence_id = 0
 current_sequence_length = 0
 for step in range(steps):
-    if close_to_goal[step] or missing_images[step] or goal_changed[step]:
+    if close_to_goal[step] or goal_changed[step] or \
+            missing_images[step] or missing_vels[step] or missing_nextvels[step] or missing_pos[step]:
         if current_sequence_length >= MIN_SEQ_LENGTH: # terminate sequence if valid
             current_sequence_length = 0
             current_sequence_id += 1
@@ -137,14 +150,16 @@ for seq_id in range(n_sequences):
     seq_robot_in_fix = robot_in_fix[seq_mask]
     seq_goals_in_fix = goals_in_fix[seq_mask]
     if np.any(np.isnan(seq_goals_in_fix)):
-        print("Sequence {}: goal missing! Use last point as goal?".format(seq_id))
+        print("Sequence {} (len {}): goal missing! Use last point as goal?".format(
+            seq_id, len(seq_robot_in_fix)))
         plt.figure("missing goal")
+        plt.title("Goal missing")
         plt.plot(seq_robot_in_fix[:, 0], seq_robot_in_fix[:, 1])
         plt.show()
-        plt.clf()
+        plt.close('all')
         if True:
             print("using last point as goal.")
-            goals_in_fix[seq_mask] = seq_robot_in_fix[-1]
+            goals_in_fix[seq_mask] = seq_robot_in_fix[-1, :2]
 
 
 # infer goal_in_robot
@@ -158,6 +173,7 @@ for step in range(steps):
 
 # plot sequences
 plt.figure("sequences")
+plt.title("Sequences")
 legends = []
 for seq_id in range(n_sequences):
     seq_mask = sequence_ids == seq_id
@@ -191,9 +207,22 @@ robotstates = robotstates[valid_mask]
 actions = actions[valid_mask]
 dones = dones[valid_mask]
 rewards = np.zeros_like(dones)
+print("Found {} sequences, {} total steps".format(n_sequences, len(robotstates)))
+
+if np.any(np.isnan(scans)):
+    raise ValueError
+if np.any(np.isnan(robotstates)):
+    raise ValueError
+if np.any(np.isnan(actions)):
+    raise ValueError
+if np.any(np.isnan(rewards)):
+    raise ValueError
 
 # write
-make_dir_if_not_exists(archive_dir)
-archive_path = os.path.join(archive_dir, "{:03}_scans_robotstates_actions_rewards_dones.npz".format(0))
-np.savez_compressed(archive_path,
-                    scans=scans, robotstates=robotstates, actions=actions, rewards=rewards, dones=dones)
+if n_sequences > 0:
+    archive_dir = os.path.expanduser(archive_dir)
+    make_dir_if_not_exists(archive_dir)
+    archive_path = os.path.join(archive_dir, "{:03}_scans_robotstates_actions_rewards_dones.npz".format(0))
+    np.savez_compressed(archive_path,
+                        scans=scans, robotstates=robotstates, actions=actions, rewards=rewards, dones=dones)
+    print("Saved to {}".format(archive_path))

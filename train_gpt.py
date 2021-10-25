@@ -12,6 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 import torch
 import torch.optim as optim
+import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 from strictfire import StrictFire
@@ -83,7 +84,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SC_step")
     elif dataset == "Random":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")]
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")]
         log_path = os.path.expanduser(
             "~/navrep3d_W/logs/W/transformer_Random_train_log_{}.csv".format(START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
@@ -140,7 +141,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
                     data = generate_vae_dataset(
                         env, n_sequences=n_new_sequences, policy=policy,
                         render=False, archive_dir=None)
-                except:
+                except: # noqa
                     print("Failed to regenerate dataset. retrying.")
                     self._partial_regen(n_new_sequences=n_new_sequences)
                     return
@@ -184,6 +185,15 @@ def main(max_steps=222222, dataset="S", dry_run=False):
     model = GPT(mconf)
     print("GPT trainable params: {}".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
+
+    # increase stddev in random model weights
+    if dataset == "Random":
+        def randomize_weights(module):
+            if isinstance(module, (nn.Linear, nn.Embedding)):
+                module.weight.data.normal_(mean=0.0, std=0.2)
+                if isinstance(module, nn.Linear) and module.bias is not None:
+                    module.bias.data.zero_()
+        model.apply(randomize_weights)
 
     # take over whatever gpus are on the system
     device = "cpu"
@@ -314,6 +324,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         if global_step >= max_steps:
             break
 
+    print("Final evaluation")
     lidar_e, state_e = gpt_worldmodel_error(model, dataset_dir, device)
     save_checkpoint(model, checkpoint_path)
 

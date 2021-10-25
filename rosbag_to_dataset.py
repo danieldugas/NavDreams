@@ -12,6 +12,10 @@ from tqdm import tqdm
 
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 
+from navrep3d.auto_debug import enable_auto_debug
+
+enable_auto_debug()
+
 bridge = CvBridge()
 
 # bag_path = "~/irl_tests/hg_icra_round2.bag"
@@ -220,9 +224,11 @@ if np.any(np.isnan(rewards)):
 
 # write
 if n_sequences > 0:
+    bag_name = os.path.splitext(os.path.basename(bag_path))[0].replace('_', '')
     archive_dir = os.path.expanduser(archive_dir)
     make_dir_if_not_exists(archive_dir)
-    archive_path = os.path.join(archive_dir, "{:03}_scans_robotstates_actions_rewards_dones.npz".format(0))
+    archive_path = os.path.join(archive_dir,
+                                "{}_scans_robotstates_actions_rewards_dones.npz".format(bag_name))
     np.savez_compressed(archive_path,
                         scans=scans, robotstates=robotstates, actions=actions, rewards=rewards, dones=dones)
     print("Saved to {}".format(archive_path))

@@ -33,6 +33,7 @@ def get_goal(dico):
             goal = np.array(list(map(float,dico["goal"].split(' '))))
             return goal
         except ValueError:
+            print(dico["goal"])
             traceback.print_exc()
             return None
     return None

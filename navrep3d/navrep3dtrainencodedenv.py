@@ -12,9 +12,7 @@ class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding, variant="S",
                  gpu=False, encoder_to_share_model_with=None):
         assert backend == "GPT"
-        if variant == "S": # the pretrained gpt from june
-            gpt_model_path = os.path.expanduser("~/navrep3d/models/W/navrep3dtraingpt")
-        elif variant == "SNew": # new pretrained gpt
+        if variant == "S":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
         elif variant == "SC":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
@@ -50,7 +48,7 @@ class NavRep3DTrainEncodedEnv(Env):
 
     def _get_dt(self):
         return self.env._get_dt()
-    
+
     def _get_viewer(self):
         return self.encoder.viewer
 
@@ -207,7 +205,7 @@ class SubprocVecNavRep3DEncodedEnvDiscrete(SubprocVecEnv):
 if __name__ == "__main__":
     from navrep.tools.envplayer import EnvPlayer
 
-    np.set_printoptions(precision=1, suppress=True)
+    np.set_printoptions(precision=2, suppress=True)
     env = NavRep3DTrainEncodedEnv(verbose=1, backend="GPT", encoding="V_ONLY")
     player = EnvPlayer(env)
     player.run()

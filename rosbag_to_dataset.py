@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import os
 import traceback
@@ -18,16 +19,24 @@ enable_auto_debug()
 
 bridge = CvBridge()
 
+# not usable
 # bag_path = "~/irl_tests/hg_icra_round2.bag"
+# bag_path = "~/rosbags/merged_demo2.bag"
 # bag_path = "~/LIANsden/proto_round_rosbags/daniel_manip_spray.bag"
 # bag_path = "~/rosbags/HG_rosbags/hg_map.bag"
-bag_path = "~/rosbags/CLA_rosbags/2019-06-14-10-04-06.bag"
+
+# usable
+# bag_path = "~/rosbags/CLA_rosbags/2019-06-14-10-04-06.bag"
+# bag_path = "~/rosbags/CLA_rosbags/2019-06-14-10-13-03.bag"
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-03-25.bag" # noqa
+bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/corridor_koze_kids.bag" # noqa
 
 archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 
 DT = 0.2
-# FIXED_FRAME = "map"
-FIXED_FRAME = "refmap"
+# FIXED_FRAME = "odom" # StefanKiss, merged_demo
+# FIXED_FRAME = "map" # crowdbot CLA
+FIXED_FRAME = "reference_map" # corridor_koze_kids
 ROBOT_FRAME = "base_footprint"
 GOAL_REACHED_DIST = 0.5
 
@@ -42,12 +51,20 @@ cmd_vel_enabled_topic = '/oculus/cmd_vel_enabled'
 topics = [cmd_vel_enabled_topic, odom_topic, cmd_vel_topic, image_topic]
 goal_topic = "/move_base_simple/goal"
 
+print()
 print("Required topics:")
-print(topics)
+print(odom_topic)
+print(cmd_vel_topic)
+print(image_topic)
+print("Optional topics:")
+print(goal_topic)
+print(cmd_vel_enabled_topic)
+print()
+
 
 bag_path = os.path.expanduser(bag_path)
-os.system('rosbag info {} | grep -e {} -e {} -e {}'.format(
-    bag_path, odom_topic, cmd_vel_topic, image_topic))
+os.system('rosbag info {} | grep -e {} -e {} -e {} -e {} -e {}'.format(
+    bag_path.replace(" ", "\ "), odom_topic, cmd_vel_topic, image_topic, goal_topic, cmd_vel_enabled_topic))
 
 # sync concept: pick closest at each dt
 # | | | | | | | | odom
@@ -97,6 +114,7 @@ nextvels[:-1] = vels[1:] # assume vel is action at previous timestep
 missing_images = np.any(np.isnan(images.reshape((len(images), -1))), axis=-1)
 missing_vels = np.any(np.isnan(vels), axis=-1)
 missing_nextvels = np.any(np.isnan(nextvels), axis=-1)
+images = images.astype(np.uint8) # save some space!
 
 # apply received goal messages to all future steps
 goals_in_fix = np.ones((steps, 2)) * np.nan
@@ -241,6 +259,14 @@ for i, varname in enumerate([
     # slightly separate our plotted lines for clarity
     plt.plot(series + i * 0.02)
 plt.legend(legends)
+plt.show()
+
+# show evenly spaced images
+N = 10
+thumbnails = images[::len(images) // N]
+fig, axes = plt.subplots(1, N)
+for i, ax in enumerate(axes):
+    ax.imshow(thumbnails[i].astype(np.uint8))
 plt.show()
 
 if np.any(np.isnan(scans)):

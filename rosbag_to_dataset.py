@@ -19,12 +19,15 @@ enable_auto_debug()
 bridge = CvBridge()
 
 # bag_path = "~/irl_tests/hg_icra_round2.bag"
-bag_path = "~/LIANsden/proto_round_rosbags/daniel_manip_spray.bag"
+# bag_path = "~/LIANsden/proto_round_rosbags/daniel_manip_spray.bag"
+# bag_path = "~/rosbags/HG_rosbags/hg_map.bag"
+bag_path = "~/rosbags/CLA_rosbags/2019-06-14-10-04-06.bag"
 
 archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 
 DT = 0.2
-FIXED_FRAME = "gmap"
+# FIXED_FRAME = "map"
+FIXED_FRAME = "refmap"
 ROBOT_FRAME = "base_footprint"
 GOAL_REACHED_DIST = 0.5
 
@@ -38,6 +41,9 @@ image_topic = '/camera/color/image_raw'
 cmd_vel_enabled_topic = '/oculus/cmd_vel_enabled'
 topics = [cmd_vel_enabled_topic, odom_topic, cmd_vel_topic, image_topic]
 goal_topic = "/move_base_simple/goal"
+
+print("Required topics:")
+print(topics)
 
 bag_path = os.path.expanduser(bag_path)
 os.system('rosbag info {} | grep -e {} -e {} -e {}'.format(
@@ -97,8 +103,18 @@ goals_in_fix = np.ones((steps, 2)) * np.nan
 goal_changed = np.zeros((steps,))
 for topic, msg, t in bag.read_messages(topics=[goal_topic]):
     goal_in_msg = np.array([msg.pose.position.x, msg.pose.position.y])
-    p2_msg_in_fix = Pose2D(bag_transformer.lookupTransform(
-        FIXED_FRAME, msg.header.frame_id, msg.header.stamp))
+    if FIXED_FRAME != msg.header.frame_id:
+        rospy.logwarn_once("""Warning! Goal frame used in rosbag ({}) != Fixed frame used in this script ({})
+        Optimally, the fixed frame would be refmap (static). Worse, are gmap (SLAM), or even odom.
+        Please ensure that the rosbag has the desired frame, and set FIXED_FRAME accordingly.
+              """.format(msg.header.frame_id, FIXED_FRAME))
+    try:
+        p2_msg_in_fix = Pose2D(bag_transformer.lookupTransform(
+            FIXED_FRAME, msg.header.frame_id, msg.header.stamp))
+    except: # noqa
+        traceback.print_exc()
+        raise ValueError("Could not find goal position in fixed frame! Is fixed frame wrong? \
+                         hint: usually goals / global plans are set in fixed frame")
     goal_in_fix = apply_tf(goal_in_msg[None, :], p2_msg_in_fix)[0]
 
     # calculate timestep from which to start applying goal
@@ -134,7 +150,8 @@ sequence_ends = np.zeros((steps,))
 current_sequence_id = 0
 current_sequence_length = 0
 for step in range(steps):
-    if close_to_goal[step] or goal_changed[step] or \
+    last_step = step == steps-1
+    if close_to_goal[step] or goal_changed[step] or last_step or \
             missing_images[step] or missing_vels[step] or missing_nextvels[step] or missing_pos[step]:
         if current_sequence_length >= MIN_SEQ_LENGTH: # terminate sequence if valid
             current_sequence_length = 0
@@ -212,6 +229,19 @@ actions = actions[valid_mask]
 dones = dones[valid_mask]
 rewards = np.zeros_like(dones)
 print("Found {} sequences, {} total steps".format(n_sequences, len(robotstates)))
+
+# plot all sequence-ending conditions
+plt.figure()
+legends = []
+for i, varname in enumerate([
+        "missing_images", "missing_vels", "missing_pos",
+        "missing_nextvels", "close_to_goal", "goal_changed"]):
+    series = locals().get(varname)
+    legends.append(varname)
+    # slightly separate our plotted lines for clarity
+    plt.plot(series + i * 0.02)
+plt.legend(legends)
+plt.show()
 
 if np.any(np.isnan(scans)):
     raise ValueError

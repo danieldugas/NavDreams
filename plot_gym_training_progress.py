@@ -22,6 +22,8 @@ envname_styles = {
     "navrep3daltencodedenv": "dashed",
     "e2enavrep3dtrain": "solid",
     "navrep3dtrainencodedenv": "solid",
+    "navrep3daltenv": "dashed",
+    "navrep3dtrainenv": "solid",
 }
 variant_colors = {
     "S": "lightskyblue",

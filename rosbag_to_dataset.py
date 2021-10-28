@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import input
 import numpy as np
 import os
 import traceback
@@ -29,14 +30,20 @@ bridge = CvBridge()
 # bag_path = "~/rosbags/CLA_rosbags/2019-06-14-10-04-06.bag"
 # bag_path = "~/rosbags/CLA_rosbags/2019-06-14-10-13-03.bag"
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-03-25.bag" # noqa
-bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/corridor_koze_kids.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-11-56-07.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-11-58-01.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-12-01-42.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-12-04-58.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-01-00.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/corridor_koze_kids.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/2019-12-13-20-11-46.bag" # noqa
 
 archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 
 DT = 0.2
-# FIXED_FRAME = "odom" # StefanKiss, merged_demo
+FIXED_FRAME = "odom" # StefanKiss, merged_demo
 # FIXED_FRAME = "map" # crowdbot CLA
-FIXED_FRAME = "reference_map" # corridor_koze_kids
+# FIXED_FRAME = "reference_map" # open-lab
 ROBOT_FRAME = "base_footprint"
 GOAL_REACHED_DIST = 0.5
 
@@ -53,18 +60,20 @@ goal_topic = "/move_base_simple/goal"
 
 print()
 print("Required topics:")
-print(odom_topic)
-print(cmd_vel_topic)
-print(image_topic)
+print("      " + odom_topic)
+print("      " + cmd_vel_topic)
+print("      " + image_topic)
 print("Optional topics:")
-print(goal_topic)
-print(cmd_vel_enabled_topic)
+print("      " + goal_topic)
+print("      " + cmd_vel_enabled_topic)
 print()
 
 
 bag_path = os.path.expanduser(bag_path)
 os.system('rosbag info {} | grep -e {} -e {} -e {} -e {} -e {}'.format(
     bag_path.replace(" ", "\ "), odom_topic, cmd_vel_topic, image_topic, goal_topic, cmd_vel_enabled_topic))
+
+input("Are the required topics present?")
 
 # sync concept: pick closest at each dt
 # | | | | | | | | odom
@@ -145,7 +154,6 @@ for topic, msg, t in bag.read_messages(topics=[goal_topic]):
 
 # add true robot position information to all steps
 robot_in_fix = np.ones((steps, 3)) * np.nan
-close_to_goal = np.zeros((steps,))
 missing_pos = np.zeros((steps,))
 for step, time in enumerate(times):
     try:
@@ -156,32 +164,57 @@ for step, time in enumerate(times):
         missing_pos[step] = 1
         continue
     robot_in_fix[step] = p2_rob_in_fix
-    if not np.any(np.isnan(goals_in_fix[step])):
-        close_to_goal[step] = np.linalg.norm(robot_in_fix[step, :2] - goals_in_fix[step]) < GOAL_REACHED_DIST
+if np.any(missing_pos):
+    plt.figure()
+    plt.plot(missing_pos)
+    plt.show()
 
-# cut into sequence of length > 10
-# show each sequence in plot
-MIN_SEQ_LENGTH = 24
-sequence_ids = np.ones((steps,)) * -1
-sequence_steps = np.ones((steps,)) * -1
-sequence_ends = np.zeros((steps,))
-current_sequence_id = 0
-current_sequence_length = 0
-for step in range(steps):
-    last_step = step == steps-1
-    if close_to_goal[step] or goal_changed[step] or last_step or \
-            missing_images[step] or missing_vels[step] or missing_nextvels[step] or missing_pos[step]:
-        if current_sequence_length >= MIN_SEQ_LENGTH: # terminate sequence if valid
-            current_sequence_length = 0
-            current_sequence_id += 1
-            sequence_ends[step] = 1
+# find when robot is close to goal
+def find_close_to_goal(steps, times, goals_in_fix, robot_in_fix, GOAL_REACHED_DIST):
+    print("Finding close-to-goal steps")
+    close_to_goal = np.zeros((steps,))
+    for step, time in enumerate(times):
+        if not np.any(np.isnan(goals_in_fix[step])):
+            close_to_goal[step] = np.linalg.norm(
+                robot_in_fix[step, :2] - goals_in_fix[step]
+            ) < GOAL_REACHED_DIST
+    return close_to_goal
+
+
+close_to_goal = find_close_to_goal(steps, times, goals_in_fix, robot_in_fix, GOAL_REACHED_DIST)
+
+def cut_sequences(steps,
+                  close_to_goal, goal_changed,
+                  missing_images, missing_vels, missing_nextvels, missing_pos):
+    print("Cutting sequences")
+    # cut into sequence of length > 10
+    # show each sequence in plot
+    MIN_SEQ_LENGTH = 24
+    sequence_ids = np.ones((steps,)) * -1
+    sequence_steps = np.ones((steps,)) * -1
+    sequence_ends = np.zeros((steps,))
+    current_sequence_id = 0
+    current_sequence_length = 0
+    for step in range(steps):
+        last_step = step == steps-1
+        if close_to_goal[step] or goal_changed[step] or last_step or \
+                missing_images[step] or missing_vels[step] or missing_nextvels[step] or missing_pos[step]:
+            if current_sequence_length >= MIN_SEQ_LENGTH: # terminate sequence if valid
+                current_sequence_length = 0
+                current_sequence_id += 1
+                sequence_ends[step-1] = 1
+            else:
+                sequence_ids[step] = -1
         else:
-            sequence_ids[step] = -1
-    else:
-        sequence_ids[step] = current_sequence_id
-        sequence_steps[step] = current_sequence_length
-        current_sequence_length += 1
-n_sequences = current_sequence_id
+            sequence_ids[step] = current_sequence_id
+            sequence_steps[step] = current_sequence_length
+            current_sequence_length += 1
+    n_sequences = current_sequence_id
+    return sequence_ids, sequence_steps, sequence_ends, n_sequences
+
+
+sequence_ids, sequence_steps, sequence_ends, n_sequences = cut_sequences(
+    steps, close_to_goal, goal_changed, missing_images, missing_vels, missing_nextvels, missing_pos)
 
 # fill goals
 for seq_id in range(n_sequences):
@@ -200,6 +233,10 @@ for seq_id in range(n_sequences):
             print("using last point as goal.")
             goals_in_fix[seq_mask] = seq_robot_in_fix[-1, :2]
 
+# re-calculate close-to-goal, re-cut sequences
+close_to_goal = find_close_to_goal(steps, times, goals_in_fix, robot_in_fix, GOAL_REACHED_DIST)
+sequence_ids, sequence_steps, sequence_ends, n_sequences = cut_sequences(
+    steps, close_to_goal, goal_changed, missing_images, missing_vels, missing_nextvels, missing_pos)
 
 # infer goal_in_robot
 goals_in_robot = np.zeros_like(goals_in_fix)
@@ -263,7 +300,7 @@ plt.show()
 
 # show evenly spaced images
 N = 10
-thumbnails = images[::len(images) // N]
+thumbnails = scans[::len(scans) // N]
 fig, axes = plt.subplots(1, N)
 for i, ax in enumerate(axes):
     ax.imshow(thumbnails[i].astype(np.uint8))

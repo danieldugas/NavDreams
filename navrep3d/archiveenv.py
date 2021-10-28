@@ -16,12 +16,13 @@ class ArchiveEnv(gym.Env):
     """
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, directory, file_limit=None, silent=False, max_episode_length=1000):
+    def __init__(self, directory,
+                 file_limit=None, silent=False, max_episode_length=1000, shuffle_episodes=False):
         # gym env definition
         super(ArchiveEnv, self).__init__()
         self.action_space = spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.observation_space = spaces.Tuple((
-            spaces.Box(low=-np.inf, high=np.inf, shape=(1080,), dtype=np.float32),
+            spaces.Box(low=0, high=255, shape=(64,64,3), dtype=np.uint8),
             spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32),
         ))
         self.data = WorldModelDataset._load_data(None, directory, file_limit=file_limit)
@@ -30,6 +31,7 @@ class ArchiveEnv(gym.Env):
         self.current_iteration = None
         self.data["dones"][-1] = 1
         self.viewer = None
+        self.shuffle_episodes = shuffle_episodes
 
     def _step(self, action):
         """ preserved when inherited classes overrite step() """
@@ -47,6 +49,8 @@ class ArchiveEnv(gym.Env):
 
     def reset(self):
         action = self.data["actions"][self.current_iteration]
+        if self.shuffle_episodes:
+            self.current_iteration = np.random.randint(len(self.data["scans"]))
         if self.current_iteration is None:
             self.current_iteration = 0
             obs, _, _, _ = self._step(action)
@@ -237,13 +241,14 @@ class ArchiveEnv(gym.Env):
 
 # separate main function to define the script-relevant arguments used by StrictFire
 def main(
+    # Env args
+    shuffle=False,
     # Player args
     render_mode='human', step_by_step=False,
-    # Task args
 ):
     np.set_printoptions(precision=2, suppress=True)
     directory = [os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
-    env = ArchiveEnv(directory)
+    env = ArchiveEnv(directory, shuffle_episodes=shuffle)
     player = EnvPlayer(env, render_mode, step_by_step)
     player.run()
 

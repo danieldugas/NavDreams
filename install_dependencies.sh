@@ -19,10 +19,8 @@ pip install --upgrade pip # fixes ubuntu 20 pip pep517 error
 sudo apt install -y build-essential python3-dev cmake # needed to compile some of the pip packages
 
 pip install numpy cython
-pip install matplotlib ipython pyyaml snakeviz stable-baselines3 pyglet navrep strictfire jedi==0.17
-cd lib_dwa
-pip install .
-cd ..
+pip install matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet navrep strictfire \
+  jedi==0.17 gym==0.18.0 # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
 git clone git@github.com:danieldugas/Python-RVO2.git
 cd Python-RVO2
 pip install .

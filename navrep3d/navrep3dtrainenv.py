@@ -233,6 +233,7 @@ class NavRep3DTrainEnv(gym.Env):
         return obs
 
     def step(self, actions):
+        info = {}
         self.last_action = actions
         actions = np.array(actions)
         if rotation_deadzone is not None:
@@ -247,7 +248,6 @@ class NavRep3DTrainEnv(gym.Env):
         # theta>0 in cmd_vel turns right in the simulator, usually it's the opposite.
         self.pub['vel_cmd'] = (actions[0], actions[1], np.rad2deg(actions[2]))
 
-        time_in = time.time()
         # making the raw string to send from the dict
         to_send = helpers.publish_all(self.pub)
         # sending and receiving raw data
@@ -276,7 +276,7 @@ class NavRep3DTrainEnv(gym.Env):
                 self.last_walls = None
 
         self.last_trialinfo = helpers.get_trialinfo(dico)
-        
+
         goal = helpers.get_goal(dico)
         if goal is not None:
             self.goal_xy = goal[:2]
@@ -316,6 +316,14 @@ class NavRep3DTrainEnv(gym.Env):
                 arrimg = np.zeros((_H, _W, 3), dtype=np.uint8)
             else:
                 raise IOError("Image message is corrupted")
+
+        arrseg = None
+        if dico["segcam"] != '':
+#                 jpgbytes = base64.decodestring(dico["segcam"])
+            jpgbytes = base64.b64decode(dico["segcam"])
+            segimg = Image.open(io.BytesIO(jpgbytes))
+            arrseg = np.asarray(segimg)
+            info["segmentation_image"] = arrseg
 
         if self.output_lidar:
             self.raytrace_lidar(odom[:3], self.last_walls, crowd, crowd_vel)
@@ -431,8 +439,6 @@ class NavRep3DTrainEnv(gym.Env):
         # log reward
         self.episode_reward += reward
 
-        time_out = time.time()
-
         if self.verbose > 1:
             toc = timer()
             print("Step: {} Hz".format(1. / (toc - tic)))
@@ -470,7 +476,7 @@ class NavRep3DTrainEnv(gym.Env):
         obs = (arrimg, robotstate_obs)
         if np.any(np.isnan(robotstate_obs)):
             raise ValueError("nan values in robotstate")
-        return obs, reward, done, {}
+        return obs, reward, done, info
 
     def close(self):
         if self.viewer is not None:

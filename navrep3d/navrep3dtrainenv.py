@@ -44,6 +44,14 @@ DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
 MINDIF = 1.
 MAXDIF = 10.
 
+scenario_names = {
+    "./build.x86_64": "navrep3dtrain",
+    "./alternate.x86_64": "navrep3dalt",
+    "./city.x86_64": "navrep3dcity",
+    "./office.x86_64": "navrep3doffice",
+    "./alternate_segmentation.x86_64": "navrep3daltseg",
+}
+
 def angle_difference(a, b):
     """ returns smallest angle a - b """
     delta = a - b
@@ -53,8 +61,11 @@ def angle_difference(a, b):
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
-                 unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64",
+                 unity_player_dir=DEFAULT_UNITY_EXE, build_name=None,
                  start_with_random_rot=True, tolerate_corruption=True):
+        # default args
+        if build_name is None:
+            build_name = "./build.x86_64"
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -89,6 +100,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.unity_process = None
         # other tools
         self.viewer = None
+        self.scenario_name = scenario_names[self.build_name]
         self.episode_statistics = None
         if self.collect_statistics:
             self.episode_statistics = DataFrame(
@@ -317,13 +329,18 @@ class NavRep3DTrainEnv(gym.Env):
             else:
                 raise IOError("Image message is corrupted")
 
-        arrseg = None
-        if dico["segcam"] != '':
+        if "segcam" in dico and dico["segcam"] != '':
 #                 jpgbytes = base64.decodestring(dico["segcam"])
             jpgbytes = base64.b64decode(dico["segcam"])
             segimg = Image.open(io.BytesIO(jpgbytes))
             arrseg = np.asarray(segimg)
             info["segmentation_image"] = arrseg
+        if "depthcam" in dico and dico["depthcam"] != '':
+#                 jpgbytes = base64.decodestring(dico["depthcam"])
+            jpgbytes = base64.b64decode(dico["depthcam"])
+            depthimg = Image.open(io.BytesIO(jpgbytes))
+            arrdepth = np.asarray(depthimg)
+            info["depth_image"] = arrdepth
 
         if self.output_lidar:
             self.raytrace_lidar(odom[:3], self.last_walls, crowd, crowd_vel)
@@ -453,7 +470,7 @@ class NavRep3DTrainEnv(gym.Env):
             if self.collect_statistics:
                 self.episode_statistics.loc[len(self.episode_statistics)] = [
                     self.total_steps,
-                    'navrep3dtrain',
+                    self.scenario_name,
                     np.nan,
                     self.steps_since_reset,
                     goal_is_reached,

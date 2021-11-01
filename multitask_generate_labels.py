@@ -23,6 +23,7 @@ def generate_segmentation_dataset(env, n_sequences,
     for n in indices:
         images = []
         labels = []
+        depths = []
         robotstates = []
         actions = []
         rewards = []
@@ -39,6 +40,7 @@ def generate_segmentation_dataset(env, n_sequences,
             rewards.append(rew)
             dones.append(done)
             labels.append(info["segmentation_image"])
+            depths.append(info["depth_image"])
             if render:
                 env.render()
             if done:
@@ -49,11 +51,12 @@ def generate_segmentation_dataset(env, n_sequences,
 
         images = np.array(images)
         labels = np.array(labels)
+        depths = np.array(depths)
         robotstates = np.array(robotstates)
         actions = np.array(actions)
         rewards = np.array(rewards)
         dones = np.array(dones)
-        data = dict(images=images, labels=labels,
+        data = dict(images=images, labels=labels, depths=depths,
                     robotstates=robotstates, actions=actions, rewards=rewards, dones=dones)
         if archive_dir is not None:
             make_dir_if_not_exists(archive_dir)
@@ -71,17 +74,23 @@ def visual_archive_check(archive_dir):
     data = np.load(archive_path)
     images = data["images"]
     labels = data["labels"]
+    depths = data["depths"]
     actions = data["actions"]
     dones = data["dones"]
     robotstates = data["robotstates"]
     plt.figure("check")
-    for i, (im, lb, a, d, rs) in enumerate(zip(images, labels, actions, dones, robotstates)):
+    for i, (im, lb, dp, a, d, rs) in enumerate(zip(images, labels, depths, actions, dones, robotstates)):
         plt.clf()
-        fig, (ax1, ax2) = plt.subplots(1, 2, num="check")
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, num="check")
         ax1.imshow(im)
         ax1.set_title("image {}".format(i))
         ax2.imshow(lb)
         ax2.set_title("labels")
+        dpth = (dp[:, :, 0] / 256.
+                + dp[:, :, 1] / 256. / 256.
+                + dp[:, :, 2] / 256. / 256. / 256.) * 100.
+        ax3.imshow(dpth / 100.)
+        ax3.set_title("depth")
         fig.suptitle(archive_path + "\n" + "{} {} {}".format(a, d, rs))
         plt.pause(0.1)
 

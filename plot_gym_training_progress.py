@@ -59,6 +59,7 @@ def get_variant(logpath):
     variant = None
     string = logpath.split("V64M64_")[-1]
     string = string.split(".")[0]
+    string = string.split("_")[0]
     # find variant in string
     for k in variant_colors:
         if string == k:

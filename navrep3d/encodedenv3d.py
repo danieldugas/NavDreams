@@ -39,6 +39,7 @@ class EnvEncoder(object):
                  rnn_model_path=os.path.expanduser("~/navrep3d/models/M/rnn.json"),
                  vae_model_path=os.path.expanduser("~/navrep3d/models/V/vae.json"),
                  gpt_model_path=os.path.expanduser("~/navrep3d/models/W/gpt"),
+                 e2e_model_path=os.path.expanduser("~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip"), # noqa
                  vaelstm_model_path=os.path.expanduser("~/navrep3d/models/W/vaelstm"),
                  gpu=False,
                  encoder_to_share_model_with=None,  # another EnvEncoder
@@ -51,6 +52,9 @@ class EnvEncoder(object):
         elif backend == "VAE_LSTM":
             from navrep.scripts.train_vae import _Z
             from navrep.scripts.train_rnn import _H
+        elif backend == "E2E":
+            _Z = 64
+            _H = None
         self._Z = _Z
         self._H = _H
         self.LIDAR_NORM_FACTOR = LIDAR_NORM_FACTOR
@@ -93,6 +97,23 @@ class EnvEncoder(object):
                 load_checkpoint(model, vaelstm_model_path, gpu=gpu)
                 self.vae = model
                 self.rnn = model
+            elif self.backend == "E2E":
+                from stable_baselines3 import PPO
+                import torch
+                model = PPO.load(e2e_model_path)
+                class Model(object):
+                    def __init__(self, torch_model):
+                        self.torch_model = torch_model
+                    def encode_mu_logvar(self, img):
+                        """ img is normalized [0-1] (that's what the sb3 model expects) """
+                        b, W, H, CH = img.shape
+                        tm = self.torch_model
+                        img_t = torch.tensor(np.moveaxis(img, -1, 1), dtype=torch.float)
+                        mu = tm.linear(tm.cnn(img_t))
+                        mu = mu.detach().cpu().numpy()
+                        logvar = np.zeros_like(mu)
+                        return mu, logvar
+                self.vae = Model(model.policy.features_extractor)
             else:
                 raise NotImplementedError
         # other tools
@@ -164,7 +185,7 @@ class EnvEncoder(object):
             if self.encoding == "VM":
                 encoded_obs = np.concatenate([self.latest_z, obs[1], h], axis=0)
             elif self.encoding == "M_ONLY":
-                encoded_obs = np.concatenate([obs[1], h], axis=0)
+                encoded_obs = np.concatenate([h, obs[1]], axis=0)
         return encoded_obs
 
     def _render_side_by_side(self, mode="human", close=False, save_to_file=False):

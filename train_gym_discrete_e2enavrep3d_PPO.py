@@ -14,13 +14,14 @@ if __name__ == "__main__":
 
     MILLION = 1000000
     TRAIN_STEPS = 60 * MILLION
+    _C = 64
     DIR = os.path.expanduser("~/navrep3d/models/gym")
     LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")
     if args.dry_run:
         DIR = "/tmp/navrep3d/models/gym"
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    CONTROLLER_ARCH = "_VCARCH_C64"
+    CONTROLLER_ARCH = "_VCARCH_C{}".format(_C)
     LOGNAME = "navrep3dtrainenv_" + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")
@@ -43,7 +44,7 @@ if __name__ == "__main__":
 
     policy_kwargs = dict(
         features_extractor_class=NavRep3DTupleCNN,
-        features_extractor_kwargs=dict(cnn_features_dim=128),
+        features_extractor_kwargs=dict(cnn_features_dim=_C),
     )
     model = PPO("CnnPolicy", env, policy_kwargs=policy_kwargs, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS, callback=cb)

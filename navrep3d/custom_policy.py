@@ -8,6 +8,10 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
 
+_RS = 5
+_64 = 64
+_CH = 3
+
 class NavRep3DTrainEnvFlattened(NavRep3DTrainEnv):
     # returns only the robotstate as obs
     def __init__(self, *args, **kwargs):
@@ -45,13 +49,13 @@ class NavRep3DTupleCNN(BaseFeaturesExtractor):
                  cnn_features_dim: int = 256, mlp_features_dim: int = 16):
         super(NavRep3DTupleCNN, self).__init__(observation_space, cnn_features_dim + mlp_features_dim)
         # hardcoded, because running into issues with dict observation_spaces
-        self.image_shape = (3,64,64)
+        self.image_shape = (_CH,_64,_64)
         self.image_shape_flat = np.prod(self.image_shape)
-        self.vector_shape_flat = 5
+        self.vector_shape_flat = _RS
         # observation[0] is image
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
-        n_input_channels = 3
+        n_input_channels = _CH
         self.cnn = nn.Sequential(
             nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
             nn.ReLU(),
@@ -82,7 +86,7 @@ class NavRep3DTupleCNN(BaseFeaturesExtractor):
 if __name__ == "__main__":
     policy_kwargs = dict(
         features_extractor_class=NavRep3DTupleCNN,
-        features_extractor_kwargs=dict(cnn_features_dim=128),
+        features_extractor_kwargs=dict(cnn_features_dim=64),
     )
     model = PPO("CnnPolicy", "NavRep3DTrainEnvFlattened", policy_kwargs=policy_kwargs, verbose=1)
     model.learn(1000)

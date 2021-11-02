@@ -91,6 +91,8 @@ def basic_archive_check(archive_dir):
     if errors:
         print(errors)
         raise ValueError("{} corrupted files found in archive!".format(len(errors)))
+    else:
+        print("{} files successfully opened.".format(len(filenames)))
 
 def visual_archive_check(archive_dir):
     basic_archive_check(archive_dir)

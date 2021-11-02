@@ -102,18 +102,28 @@ class EnvEncoder(object):
                 import torch
                 model = PPO.load(e2e_model_path)
                 class Model(object):
-                    def __init__(self, torch_model):
+                    def __init__(self, torch_model, gpu):
                         self.torch_model = torch_model
+                        self.gpu = gpu
+                    def _to_correct_device(self, tensor):
+                        if self.gpu:
+                            if torch.cuda.is_available():
+                                device = torch.cuda.current_device()
+                                return tensor.to(device)
+                            else:
+                                print("WARNING: model created with gpu enabled, but no gpu found")
+                        return tensor
                     def encode_mu_logvar(self, img):
                         """ img is normalized [0-1] (that's what the sb3 model expects) """
                         b, W, H, CH = img.shape
                         tm = self.torch_model
                         img_t = torch.tensor(np.moveaxis(img, -1, 1), dtype=torch.float)
+                        img_t = self._to_correct_device(img_t)
                         mu = tm.linear(tm.cnn(img_t))
                         mu = mu.detach().cpu().numpy()
                         logvar = np.zeros_like(mu)
                         return mu, logvar
-                self.vae = Model(model.policy.features_extractor)
+                self.vae = Model(model.policy.features_extractor, gpu)
             else:
                 raise NotImplementedError
         # other tools

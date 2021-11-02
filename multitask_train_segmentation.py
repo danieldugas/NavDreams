@@ -1,5 +1,4 @@
 import numpy as np
-from enum import Enum
 import pandas as pd
 from datetime import datetime
 import time
@@ -157,13 +156,7 @@ class MultitaskDataset(Dataset):
             y = torch.tensor(y, dtype=torch.float)
         return x, y
 
-def str_enum(options: list):
-    return Enum("", {n: n for n in options}, type=str)
-
-
-encoder_types_enum = str_enum(encoder_types)
-
-def main(encoder_type : encoder_types_enum, dry_run : bool = False):
+def train_segmenter(encoder_type):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     log_path = os.path.expanduser(
         "~/navrep3d/logs/multitask/{}_segmenter_train_log_{}.csv".format(encoder_type, START_TIME))
@@ -188,7 +181,6 @@ def main(encoder_type : encoder_types_enum, dry_run : bool = False):
     PLOT_EVERY_N_STEPS = 1000
     max_epochs = max_steps  # don't stop based on epoch
     grad_norm_clip = 1.0
-    lr_decay = True  # learning rate decay params: linear warmup followed by cosine decay to 10% of original
     num_workers = 0  # for DataLoader
 
     # take over whatever gpus are on the system
@@ -255,8 +247,6 @@ def main(encoder_type : encoder_types_enum, dry_run : bool = False):
                         ax1.imshow(onehot_to_rgb(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1)))
                     plt.savefig(plot_path + "{:07}.png".format(global_step))
 
-        lidar_e = None
-        state_e = None
         test_error = np.nan
 #         if global_step % PLOT_EVERY_N_STEPS == 0:
 #             test_error = segmentation_error(model, test_dataset, device)
@@ -267,7 +257,7 @@ def main(encoder_type : encoder_types_enum, dry_run : bool = False):
         start = time.time()
         values_log = pd.DataFrame(
             [[global_step, np.mean(epoch_losses), test_error, time_taken]],
-            columns=["step", "cost", "test_error", "train_time_taken"],
+            columns=["step", "epoch_loss", "test_error", "train_time_taken"],
         )
         if values_logs is None:
             values_logs = values_log.copy()
@@ -279,7 +269,9 @@ def main(encoder_type : encoder_types_enum, dry_run : bool = False):
         if global_step >= max_steps:
             break
 
-    globals().update(locals())
+def main():
+    for encoder_type in encoder_types:
+        train_segmenter(encoder_type)
 
 
 if __name__ == "__main__":

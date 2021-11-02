@@ -20,35 +20,37 @@ def main(dry_run=False):
             if f.endswith("images_labels.npz")
         ]:
             filenames.append(os.path.join(dirpath, filename))
-    for archive_file in filenames:
-        archive_path = os.path.join(archive_dir, archive_file)
-        data = np.load(archive_path)
-        print("{} loaded.".format(archive_path))
-        images = data["images"]
-        labels = data["labels"]
-        depths = data["depths"]
-        actions = data["actions"]
-        rewards = data["rewards"]
-        dones = data["dones"]
-        robotstates = data["robotstates"]
+    filenames = sorted(filenames)
 
-        for encoder_type in encoder_types:
-            if encoder_type == "E2E":
-                # img, rs -> 64
-                modelpath = os.path.expanduser("~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip") # noqa
-                encoder = EnvEncoder("E2E", "V_ONLY", gpt_model_path=modelpath)
-            elif encoder_type == "N3D":
-                # img, rs -> 64
-                # (can use z)
-                modelpath = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
-                encoder = EnvEncoder("GPT", "V_ONLY", gpt_model_path=modelpath)
-            elif encoder_type == "sequenceN3D":
-                # {(img, a, rs, d), (img, a, rs, d), ...} -> (64, 64, 64, 64)
-                # (uses get_h)
-                modelpath = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
-                encoder = EnvEncoder("GPT", "M_ONLY", gpt_model_path=modelpath)
-            else:
-                raise NotImplementedError
+    for encoder_type in encoder_types:
+        if encoder_type == "E2E":
+            # img, rs -> 64
+            modelpath = os.path.expanduser("~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip") # noqa
+            encoder = EnvEncoder("E2E", "V_ONLY", gpt_model_path=modelpath, gpu=True)
+        elif encoder_type == "N3D":
+            # img, rs -> 64
+            # (can use z)
+            modelpath = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+            encoder = EnvEncoder("GPT", "V_ONLY", gpt_model_path=modelpath, gpu=True)
+        elif encoder_type == "sequenceN3D":
+            # {(img, a, rs, d), (img, a, rs, d), ...} -> (64, 64, 64, 64)
+            # (uses get_h)
+            modelpath = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+            encoder = EnvEncoder("GPT", "M_ONLY", gpt_model_path=modelpath, gpu=True)
+        else:
+            raise NotImplementedError
+
+        for archive_file in filenames:
+            archive_path = os.path.join(archive_dir, archive_file)
+            data = np.load(archive_path)
+            print("{} loaded.".format(archive_path))
+            images = data["images"]
+            labels = data["labels"]
+            depths = data["depths"]
+            actions = data["actions"]
+            rewards = data["rewards"]
+            dones = data["dones"]
+            robotstates = data["robotstates"]
 
             encodings = []
             for image, label, depth, action, done, robotstate in tqdm(zip(
@@ -60,6 +62,7 @@ def main(dry_run=False):
                 if done:
                     encoder.reset()
                 encodings.append(h_no_rs)
+            encoder.reset()
             encodings = np.array(encodings)
             data = dict(encodings=encodings, labels=labels, depths=depths,
                         robotstates=robotstates, actions=actions, rewards=rewards, dones=dones,

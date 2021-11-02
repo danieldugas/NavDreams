@@ -65,10 +65,35 @@ def generate_segmentation_dataset(env, n_sequences,
             )
             np.savez_compressed(archive_path, **data)
             print(archive_path, "written.")
+            np.load(archive_path) # check for corruption
     env.close()
     return data
 
+def basic_archive_check(archive_dir):
+    # check
+    filenames = []
+    for dirpath, dirnames, dirfilename in os.walk(archive_dir):
+        for filename in [
+            f
+            for f in dirfilename
+            if f.endswith("images_labels.npz")
+        ]:
+            filenames.append(os.path.join(dirpath, filename))
+    filenames = sorted(filenames)
+    errors = []
+    for archive_file in filenames:
+        archive_path = os.path.join(archive_dir, archive_file)
+        try:
+            _ = np.load(archive_path)
+        except: # noqa
+            print(archive_path)
+            errors.append(archive_path)
+    if errors:
+        print(errors)
+        raise ValueError("{} corrupted files found in archive!".format(len(errors)))
+
 def visual_archive_check(archive_dir):
+    basic_archive_check(archive_dir)
     from matplotlib import pyplot as plt
     archive_path = os.path.join(archive_dir, "000_images_labels.npz")
     data = np.load(archive_path)
@@ -113,6 +138,8 @@ def main(n_sequences=100, env="S", render=False, dry_run=False,
         subset_index=subproc_id, n_subsets=n_subprocs,
         policy=policy,
         render=render, archive_dir=archive_dir)
+
+    basic_archive_check(archive_dir)
 
 
 if __name__ == "__main__":

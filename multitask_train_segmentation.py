@@ -1,19 +1,36 @@
 import numpy as np
+from enum import Enum
+import pandas as pd
+from datetime import datetime
+import time
 import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.nn import functional as F
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from strictfire import StrictFire
+import typer
+from pyniel.python_tools.path_tools import make_dir_if_not_exists
+from navrep.models.gpt import save_checkpoint
+
+from multitask_encode_dataset import encoder_types
 
 _RS = 5
 _H = 64
-encoder_types = ["E2E", "N3D", "sequenceN3D"]
 N_CLASSES = 6
 
-def labels_to_onehot(labels):
-    pass
+def onehot_to_rgb(labels):
+    W, H, CH = labels.shape
+    colors = np.array([[0, 0, 0],
+                       [1, 0, 0],
+                       [0, 1, 0],
+                       [0, 0, 1],
+                       [1, 1, 0],
+                       [0, 1, 1],
+                       [1, 0, 1]], dtype=float)
+    indices = np.argmax(labels, axis=-1)
+    return colors[indices]
 
 class UnFlatten(nn.Module):
     def __init__(self, channels):
@@ -23,10 +40,14 @@ class UnFlatten(nn.Module):
     def forward(self, input):
         return input.view(input.size(0), self.channels, 1, 1)
 
-class Segmenter(nn.Module):
-    def __init__(self, image_channels=1, fc_dim=1024, z_dim=64, gpu=True):
+class TaskLearner(nn.Module):
+    def __init__(self, image_channels, label_is_onehot=True, fc_dim=1024, z_dim=64, gpu=True):
         self.gpu = gpu
-        super(Segmenter, self).__init__()
+        if label_is_onehot:
+            self.loss_func = F.binary_cross_entropy
+        else:
+            self.loss_func = F.mse_loss
+        super(TaskLearner, self).__init__()
         self.fc3 = nn.Linear(z_dim, fc_dim)
 
         self.decoder = nn.Sequential(
@@ -47,84 +68,219 @@ class Segmenter(nn.Module):
 
         loss = None
         if labels is not None:
-            loss = F.binary_cross_entropy(img, labels)  # input-reconstruction loss
+            loss = self.loss_func(img, labels)  # input-reconstruction loss
         return img, loss
 
-def main(dry_run=False):
+class MultitaskDataset(Dataset):
+    def __init__(self, directory, task="segmentation",
+                 filename_mask="encodings_labels.npz",
+                 file_limit=None,
+                 channel_first=True, as_torch_tensors=True,
+                 ):
+        self.channel_first = channel_first
+        self.as_torch_tensors = as_torch_tensors
+        self.task = task
+        self.data = self._load_data(directory, filename_mask, file_limit=file_limit)
+        size = len(self.data["encodings"])
+        if size == 0:
+            raise ValueError
+        self._preconvert_obs()
+        print("data has %d steps." % size)
+
+    def _load_data(self, directory, filename_mask, file_limit=None):
+        # list all data files
+        files = []
+        if isinstance(directory, list):
+            directories = directory
+        elif isinstance(directory, str):
+            directories = [directory]
+        else:
+            raise NotImplementedError
+        for dir_ in directories:
+            dir_ = os.path.expanduser(dir_)
+            for dirpath, dirnames, filenames in os.walk(dir_):
+                for filename in [
+                    f
+                    for f in filenames
+                    if f.endswith(filename_mask)
+                ]:
+                    files.append(os.path.join(dirpath, filename))
+        if file_limit is None:
+            file_limit = len(files)
+        data = {
+            "encodings": [],
+            "labels": [],
+            "depths": [],
+            "robotstates": [],
+            "actions": [],
+            "rewards": [],
+            "dones": [],
+        }
+        arrays_dict = {}
+        for path in files[:file_limit]:
+            arrays_dict = np.load(path)
+            for k in arrays_dict.keys():
+                if k == "modelpath":
+                    continue
+                data[k].append(arrays_dict[k])
+        for k in arrays_dict.keys():
+            if k == "modelpath":
+                continue
+            data[k] = np.concatenate(data[k], axis=0)
+        return data
+
+    def _preconvert_obs(self):
+        # labels to one-hot, then move channel to first axis
+        ohlabels = F.one_hot(torch.tensor(self.data["labels"][:, :, :, 2], dtype=torch.int64))
+        ohlabels = np.moveaxis(ohlabels.detach().cpu().numpy(), -1, 1).astype(float)
+        self.data["ohlabels"] = ohlabels
+        self.data["depths01"] = self.data["depths"].astype(float) / 256.
+
+    def __len__(self):
+        return len(self.data["encodings"])
+
+    def __getitem__(self, idx):
+        encodings = self.data["encodings"][idx]
+        ohlabels = self.data["ohlabels"][idx]
+        depths01 = self.data["depths01"][idx]
+        # outputs
+        x = encodings
+        if self.task == "segmentation":
+            y = ohlabels
+        elif self.task == "depth":
+            y = depths01
+        else:
+            raise NotImplementedError
+        # torch
+        if self.as_torch_tensors:
+            x = torch.tensor(x, dtype=torch.float)
+            y = torch.tensor(y, dtype=torch.float)
+        return x, y
+
+def str_enum(options: list):
+    return Enum("", {n: n for n in options}, type=str)
+
+
+encoder_types_enum = str_enum(encoder_types)
+
+def main(encoder_type : encoder_types_enum, dry_run : bool = False):
+    START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+    log_path = os.path.expanduser(
+        "~/navrep3d/logs/multitask/{}_segmenter_train_log_{}.csv".format(encoder_type, START_TIME))
+    checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_segmenter_{}".format(
+        encoder_type, START_TIME))
+    plot_path = os.path.expanduser("~/tmp_navrep3d/{}_segmenter_step".format(encoder_type))
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
+    filename_mask = "{}encodings_labels.npz".format(encoder_type)
+    make_dir_if_not_exists(os.path.dirname(checkpoint_path))
+    make_dir_if_not_exists(os.path.dirname(log_path))
+    make_dir_if_not_exists(os.path.expanduser("~/tmp_navrep3d"))
 
-    for encoder_type in encoder_types:
-        filenames = []
-        for dirpath, dirnames, dirfilename in os.walk(archive_dir):
-            for filename in [
-                f
-                for f in dirfilename
-                if f.endswith("{}encodings_labels.npz".format(encoder_type))
-            ]:
-                filenames.append(os.path.join(dirpath, filename))
-        for archive_file in filenames:
-            archive_path = os.path.join(archive_dir, archive_file)
-            data = np.load(archive_path)
-            print("{} loaded.".format(archive_path))
-            encodings = data["encodings"]
-            labels = data["labels"]
-            depths = data["depths"]
-            actions = data["actions"]
-            rewards = data["rewards"]
-            dones = data["dones"]
-            robotstates = data["robotstates"]
+    training_data = MultitaskDataset(archive_dir, task="segmentation", filename_mask=filename_mask)
 
-        model = Segmenter(N_CLASSES)
+    model = TaskLearner(N_CLASSES, label_is_onehot=True)
+    print("trainable params: {}".format(
+        sum(p.numel() for p in model.parameters() if p.requires_grad)))
+
+    # training params
+    # optimization parameters
+    max_steps = 100000
+    PLOT_EVERY_N_STEPS = 1000
+    max_epochs = max_steps  # don't stop based on epoch
+    grad_norm_clip = 1.0
+    lr_decay = True  # learning rate decay params: linear warmup followed by cosine decay to 10% of original
+    num_workers = 0  # for DataLoader
+
+    # take over whatever gpus are on the system
+    device = "cpu"
+    if torch.cuda.is_available():
+        device = torch.cuda.current_device()
+        model = torch.nn.DataParallel(model).to(device)
+
+    # optimizer
+    learning_rate = 1e-4
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+    global_step = 0
+    values_logs = None
+    start = time.time()
+    for epoch in range(max_epochs):
         is_train = True
-        grad_norm_clip = 1.0
-        losses = []
+        model.train(is_train)
+        loader = DataLoader(
+            training_data,
+            shuffle=is_train,
+            batch_size=128,
+            num_workers=0,
+        )
 
-        # take over whatever gpus are on the system
-        device = "cpu"
-        if torch.cuda.is_available():
-            device = torch.cuda.current_device()
-            model = torch.nn.DataParallel(model).to(device)
+        epoch_losses = []
+        pbar = tqdm(enumerate(loader), total=len(loader)) if is_train else enumerate(loader)
+        for it, (x, y) in pbar:
+            global_step += 1
 
-        # create the optimizer
-        no_decay = ["bias", "LayerNorm.weight"]
-        params_decay = [
-            p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)
-        ]
-        params_nodecay = [
-            p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)
-        ]
-        weight_decay = 0.1  # only applied on matmul weights
-        optim_groups = [
-            {"params": params_decay, "weight_decay": weight_decay},
-            {"params": params_nodecay, "weight_decay": 0.0},
-        ]
-        optimizer = optim.AdamW(optim_groups)
+            # place data on the correct device
+            x = x.to(device)
+            y = y.to(device)
 
-        # place data on the correct device
-        x = torch.tensor(encodings, dtype=torch.float)
-        B, W, H, CH = labels.shape
-        y_oh = F.one_hot(torch.tensor(labels[:, :, :, 2], dtype=torch.int64))
-        y = torch.tensor(np.moveaxis(y_oh.detach().cpu().numpy(), -1, 1), dtype=torch.float)
-        x = x.to(device)
-        y = y.to(device)
+            # forward the model
+            with torch.set_grad_enabled(is_train):
+                y_pred, loss = model(x, labels=y)
+                loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
+                epoch_losses.append(loss.item())
 
-        # forward the model
-        with torch.set_grad_enabled(is_train):
-            y_pred, loss = model(x, labels=y)
-            loss = (
-                loss.mean()
-            )  # collapse all losses if they are scattered on multiple gpus
-            losses.append(loss.item())
+            if is_train:
+                # backprop and update the parameters
+                model.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_norm_clip)
+                optimizer.step()
 
-        if is_train:
-            # backprop and update the parameters
-            model.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_norm_clip)
-            optimizer.step()
+                # report progress
+                pbar.set_description(
+                    f"epoch {epoch}: train loss {np.mean(epoch_losses):.5f}"
+                )
+
+                if global_step == 1 or global_step % PLOT_EVERY_N_STEPS == 0:
+                    # save model
+                    save_checkpoint(model, checkpoint_path)
+                    # save plot
+                    from matplotlib import pyplot as plt
+                    plt.figure("training_status")
+                    plt.clf()
+                    plt.suptitle("training step {}".format(global_step))
+                    f, axes = plt.subplots(2, 5, num="training_status", sharex=True, sharey=True)
+                    for i, (ax0, ax1) in enumerate(axes.T):
+                        ax0.imshow(onehot_to_rgb(np.moveaxis(y.cpu().numpy()[i], 0, -1)))
+                        ax1.imshow(onehot_to_rgb(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1)))
+                    plt.savefig(plot_path + "{:07}.png".format(global_step))
+
+        lidar_e = None
+        state_e = None
+        test_error = np.nan
+#         if global_step % PLOT_EVERY_N_STEPS == 0:
+#             test_error = segmentation_error(model, test_dataset, device)
+
+        # log
+        end = time.time()
+        time_taken = end - start
+        start = time.time()
+        values_log = pd.DataFrame(
+            [[global_step, np.mean(epoch_losses), test_error, time_taken]],
+            columns=["step", "cost", "test_error", "train_time_taken"],
+        )
+        if values_logs is None:
+            values_logs = values_log.copy()
+        else:
+            values_logs = values_logs.append(values_log, ignore_index=True)
+        if log_path is not None:
+            values_logs.to_csv(log_path)
+
+        if global_step >= max_steps:
+            break
 
     globals().update(locals())
 
 
 if __name__ == "__main__":
-    StrictFire(main)
+    typer.run(main)

@@ -73,8 +73,7 @@ class TaskLearner(nn.Module):
         return img, loss
 
 class MultitaskDataset(Dataset):
-    def __init__(self, directory, task="segmentation",
-                 filename_mask="encodings_labels.npz",
+    def __init__(self, directory, task, filename_mask,
                  file_limit=None,
                  channel_first=True, as_torch_tensors=True,
                  ):
@@ -161,6 +160,32 @@ class MultitaskDataset(Dataset):
             y = torch.tensor(y, dtype=torch.float)
         return x, y
 
+def validate(model, test_dataset, device):
+    # Validation error
+    is_train = False
+    model.train(is_train)
+    loader = DataLoader(
+        test_dataset,
+        shuffle=is_train,
+        batch_size=128,
+        num_workers=0,
+    )
+    epoch_losses = []
+    pbar = tqdm(enumerate(loader), total=len(loader))
+    for it, (x, y) in pbar:
+        # place data on the correct device
+        x = x.to(device)
+        y = y.to(device)
+        # forward the model
+        with torch.set_grad_enabled(is_train):
+            y_pred, loss = model(x, labels=y)
+            loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
+            epoch_losses.append(loss.item())
+            pbar.set_description(f"eval loss {np.mean(epoch_losses):.5f}")
+    test_error = np.mean(epoch_losses)
+    model.train(True)
+    return test_error
+
 def train_multitask(encoder_type, task="segmentation"):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     if task == "segmentation":
@@ -177,17 +202,17 @@ def train_multitask(encoder_type, task="segmentation"):
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_depth_step".format(encoder_type))
 
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
-    filename_mask = "{}encodings_labels.npz".format(encoder_type)
+    filename_mask = "_{}encodings_labels.npz".format(encoder_type)
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))
     make_dir_if_not_exists(os.path.expanduser("~/tmp_navrep3d"))
 
-    full_dataset = MultitaskDataset(archive_dir, task=task, filename_mask=filename_mask)
+    full_dataset = MultitaskDataset(archive_dir, task, filename_mask)
     train_size = int(0.8 * len(full_dataset))
     test_size = len(full_dataset) - train_size
     train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
     label_is_onehot = task == "segmentation"
-    channels = N_CLASSES if label_is_onehot else 3
+    channels = N_CLASSES if label_is_onehot else 1
 
     model = TaskLearner(channels, label_is_onehot=label_is_onehot)
     print("trainable params: {}".format(
@@ -213,6 +238,7 @@ def train_multitask(encoder_type, task="segmentation"):
     global_step = 0
     values_logs = None
     start = time.time()
+    losses = []
     for epoch in range(max_epochs):
         is_train = True
         model.train(is_train)
@@ -222,8 +248,6 @@ def train_multitask(encoder_type, task="segmentation"):
             batch_size=128,
             num_workers=8,
         )
-
-        epoch_losses = []
 
         pbar = tqdm(enumerate(loader), total=len(loader))
         for it, (x, y) in pbar:
@@ -237,7 +261,7 @@ def train_multitask(encoder_type, task="segmentation"):
             with torch.set_grad_enabled(is_train):
                 y_pred, loss = model(x, labels=y)
                 loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
-                epoch_losses.append(loss.item())
+                losses.append(loss.item())
 
             if is_train:
                 # backprop and update the parameters
@@ -248,7 +272,7 @@ def train_multitask(encoder_type, task="segmentation"):
 
                 # report progress
                 pbar.set_description(
-                    f"{encoder_type} epoch {epoch}: train loss {np.mean(epoch_losses):.5f}"
+                    f"{encoder_type} epoch {epoch}: train loss {np.mean(losses):.5f}"
                 )
 
                 if global_step == 1 or global_step % PLOT_EVERY_N_STEPS == 0:
@@ -268,44 +292,21 @@ def train_multitask(encoder_type, task="segmentation"):
                             ax0.imshow(np.moveaxis(y.cpu().numpy()[i], 0, -1))
                             ax1.imshow(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1))
                     plt.savefig(plot_path + "{:07}.png".format(global_step))
-
-        # Validation error
-        is_train = False
-        model.train(is_train)
-        loader = DataLoader(
-            test_dataset,
-            shuffle=is_train,
-            batch_size=128,
-            num_workers=0,
-        )
-        epoch_losses = []
-        pbar = tqdm(enumerate(loader), total=len(loader))
-        for it, (x, y) in pbar:
-            # place data on the correct device
-            x = x.to(device)
-            y = y.to(device)
-            # forward the model
-            with torch.set_grad_enabled(is_train):
-                y_pred, loss = model(x, labels=y)
-                loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
-                epoch_losses.append(loss.item())
-                pbar.set_description(f"eval loss {np.mean(epoch_losses):.5f}")
-        test_error = np.mean(epoch_losses)
-
-        # log
-        end = time.time()
-        time_taken = end - start
-        start = time.time()
-        values_log = pd.DataFrame(
-            [[global_step, np.mean(epoch_losses), test_error, time_taken]],
-            columns=["step", "epoch_loss", "test_error", "train_time_taken"],
-        )
-        if values_logs is None:
-            values_logs = values_log.copy()
-        else:
-            values_logs = values_logs.append(values_log, ignore_index=True)
-        if log_path is not None:
-            values_logs.to_csv(log_path)
+                    # log
+                    end = time.time()
+                    test_error = validate(model, test_dataset, device)
+                    time_taken = end - start
+                    start = time.time()
+                    values_log = pd.DataFrame(
+                        [[global_step, np.mean(losses), test_error, time_taken]],
+                        columns=["step", "epoch_loss", "test_error", "train_time_taken"],
+                    )
+                    if values_logs is None:
+                        values_logs = values_log.copy()
+                    else:
+                        values_logs = values_logs.append(values_log, ignore_index=True)
+                    if log_path is not None:
+                        values_logs.to_csv(log_path)
 
         if global_step >= max_steps:
             break

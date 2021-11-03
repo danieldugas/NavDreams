@@ -31,6 +31,10 @@ def onehot_to_rgb(labels):
     indices = np.argmax(labels, axis=-1)
     return colors[indices]
 
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.reshape(input.size(0), -1)
+
 class UnFlatten(nn.Module):
     def __init__(self, channels):
         super(UnFlatten, self).__init__()
@@ -40,13 +44,29 @@ class UnFlatten(nn.Module):
         return input.view(input.size(0), self.channels, 1, 1)
 
 class TaskLearner(nn.Module):
-    def __init__(self, image_channels, label_is_onehot=True, fc_dim=1024, z_dim=64, gpu=True):
+    def __init__(self, task_channels, from_image, label_is_onehot,
+                 fc_dim=1024, z_dim=64, gpu=True, ):
         self.gpu = gpu
-        if label_is_onehot:
-            self.loss_func = F.binary_cross_entropy
-        else:
-            self.loss_func = F.mse_loss
+        self.from_image = from_image
         super(TaskLearner, self).__init__()
+
+        # only used for baseline - train encoder + decoder
+        if self.from_image:
+            input_channels = 3
+            self.encoder = nn.Sequential(
+                nn.Conv2d(input_channels, 32, kernel_size=4, stride=2),
+                nn.ReLU(),
+                nn.Conv2d(32, 64, kernel_size=4, stride=2),
+                nn.ReLU(),
+                nn.Conv2d(64, 128, kernel_size=4, stride=2),
+                nn.ReLU(),
+                nn.Conv2d(128, 256, kernel_size=4, stride=2),
+                nn.ReLU(),
+                Flatten(),
+            )
+            self.fc1 = nn.Linear(fc_dim, z_dim)
+            self.fc2 = nn.Linear(fc_dim, z_dim)
+
         self.fc3 = nn.Linear(z_dim, fc_dim)
 
         self.decoder = nn.Sequential(
@@ -57,11 +77,28 @@ class TaskLearner(nn.Module):
             nn.ReLU(),
             nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
             nn.ReLU(),
-            nn.ConvTranspose2d(32, image_channels, kernel_size=6, stride=2),
+            nn.ConvTranspose2d(32, task_channels, kernel_size=6, stride=2),
             nn.Sigmoid(),
         )
 
+        if label_is_onehot:
+            self.loss_func = F.binary_cross_entropy
+        else:
+            self.loss_func = F.mse_loss
+
     def forward(self, x, labels=None):
+        if self.from_image:
+#             B, _3, W, H = x.shape
+            h = self.encoder(x)
+            mu, logvar = self.fc1(h), self.fc2(h)
+            std = logvar.mul(0.5).exp_()
+            # return torch.normal(mu, std)
+            if self.gpu:
+                eps = torch.cuda.FloatTensor(*mu.size()).normal_()
+            else:
+                eps = torch.FloatTensor(*mu.size()).normal_()
+            x = mu + std * eps
+
 #         B, Z = x.shape
 #         B, CH, W, H = labels.shape
         x = self.fc3(x)
@@ -73,10 +110,11 @@ class TaskLearner(nn.Module):
         return img, loss
 
 class MultitaskDataset(Dataset):
-    def __init__(self, directory, task, filename_mask,
+    def __init__(self, directory, task, from_image, filename_mask,
                  file_limit=None,
                  channel_first=True, as_torch_tensors=True,
                  ):
+        self.from_image = from_image
         self.channel_first = channel_first
         self.as_torch_tensors = as_torch_tensors
         self.task = task
@@ -107,25 +145,32 @@ class MultitaskDataset(Dataset):
         files = sorted(files)
         if file_limit is None:
             file_limit = len(files)
-        data = {
-            "encodings": [],
-            "labels": [],
-            "depths": [],
-            "robotstates": [],
-            "actions": [],
-            "rewards": [],
-            "dones": [],
-        }
+        if self.from_image:
+            data = {
+                "images": [],
+                "labels": [],
+                "depths": [],
+                "robotstates": [],
+                "actions": [],
+                "rewards": [],
+                "dones": [],
+            }
+        else:
+            data = {
+                "encodings": [],
+                "labels": [],
+                "depths": [],
+                "robotstates": [],
+                "actions": [],
+                "rewards": [],
+                "dones": [],
+            }
         arrays_dict = {}
         for path in files[:file_limit]:
             arrays_dict = np.load(path)
-            for k in arrays_dict.keys():
-                if k == "modelpath":
-                    continue
+            for k in data.keys():
                 data[k].append(arrays_dict[k])
-        for k in arrays_dict.keys():
-            if k == "modelpath":
-                continue
+        for k in data.keys():
             data[k] = np.concatenate(data[k], axis=0)
         return data
 
@@ -141,13 +186,16 @@ class MultitaskDataset(Dataset):
         return ohlabels, depths01
 
     def __len__(self):
-        return len(self.data["encodings"])
+        return len(self.data["labels"])
 
     def __getitem__(self, idx):
-        encodings = self.data["encodings"][idx]
+        if self.from_image:
+            x = self.data["images"][idx]
+            x = np.moveaxis(x, -1, 0)
+        else:
+            x = self.data["encodings"][idx]
         ohlabels, depths01 = self._convert_obs(self.data["labels"][idx] , self.data["depths"][idx])
         # outputs
-        x = encodings
         if self.task == "segmentation":
             y = ohlabels
         elif self.task == "depth":
@@ -200,21 +248,25 @@ def train_multitask(encoder_type, task="segmentation"):
         checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_depth_{}".format(
             encoder_type, START_TIME))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_depth_step".format(encoder_type))
+    from_image = encoder_type == "baseline"
 
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
-    filename_mask = "_{}encodings_labels.npz".format(encoder_type)
+    if from_image:
+        filename_mask = "_images_labels.npz"
+    else:
+        filename_mask = "_{}encodings_labels.npz".format(encoder_type)
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))
     make_dir_if_not_exists(os.path.expanduser("~/tmp_navrep3d"))
 
-    full_dataset = MultitaskDataset(archive_dir, task, filename_mask)
+    full_dataset = MultitaskDataset(archive_dir, task, from_image, filename_mask)
     train_size = int(0.8 * len(full_dataset))
     test_size = len(full_dataset) - train_size
     train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
     label_is_onehot = task == "segmentation"
-    channels = N_CLASSES if label_is_onehot else 1
+    task_channels = N_CLASSES if label_is_onehot else 1
 
-    model = TaskLearner(channels, label_is_onehot=label_is_onehot)
+    model = TaskLearner(task_channels, from_image, label_is_onehot)
     print("trainable params: {}".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
@@ -312,9 +364,9 @@ def train_multitask(encoder_type, task="segmentation"):
             break
 
 def main():
-    for encoder_type in encoder_types:
+    for encoder_type in encoder_types + ["baseline"]:
         train_multitask(encoder_type, task="depth")
-    for encoder_type in encoder_types:
+    for encoder_type in encoder_types + ["baseline"]:
         train_multitask(encoder_type, task="segmentation")
 
 

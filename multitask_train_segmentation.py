@@ -80,10 +80,9 @@ class MultitaskDataset(Dataset):
         self.as_torch_tensors = as_torch_tensors
         self.task = task
         self.data = self._load_data(directory, filename_mask, file_limit=file_limit)
-        size = len(self.data["encodings"])
+        size = self.__len__()
         if size == 0:
             raise ValueError
-        self._preconvert_obs()
         print("data has %d steps." % size)
 
     def _load_data(self, directory, filename_mask, file_limit=None):
@@ -104,6 +103,7 @@ class MultitaskDataset(Dataset):
                     if f.endswith(filename_mask)
                 ]:
                     files.append(os.path.join(dirpath, filename))
+        files = sorted(files)
         if file_limit is None:
             file_limit = len(files)
         data = {
@@ -128,20 +128,19 @@ class MultitaskDataset(Dataset):
             data[k] = np.concatenate(data[k], axis=0)
         return data
 
-    def _preconvert_obs(self):
+    def _convert_obs(self, labels, depths):
         # labels to one-hot, then move channel to first axis
-        ohlabels = F.one_hot(torch.tensor(self.data["labels"][:, :, :, 2], dtype=torch.int64))
-        ohlabels = np.moveaxis(ohlabels.detach().cpu().numpy(), -1, 1).astype(float)
-        self.data["ohlabels"] = ohlabels
-        self.data["depths01"] = self.data["depths"].astype(float) / 256.
+        ohlabels = F.one_hot(torch.tensor(labels[:, :, 2], dtype=torch.int64), num_classes=N_CLASSES)
+        ohlabels = np.moveaxis(ohlabels.detach().cpu().numpy(), -1, 0).astype(float)
+        depths01 = depths.astype(float) / 256.
+        return ohlabels, depths01
 
     def __len__(self):
         return len(self.data["encodings"])
 
     def __getitem__(self, idx):
         encodings = self.data["encodings"][idx]
-        ohlabels = self.data["ohlabels"][idx]
-        depths01 = self.data["depths01"][idx]
+        ohlabels, depths01 = self._convert_obs(self.data["labels"][idx] , self.data["depths"][idx])
         # outputs
         x = encodings
         if self.task == "segmentation":
@@ -181,7 +180,6 @@ def train_segmenter(encoder_type):
     PLOT_EVERY_N_STEPS = 1000
     max_epochs = max_steps  # don't stop based on epoch
     grad_norm_clip = 1.0
-    num_workers = 0  # for DataLoader
 
     # take over whatever gpus are on the system
     device = "cpu"
@@ -203,10 +201,11 @@ def train_segmenter(encoder_type):
             training_data,
             shuffle=is_train,
             batch_size=128,
-            num_workers=0,
+            num_workers=8,
         )
 
         epoch_losses = []
+
         pbar = tqdm(enumerate(loader), total=len(loader)) if is_train else enumerate(loader)
         for it, (x, y) in pbar:
             global_step += 1
@@ -230,7 +229,7 @@ def train_segmenter(encoder_type):
 
                 # report progress
                 pbar.set_description(
-                    f"epoch {epoch}: train loss {np.mean(epoch_losses):.5f}"
+                    f"{encoder_type} epoch {epoch}: train loss {np.mean(epoch_losses):.5f}"
                 )
 
                 if global_step == 1 or global_step % PLOT_EVERY_N_STEPS == 0:

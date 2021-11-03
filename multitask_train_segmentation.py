@@ -62,6 +62,8 @@ class TaskLearner(nn.Module):
         )
 
     def forward(self, x, labels=None):
+#         B, Z = x.shape
+#         B, CH, W, H = labels.shape
         x = self.fc3(x)
         img = self.decoder(x)
 
@@ -133,6 +135,7 @@ class MultitaskDataset(Dataset):
         ohlabels = F.one_hot(torch.tensor(labels[:, :, 2], dtype=torch.int64), num_classes=N_CLASSES)
         ohlabels = np.moveaxis(ohlabels.detach().cpu().numpy(), -1, 0).astype(float)
         depths01 = depths.astype(float) / 256.
+        depths01 = np.moveaxis(depths01, -1, 0)
         return ohlabels, depths01
 
     def __len__(self):
@@ -155,22 +158,35 @@ class MultitaskDataset(Dataset):
             y = torch.tensor(y, dtype=torch.float)
         return x, y
 
-def train_segmenter(encoder_type):
+def train_multitask(encoder_type, task="segmentation"):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    log_path = os.path.expanduser(
-        "~/navrep3d/logs/multitask/{}_segmenter_train_log_{}.csv".format(encoder_type, START_TIME))
-    checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_segmenter_{}".format(
-        encoder_type, START_TIME))
-    plot_path = os.path.expanduser("~/tmp_navrep3d/{}_segmenter_step".format(encoder_type))
+    if task == "segmentation":
+        log_path = os.path.expanduser(
+            "~/navrep3d/logs/multitask/{}_segmenter_train_log_{}.csv".format(encoder_type, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_segmenter_{}".format(
+            encoder_type, START_TIME))
+        plot_path = os.path.expanduser("~/tmp_navrep3d/{}_segmenter_step".format(encoder_type))
+    elif task == "depth":
+        log_path = os.path.expanduser(
+            "~/navrep3d/logs/multitask/{}_depth_train_log_{}.csv".format(encoder_type, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_depth_{}".format(
+            encoder_type, START_TIME))
+        plot_path = os.path.expanduser("~/tmp_navrep3d/{}_depth_step".format(encoder_type))
+
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
     filename_mask = "{}encodings_labels.npz".format(encoder_type)
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))
     make_dir_if_not_exists(os.path.expanduser("~/tmp_navrep3d"))
 
-    training_data = MultitaskDataset(archive_dir, task="segmentation", filename_mask=filename_mask)
+    full_dataset = MultitaskDataset(archive_dir, task=task, filename_mask=filename_mask)
+    train_size = int(0.8 * len(full_dataset))
+    test_size = len(full_dataset) - train_size
+    train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
+    label_is_onehot = task == "segmentation"
+    channels = N_CLASSES if label_is_onehot else 3
 
-    model = TaskLearner(N_CLASSES, label_is_onehot=True)
+    model = TaskLearner(channels, label_is_onehot=label_is_onehot)
     print("trainable params: {}".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
@@ -198,7 +214,7 @@ def train_segmenter(encoder_type):
         is_train = True
         model.train(is_train)
         loader = DataLoader(
-            training_data,
+            train_dataset,
             shuffle=is_train,
             batch_size=128,
             num_workers=8,
@@ -206,7 +222,7 @@ def train_segmenter(encoder_type):
 
         epoch_losses = []
 
-        pbar = tqdm(enumerate(loader), total=len(loader)) if is_train else enumerate(loader)
+        pbar = tqdm(enumerate(loader), total=len(loader))
         for it, (x, y) in pbar:
             global_step += 1
 
@@ -242,13 +258,36 @@ def train_segmenter(encoder_type):
                     plt.suptitle("training step {}".format(global_step))
                     f, axes = plt.subplots(2, 5, num="training_status", sharex=True, sharey=True)
                     for i, (ax0, ax1) in enumerate(axes.T):
-                        ax0.imshow(onehot_to_rgb(np.moveaxis(y.cpu().numpy()[i], 0, -1)))
-                        ax1.imshow(onehot_to_rgb(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1)))
+                        if label_is_onehot:
+                            ax0.imshow(onehot_to_rgb(np.moveaxis(y.cpu().numpy()[i], 0, -1)))
+                            ax1.imshow(onehot_to_rgb(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1)))
+                        else:
+                            ax0.imshow(np.moveaxis(y.cpu().numpy()[i], 0, -1))
+                            ax1.imshow(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1))
                     plt.savefig(plot_path + "{:07}.png".format(global_step))
 
-        test_error = np.nan
-#         if global_step % PLOT_EVERY_N_STEPS == 0:
-#             test_error = segmentation_error(model, test_dataset, device)
+        # Validation error
+        is_train = False
+        model.train(is_train)
+        loader = DataLoader(
+            test_dataset,
+            shuffle=is_train,
+            batch_size=128,
+            num_workers=0,
+        )
+        epoch_losses = []
+        pbar = tqdm(enumerate(loader), total=len(loader))
+        for it, (x, y) in pbar:
+            # place data on the correct device
+            x = x.to(device)
+            y = y.to(device)
+            # forward the model
+            with torch.set_grad_enabled(is_train):
+                y_pred, loss = model(x, labels=y)
+                loss = loss.mean() # collapse all losses if they are scattered on multiple gpus
+                epoch_losses.append(loss.item())
+                pbar.set_description(f"eval loss {np.mean(epoch_losses):.5f}")
+        test_error = np.mean(epoch_losses)
 
         # log
         end = time.time()
@@ -270,7 +309,9 @@ def train_segmenter(encoder_type):
 
 def main():
     for encoder_type in encoder_types:
-        train_segmenter(encoder_type)
+        train_multitask(encoder_type, task="depth")
+    for encoder_type in encoder_types:
+        train_multitask(encoder_type, task="segmentation")
 
 
 if __name__ == "__main__":

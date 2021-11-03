@@ -132,10 +132,13 @@ class MultitaskDataset(Dataset):
 
     def _convert_obs(self, labels, depths):
         # labels to one-hot, then move channel to first axis
+        W, H, CH = labels.shape # 0-255
+        W, H, CH = depths.shape # 0-255
         ohlabels = F.one_hot(torch.tensor(labels[:, :, 2], dtype=torch.int64), num_classes=N_CLASSES)
         ohlabels = np.moveaxis(ohlabels.detach().cpu().numpy(), -1, 0).astype(float)
-        depths01 = depths.astype(float) / 256.
-        depths01 = np.moveaxis(depths01, -1, 0)
+        depths01 = (depths[:, :, 0] / 256.
+                    + depths[:, :, 1] / 256. / 256.
+                    + depths[:, :, 2] / 256. / 256. / 256.).astype(float).reshape((1, W, H))
         return ohlabels, depths01
 
     def __len__(self):

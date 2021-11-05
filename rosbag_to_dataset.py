@@ -35,6 +35,8 @@ bridge = CvBridge()
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-12-01-42.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-12-04-58.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-01-00.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-08-23.bag" # noqa
+bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-12-11.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/corridor_koze_kids.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/2019-12-13-20-11-46.bag" # noqa
 

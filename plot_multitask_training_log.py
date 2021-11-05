@@ -4,7 +4,7 @@ import os
 import numpy as np
 import typer
 
-def main(refresh : bool = True, logdir : str = None):
+def main(refresh : bool = True, logdir : str = None, paper : bool = False):
     if logdir is None:
         logdir = os.path.expanduser("~/navrep3d/logs/multitask")
 
@@ -30,15 +30,31 @@ def main(refresh : bool = True, logdir : str = None):
             else:
                 raise NotImplementedError
             path = os.path.join(logdir, log)
-            legend.append(log)
             data = pd.read_csv(path)
             x = data["step"].values
-            y = data["epoch_loss"].values
-            line, = ax.plot(x, y, label=log)
+            y = data["test_error"].values
+            if paper:
+                if x[-1] < 80000:
+                    continue
+                if "sequence" in log:
+                    continue
+            style = "solid"
+            color = None
+            if paper:
+                if "baseline" in log:
+                    style = "dashed"
+                    color = 'k'
+            line, = ax.plot(x, y, linestyle=style, color=color, label=log)
             ax.axhline(np.min(y), alpha=0.3, linewidth=1, color=line.get_color())
             ax.set_xlabel("training steps")
             lines.append(line)
-        plt.legend()   # quick-search : plot tcn training logs
+            legend.append(log)
+        ax1.axhline(0, linewidth=1, color='k')
+        ax2.axhline(0, linewidth=1, color='k')
+        if paper:
+            ax1.set_ylim((0, 0.05))
+            ax2.set_ylim((0, 0.005))
+        ax1.legend()   # quick-search : plot tcn training logs
         if refresh:
             plt.ion()
             plt.pause(10.)

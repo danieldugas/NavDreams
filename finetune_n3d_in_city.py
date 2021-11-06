@@ -24,7 +24,13 @@ if __name__ == "__main__":
     HOME = os.path.expanduser("~")
     TRAIN_STEPS = 100000
     FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0]
-    LOGPATH = os.path.join(HOME, "finetune/logs", FILENAME + ".csv")
-    SAVEPATH = os.path.join(HOME, "finetune/models", FILENAME + ".zip")
+    LOGDIR = os.path.join(HOME, "finetune/logs/gym")
+    SAVEDIR = os.path.join(HOME, "finetune/models/gym")
+    if not os.path.exists(SAVEDIR):
+        os.makedirs(SAVEDIR)
+    if not os.path.exists(LOGDIR):
+        os.makedirs(LOGDIR)
+    LOGPATH = os.path.join(LOGDIR, FILENAME + ".csv")
+    SAVEPATH = os.path.join(SAVEDIR, FILENAME + ".zip")
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=SAVEPATH, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS+1, callback=cb)

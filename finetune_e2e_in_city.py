@@ -3,7 +3,7 @@ from navrep.tools.commonargs import parse_common_args
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from navrep3d.custom_policy import NavRep3DTrainEnvDiscreteFlattened, NavRep3DTrainEnvFlattened
+from navrep3d.custom_policy import NavRep3DTrainEnvDiscreteFlattened
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 
 if __name__ == "__main__":
@@ -17,14 +17,13 @@ if __name__ == "__main__":
                                                       debug_export_every_n_episodes=170, port=25002),
             lambda: NavRep3DTrainEnvDiscreteFlattened(build_name="./city.x86_64",
                                                       debug_export_every_n_episodes=0, port=25003),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name="./city.x86_64",
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name="./office.x86_64",
                                                       debug_export_every_n_episodes=0, port=25004),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name="./city.x86_64",
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name="./office.x86_64",
                                                       debug_export_every_n_episodes=0, port=25005),
         ])
     else:
-        env = NavRep3DTrainEnvFlattened(verbose=0, build_name="./city.x86_64",
-                                        debug_export_every_n_episodes=170)
+        raise NotImplementedError
     model = PPO.load(MODELPATH, env=env)
 
     HOME = os.path.expanduser("~")

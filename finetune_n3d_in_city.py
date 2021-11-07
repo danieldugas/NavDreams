@@ -10,12 +10,15 @@ from plot_gym_training_progress import get_variant
 if __name__ == "__main__":
     args, _ = parse_common_args()
 
-    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3daltencodedenv_2021_10_08__16_34_19_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
+    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dtrainencodedenv_2021_10_02__12_44_20_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
 
     variant = get_variant(os.path.basename(MODELPATH))
     if "DISCRETE" in MODELPATH:
         env = SubprocVecNavRep3DEncodedEnvDiscrete("GPT", "V_ONLY", variant, 4,
-                                                   build_name="./city.x86_64",
+                                                   build_name=["./city.x86_64",
+                                                               "./city.x86_64",
+                                                               "./office.x86_64",
+                                                               "./office.x86_64"],
                                                    debug_export_every_n_episodes=170)
     else:
         raise NotImplementedError

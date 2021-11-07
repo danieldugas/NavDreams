@@ -151,6 +151,7 @@ class SubprocVecNavRep3DEncodedEnvDiscrete(SubprocVecEnv):
                  verbose=0, collect_statistics=True, debug_export_every_n_episodes=0, build_name=None,
                  gpu=False, ):
         # create multiple encoder objects (to store distinct sequences) but with single encoding model
+        build_names = build_name if isinstance(build_name, list) else [build_name] * n_envs
         self.encoders = []
         shared_encoder = None
         for i in range(n_envs):
@@ -164,7 +165,7 @@ class SubprocVecNavRep3DEncodedEnvDiscrete(SubprocVecEnv):
         env_init_funcs = [
             partial(
                 lambda i: NavRep3DTrainEnvDiscrete(
-                    verbose=verbose, collect_statistics=collect_statistics, build_name=build_name,
+                    verbose=verbose, collect_statistics=collect_statistics, build_name=build_names[i],
                     debug_export_every_n_episodes=debug_export_every_n_episodes if i == 0 else 0,
                     port=25002+i
                 ),

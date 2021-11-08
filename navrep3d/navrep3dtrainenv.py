@@ -41,9 +41,6 @@ HOMEDIR = os.path.expanduser("~")
 DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
 # TODO: RELEASE - make a tool which downloads LFS files
 
-MINDIF = 1.
-MAXDIF = 10.
-
 scenario_names = {
     "./build.x86_64": "navrep3dtrain",
     "./alternate.x86_64": "navrep3dalt",
@@ -89,6 +86,8 @@ class NavRep3DTrainEnv(gym.Env):
         self.output_lidar = False
         self.render_legs_in_lidar = True
         self.start_with_random_rot = start_with_random_rot
+        self.min_dif = 1.
+        self.max_dif = 6. if build_name == "./office.x86_64" else 10.
         # variables
         self.target_difficulty = 1.
         self.last_odom = None
@@ -481,7 +480,7 @@ class NavRep3DTrainEnv(gym.Env):
                 ]
             if difficulty_increase is not None:
                 self.target_difficulty += difficulty_increase
-                self.target_difficulty = np.clip(self.target_difficulty, MINDIF, MAXDIF)
+                self.target_difficulty = np.clip(self.target_difficulty, self.min_dif, self.max_dif)
 
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:

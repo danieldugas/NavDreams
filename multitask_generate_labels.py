@@ -97,10 +97,9 @@ def basic_archive_check(archive_dir, filename_mask="images_labels.npz"):
     else:
         print("{} files successfully opened.".format(len(filenames)))
 
-def visual_archive_check(archive_dir):
+def visual_archive_check(archive_dir, shuffle=True):
     basic_archive_check(archive_dir)
     from matplotlib import pyplot as plt
-    archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
     filenames = []
     for dirpath, dirnames, dirfilename in os.walk(archive_dir):
         for filename in [
@@ -121,7 +120,11 @@ def visual_archive_check(archive_dir):
         dones = data["dones"]
         robotstates = data["robotstates"]
         plt.figure("check")
-        for i, (im, lb, dp, a, d, rs) in enumerate(zip(images, labels, depths, actions, dones, robotstates)):
+        examples = list(zip(images, labels, depths, actions, dones, robotstates))
+        if shuffle:
+            import random
+            random.shuffle(examples)
+        for i, (im, lb, dp, a, d, rs) in enumerate(examples):
             plt.clf()
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, num="check")
             ax1.imshow(im)

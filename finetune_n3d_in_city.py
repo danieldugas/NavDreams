@@ -10,7 +10,8 @@ from plot_gym_training_progress import get_variant
 if __name__ == "__main__":
     args, _ = parse_common_args()
 
-    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dtrainencodedenv_2021_10_02__12_44_20_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
+#     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dtrainencodedenv_2021_10_02__12_44_20_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
+    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dtrainencodedenv_2021_10_22__21_29_23_DISCRETE_PPO_GPT_V_ONLY_V64M64_SC_ckpt.zip" # noqa
 
     variant = get_variant(os.path.basename(MODELPATH))
     if "DISCRETE" in MODELPATH:
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     model = PPO.load(MODELPATH, env=env)
 
     HOME = os.path.expanduser("~")
-    TRAIN_STEPS = 100000
+    TRAIN_STEPS = 1000000
     FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0]
     LOGDIR = os.path.join(HOME, "finetune/logs/gym")
     SAVEDIR = os.path.join(HOME, "finetune/models/gym")

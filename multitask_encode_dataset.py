@@ -24,6 +24,8 @@ def check_encodings(archive_dir):
                 filenames.append(os.path.join(dirpath, filename))
         filenames = sorted(filenames)
         all_encodings = []
+        print()
+        print(encoder_type)
         print("{} files found.".format(len(filenames)))
         for archive_file in filenames:
             archive_path = os.path.join(archive_dir, archive_file)

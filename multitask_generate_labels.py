@@ -69,14 +69,14 @@ def generate_segmentation_dataset(env, n_sequences,
     env.close()
     return data
 
-def basic_archive_check(archive_dir):
+def basic_archive_check(archive_dir, filename_mask="images_labels.npz"):
     # check
     filenames = []
     for dirpath, dirnames, dirfilename in os.walk(archive_dir):
         for filename in [
             f
             for f in dirfilename
-            if f.endswith("images_labels.npz")
+            if f.endswith(filename_mask)
         ]:
             filenames.append(os.path.join(dirpath, filename))
     filenames = sorted(filenames)

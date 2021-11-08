@@ -5,11 +5,14 @@ from strictfire import StrictFire
 
 from navrep3d.encodedenv3d import EnvEncoder
 
+from multitask_generate_labels import basic_archive_check
+
 _RS = 5
 _H = 64
 encoder_types = ["E2E", "N3D", "sequenceN3D"]
 
-def print_check_encodings(archive_dir):
+def check_encodings(archive_dir):
+    basic_archive_check(archive_dir, filename_mask=".npz")
     for encoder_type in encoder_types:
         filenames = []
         for dirpath, dirnames, dirfilename in os.walk(archive_dir):
@@ -20,22 +23,23 @@ def print_check_encodings(archive_dir):
             ]:
                 filenames.append(os.path.join(dirpath, filename))
         filenames = sorted(filenames)
+        all_encodings = []
         print("{} files found.".format(len(filenames)))
         for archive_file in filenames:
             archive_path = os.path.join(archive_dir, archive_file)
             data = np.load(archive_path)
-            print("{} loaded.".format(archive_path))
             encodings = data["encodings"]
-            print(encodings)
-            print("min {} max {}".format(np.min(encodings), np.max(encodings)))
-            print("avg {} std {}".format(np.mean(encodings), np.std(encodings)))
-            break
+            all_encodings.append(encodings)
+        encodings = np.concatenate(all_encodings, axis=0)
+        print("min {} max {}".format(np.min(encodings), np.max(encodings)))
+        print("avg {} std {}".format(np.mean(encodings), np.std(encodings)))
 
-def main(dry_run=False, check_encodings=False, gpu=True):
+
+def main(dry_run=False, check_archive=False, gpu=True):
     np.set_printoptions(precision=2, suppress=True)
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
-    if check_encodings:
-        print_check_encodings(archive_dir)
+    if check_archive:
+        check_encodings(archive_dir)
         return
 
     filenames = []

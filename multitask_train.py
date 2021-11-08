@@ -19,6 +19,9 @@ _RS = 5
 _H = 64
 N_CLASSES = 6
 
+BATCH_SIZE = 128
+_5 = 5
+
 def onehot_to_rgb(labels):
     W, H, CH = labels.shape
     colors = np.array([[0, 0, 0],
@@ -215,7 +218,7 @@ def validate(model, test_dataset, device):
     loader = DataLoader(
         test_dataset,
         shuffle=is_train,
-        batch_size=128,
+        batch_size=BATCH_SIZE,
         num_workers=0,
     )
     epoch_losses = []
@@ -249,9 +252,9 @@ def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
             encoder_type, START_TIME))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_depth_step".format(encoder_type))
     if dry_run:
-        log_path.replace(os.path.expanduser("~"), "/tmp")
-        checkpoint_path.replace(os.path.expanduser("~"), "/tmp")
-        plot_path.replace(os.path.expanduser("~"), "/tmp")
+        log_path = log_path.replace(os.path.expanduser("~"), "/tmp")
+        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~"), "/tmp")
+        plot_path = plot_path.replace(os.path.expanduser("~"), "/tmp")
     from_image = encoder_type == "baseline"
 
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
@@ -261,7 +264,7 @@ def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
         filename_mask = "_{}encodings_labels.npz".format(encoder_type)
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))
-    make_dir_if_not_exists(os.path.expanduser("~/tmp_navrep3d"))
+    make_dir_if_not_exists(os.path.dirname(plot_path))
 
     full_dataset = MultitaskDataset(archive_dir, task, from_image, filename_mask)
     train_size = int(0.8 * len(full_dataset))
@@ -302,7 +305,7 @@ def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
         loader = DataLoader(
             train_dataset,
             shuffle=is_train,
-            batch_size=128,
+            batch_size=BATCH_SIZE,
             num_workers=8,
         )
 
@@ -341,11 +344,11 @@ def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
                     plt.clf()
                     plt.suptitle("training step {}".format(global_step))
                     if encoder_type == "baseline":
-                        f, axes = plt.subplots(3, 5, num="training_status", sharex=True, sharey=True)
-                        axes = axes.reshape((3, 5))
+                        f, axes = plt.subplots(3, _5, num="training_status", sharex=True, sharey=True)
+                        axes = axes.reshape((3, _5))
                     else:
-                        f, axes = plt.subplots(2, 5, num="training_status", sharex=True, sharey=True)
-                        axes = axes.reshape((2, 5))
+                        f, axes = plt.subplots(2, _5, num="training_status", sharex=True, sharey=True)
+                        axes = axes.reshape((2, _5))
                     for i, axrow in enumerate(axes.T):
                         if encoder_type == "baseline":
                             ax0, ax1, ax2 = axrow

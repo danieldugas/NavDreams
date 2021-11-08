@@ -72,6 +72,7 @@ class TaskLearner(nn.Module):
 
         self.fc3 = nn.Linear(z_dim, fc_dim)
 
+        output_activation_fn = nn.Sigmoid if label_is_onehot else nn.ReLU
         self.decoder = nn.Sequential(
             UnFlatten(fc_dim),
             nn.ConvTranspose2d(fc_dim, 128, kernel_size=5, stride=2),
@@ -81,13 +82,17 @@ class TaskLearner(nn.Module):
             nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
             nn.ReLU(),
             nn.ConvTranspose2d(32, task_channels, kernel_size=6, stride=2),
-            nn.Sigmoid(),
+            output_activation_fn(),
         )
 
         if label_is_onehot:
             self.loss_func = F.binary_cross_entropy
         else:
-            self.loss_func = F.mse_loss
+            def MPSE(pred, target):
+                proportional_sq_error = ((pred - target) * (pred - target)) / (target*target + 0.0001)
+                return torch.mean(proportional_sq_error)
+            self.loss_func = MPSE
+#             self.loss_func = F.mse_loss
 
     def forward(self, x, labels=None):
         if self.from_image:
@@ -186,7 +191,8 @@ class MultitaskDataset(Dataset):
         depths01 = (depths[:, :, 0] / 256.
                     + depths[:, :, 1] / 256. / 256.
                     + depths[:, :, 2] / 256. / 256. / 256.).astype(float).reshape((1, W, H))
-        return ohlabels, depths01
+        depths_m = depths01 * 100
+        return ohlabels, depths_m
 
     def __len__(self):
         return len(self.data["labels"])

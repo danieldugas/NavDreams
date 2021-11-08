@@ -234,7 +234,7 @@ def validate(model, test_dataset, device):
     model.train(True)
     return test_error
 
-def train_multitask(encoder_type, task="segmentation"):
+def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     if task == "segmentation":
         log_path = os.path.expanduser(
@@ -248,6 +248,10 @@ def train_multitask(encoder_type, task="segmentation"):
         checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_depth_{}".format(
             encoder_type, START_TIME))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_depth_step".format(encoder_type))
+    if dry_run:
+        log_path.replace(os.path.expanduser("~"), "/tmp")
+        checkpoint_path.replace(os.path.expanduser("~"), "/tmp")
+        plot_path.replace(os.path.expanduser("~"), "/tmp")
     from_image = encoder_type == "baseline"
 
     archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
@@ -262,11 +266,12 @@ def train_multitask(encoder_type, task="segmentation"):
     full_dataset = MultitaskDataset(archive_dir, task, from_image, filename_mask)
     train_size = int(0.8 * len(full_dataset))
     test_size = len(full_dataset) - train_size
-    train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
+    train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size],
+                                                                generator=torch.Generator().manual_seed(42))
     label_is_onehot = task == "segmentation"
     task_channels = N_CLASSES if label_is_onehot else 1
 
-    model = TaskLearner(task_channels, from_image, label_is_onehot)
+    model = TaskLearner(task_channels, from_image, label_is_onehot, gpu=gpu)
     print("trainable params: {}".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
@@ -337,8 +342,10 @@ def train_multitask(encoder_type, task="segmentation"):
                     plt.suptitle("training step {}".format(global_step))
                     if encoder_type == "baseline":
                         f, axes = plt.subplots(3, 5, num="training_status", sharex=True, sharey=True)
+                        axes = axes.reshape((3, 5))
                     else:
                         f, axes = plt.subplots(2, 5, num="training_status", sharex=True, sharey=True)
+                        axes = axes.reshape((2, 5))
                     for i, axrow in enumerate(axes.T):
                         if encoder_type == "baseline":
                             ax0, ax1, ax2 = axrow
@@ -371,11 +378,11 @@ def train_multitask(encoder_type, task="segmentation"):
         if global_step >= max_steps:
             break
 
-def main():
+def main(dry_run : bool = False, gpu : bool = True):
     for encoder_type in encoder_types + ["baseline"]:
-        train_multitask(encoder_type, task="depth")
+        train_multitask(encoder_type, task="depth", dry_run=dry_run, gpu=gpu)
     for encoder_type in encoder_types + ["baseline"]:
-        train_multitask(encoder_type, task="segmentation")
+        train_multitask(encoder_type, task="segmentation", dry_run=dry_run, gpu=gpu)
 
 
 if __name__ == "__main__":

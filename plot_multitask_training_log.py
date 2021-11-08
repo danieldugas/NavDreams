@@ -21,12 +21,12 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
                 continue
             if "segmenter" in log:
                 ax = ax1
-                ax.set_title("segmentation error")
-                ax.set_ylabel("segmentation BCE error")
+                ax.set_title("Segmentation Error")
+                ax.set_ylabel("Segmentation BCE Error")
             elif "depth" in log:
                 ax = ax2
-                ax.set_title("depth error")
-                ax.set_ylabel("depth MSE [hm^2]")
+                ax.set_title("Depth Error")
+                ax.set_ylabel("Depth Mean Square Proportional Error")
             else:
                 raise NotImplementedError
             path = os.path.join(logdir, log)

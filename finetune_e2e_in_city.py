@@ -27,7 +27,7 @@ if __name__ == "__main__":
     model = PPO.load(MODELPATH, env=env)
 
     HOME = os.path.expanduser("~")
-    TRAIN_STEPS = 100000
+    TRAIN_STEPS = 1000000
     FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0]
     LOGDIR = os.path.join(HOME, "finetune/logs/gym")
     SAVEDIR = os.path.join(HOME, "finetune/models/gym")

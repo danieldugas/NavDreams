@@ -21,7 +21,7 @@ class ClassicalPlanner(object):
         load_checkpoint(self.model, model_path, gpu=gpu)
 
     def _obs_to_depth(self, image):
-        x = np.moveaxis(image, -1, 0)[None, :, :, :]
+        x = np.moveaxis(image / 255., -1, 0)[None, :, :, :]
         x_t = torch.tensor(x * 1., dtype=torch.float)
         depth_t, _ = self.model(x_t)
         depth = depth_t.detach().cpu().numpy()

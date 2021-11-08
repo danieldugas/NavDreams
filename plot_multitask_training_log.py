@@ -54,7 +54,10 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
         if paper:
             ax1.set_ylim((0, 0.05))
             ax2.set_ylim((0, 0.005))
-        ax1.legend()   # quick-search : plot tcn training logs
+            ax1.legend()
+        else:
+            ax1.legend()
+            ax2.legend()
         if refresh:
             plt.ion()
             plt.pause(10.)

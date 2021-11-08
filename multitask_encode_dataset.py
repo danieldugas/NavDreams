@@ -35,6 +35,8 @@ def check_encodings(archive_dir):
         encodings = np.concatenate(all_encodings, axis=0)
         print("min {} max {}".format(np.min(encodings), np.max(encodings)))
         print("avg {} std {}".format(np.mean(encodings), np.std(encodings)))
+        if np.any(np.isnan(encodings)):
+            raise ValueError
 
 
 def main(dry_run=False, check_archive=False, gpu=True):

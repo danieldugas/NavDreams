@@ -84,7 +84,10 @@ def basic_archive_check(archive_dir, filename_mask="images_labels.npz"):
     for archive_file in filenames:
         archive_path = os.path.join(archive_dir, archive_file)
         try:
-            _ = np.load(archive_path)
+            data = np.load(archive_path)
+            if "images" in data:
+                if np.any(np.isnan(data["images"])):
+                    print("NaNs found in images!")
         except: # noqa
             print(archive_path)
             errors.append(archive_path)
@@ -106,6 +109,7 @@ def visual_archive_check(archive_dir):
             if f.endswith("images_labels.npz")
         ]:
             filenames.append(os.path.join(dirpath, filename))
+    np.random.shuffle(filenames)
     for archive_file in filenames:
         archive_path = os.path.join(archive_dir, archive_file)
         data = np.load(archive_path)

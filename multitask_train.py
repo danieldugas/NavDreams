@@ -190,7 +190,7 @@ class MultitaskDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.from_image:
-            x = self.data["images"][idx]
+            x = self.data["images"][idx] / 255.
             x = np.moveaxis(x, -1, 0)
         else:
             x = self.data["encodings"][idx]
@@ -335,14 +335,22 @@ def train_multitask(encoder_type, task="segmentation"):
                     plt.figure("training_status")
                     plt.clf()
                     plt.suptitle("training step {}".format(global_step))
-                    f, axes = plt.subplots(2, 5, num="training_status", sharex=True, sharey=True)
-                    for i, (ax0, ax1) in enumerate(axes.T):
-                        if label_is_onehot:
-                            ax0.imshow(onehot_to_rgb(np.moveaxis(y.cpu().numpy()[i], 0, -1)))
-                            ax1.imshow(onehot_to_rgb(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1)))
+                    if encoder_type == "baseline":
+                        f, axes = plt.subplots(3, 5, num="training_status", sharex=True, sharey=True)
+                    else:
+                        f, axes = plt.subplots(2, 5, num="training_status", sharex=True, sharey=True)
+                    for i, axrow in enumerate(axes.T):
+                        if encoder_type == "baseline":
+                            ax0, ax1, ax2 = axrow
+                            ax0.imshow(np.moveaxis(x.cpu().numpy()[i], 0, -1))
                         else:
-                            ax0.imshow(np.moveaxis(y.cpu().numpy()[i], 0, -1))
-                            ax1.imshow(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1))
+                            ax1, ax2 = axrow
+                        if label_is_onehot:
+                            ax1.imshow(onehot_to_rgb(np.moveaxis(y.cpu().numpy()[i], 0, -1)))
+                            ax2.imshow(onehot_to_rgb(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1)))
+                        else:
+                            ax1.imshow(np.moveaxis(y.cpu().numpy()[i], 0, -1))
+                            ax2.imshow(np.moveaxis(y_pred.detach().cpu().numpy()[i], 0, -1))
                     plt.savefig(plot_path + "{:07}.png".format(global_step))
                     # log
                     end = time.time()

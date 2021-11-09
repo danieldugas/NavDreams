@@ -53,7 +53,7 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
         ax2.axhline(0, linewidth=1, color='k')
         if paper:
             ax1.set_ylim((0, 0.05))
-            ax2.set_ylim((0, 0.005))
+            ax2.set_ylim((0, 0.1))
             ax1.legend()
         else:
             ax1.legend()

@@ -16,17 +16,26 @@ class ClassicalPlanner(object):
         task_channels = 1 # depth
         from_image = True
         label_is_onehot = False
-        self.model = TaskLearner(task_channels, from_image, label_is_onehot, gpu=gpu)
-        model_path = os.path.expanduser("~/navrep3d/models/multitask/baseline_depth_2021_11_03__23_18_40")
-        load_checkpoint(self.model, model_path, gpu=gpu)
+        self.depth_model = TaskLearner(task_channels, from_image, label_is_onehot, gpu=gpu)
+        depth_model_path = os.path.expanduser(
+            "~/navrep3d/models/multitask/baseline_depth_2021_11_08__22_21_30")
+        load_checkpoint(self.depth_model, depth_model_path, gpu=gpu)
+        self.segmentation_model = TaskLearner(6, from_image, True, gpu=gpu)
+        segmentation_model_path = os.path.expanduser(
+            "~/navrep3d/models/multitask/baseline_segmenter_2021_11_09__04_13_38")
+        load_checkpoint(self.segmentation_model, segmentation_model_path, gpu=gpu)
 
     def _obs_to_depth(self, image):
         x = np.moveaxis(image / 255., -1, 0)[None, :, :, :]
         x_t = torch.tensor(x * 1., dtype=torch.float)
-        depth_t, _ = self.model(x_t)
+        depth_t, _ = self.depth_model(x_t)
         depth = depth_t.detach().cpu().numpy()
         depth = np.moveaxis(depth[0], 0, -1)
-        depth = depth * _100
+        labels_t, _ = self.segmentation_model(x_t)
+        labels = labels_t.detach().cpu().numpy()
+        labels = np.moveaxis(labels[0], 0, -1)
+        is_goal = np.argmax(labels, axis=-1) == 4
+        depth[is_goal] = 100
         return depth
 
     def reset(self):
@@ -59,7 +68,7 @@ class ClassicalPlanner(object):
                            [-10, 10]],
                           dtype=np.float32)
         local_map = CMap2D()
-        local_map.from_scan(scan, limits=limits, resolution=1.)
+        local_map.from_scan(scan, limits=limits, resolution=0.2, legacy=False)
         goal_ij = local_map.xy_to_ij(goal_xy[None, :], clip_if_outside=True)[0]
         robot_ij = local_map.xy_to_ij(np.array([[0, 0]]), clip_if_outside=True)[0]
         fm = local_map.fastmarch(goal_ij)
@@ -70,11 +79,15 @@ class ClassicalPlanner(object):
             print(goal_xy)
             from matplotlib import pyplot as plt
             plt.ion()
+            plt.figure("plan")
             plt.clf()
+            fig, (ax1, ax2) = plt.subplots(2, 1, num="plan")
+#             gridshow(fm)
+            plt.sca(ax1)
             gridshow(local_map.occupancy())
+            ax2.imshow(d)
             plt.scatter(goal_ij[0], goal_ij[1])
             plt.scatter(robot_ij[0], robot_ij[1])
-#             plt.imshow(d)
             plt.pause(0.1)
         return action
 
@@ -83,8 +96,10 @@ np.set_printoptions(precision=1, suppress=True)
 p = ClassicalPlanner(gpu=False)
 env = NavRep3DTrainEnv()
 obs = env.reset()
-for i in range(100):
+for i in range(1000):
     action = p.predict(obs, env)
     obs, _, done, _ = env.step(action)
     env.render()
+    if done:
+        obs = env.reset()
 env.close()

@@ -113,6 +113,16 @@ def main(gpu : bool = False):
         ax6.imshow(np.moveaxis(predictions["baseline"]["depth"].detach().cpu().numpy()[i], 0, -1))
         ax7.imshow(np.moveaxis(predictions["E2E"]["depth"].detach().cpu().numpy()[i], 0, -1))
         ax8.imshow(np.moveaxis(predictions["N3D"]["depth"].detach().cpu().numpy()[i], 0, -1))
+        if i == 0:
+            ax0.set_ylabel("input")
+            ax1.set_ylabel("GT")
+            ax2.set_ylabel("specific")
+            ax3.set_ylabel("E2E")
+            ax4.set_ylabel("N3D")
+            ax5.set_ylabel("GT")
+            ax6.set_ylabel("specific")
+            ax7.set_ylabel("E2E")
+            ax8.set_ylabel("N3D")
     plt.show()
 
 

@@ -23,10 +23,17 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(backend, encoding, _Z, _H, variant)
-    LOGNAME = "navrep3dtrainencodedenv_" + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH
+    BUILD_NAME = "./alternate.x86_64"
+    if BUILD_NAME == "./build.x86_64":
+        ENV_NAME = "navrep3dtrainencodedenv_"
+    elif BUILD_NAME == "./alternate.x86_64":
+        ENV_NAME = "navrep3daltencodedenv_"
+    else:
+        raise NotImplementedError
+    LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")
-    MODELPATH2 = os.path.join(DIR, "navrep3dtrainencodedenv_latest_DISCRETE_PPO_ckpt")
+    MODELPATH2 = os.path.join(DIR, ENV_NAME + "latest_DISCRETE_PPO_ckpt")
     if not os.path.exists(DIR):
         os.makedirs(DIR)
     if not os.path.exists(LOGDIR):
@@ -39,6 +46,7 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
     if True:
         N_ENVS = 4
         env = SubprocVecNavRep3DEncodedEnvDiscrete(backend, encoding, variant, N_ENVS,
+                                                   build_name=BUILD_NAME,
                                                    debug_export_every_n_episodes=170)
 #     else:
 #         env = NavRep3DTrainEncodedEnv(backend, encoding,

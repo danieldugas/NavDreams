@@ -10,8 +10,6 @@ from rich.table import Table
 from enum import Enum
 import typer
 
-from navrep.scripts.plot_gym_training_progress import parse_logfiles
-
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
 
@@ -88,9 +86,27 @@ def get_visible(lines):
     else:
         return lines.get_visible()
 
+def parse_logfiles(navrep_dirs, logfolder=None):
+    logfolder = "logs/gym" if logfolder is None else logfolder
+    best_navrep_names = [os.path.basename(path) for path in navrep_dirs]
 
-def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward"):
-    logpaths, parents = parse_logfiles(logdirs)
+    all_logpaths = []
+    all_parents = []
+    for name, dir_ in zip(best_navrep_names, navrep_dirs):
+        logdir = os.path.join(dir_, logfolder)
+        try:
+            logfiles = sorted([file for file in os.listdir(logdir) if ".csv" in file])
+        except FileNotFoundError:
+            logfiles = []
+        logpaths = [os.path.join(logdir, logfile) for logfile in logfiles]
+        logparents = [name for _ in logfiles]
+        all_logpaths.extend(logpaths)
+        all_parents.extend(logparents)
+    return all_logpaths, all_parents
+
+def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward", finetune=False):
+    logfolder = "logs/finetune" if finetune else None
+    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 
     # get set of all scenarios in all logpaths
     all_scenarios = []
@@ -278,16 +294,17 @@ def str_enum(options: list):
 def main(logdir="~/navrep3d",
          x_axis: str_enum(["wall_time", "total_steps"]) = "wall_time", # noqa
          y_axis: str_enum(["reward", "difficulty", "progress", "worst_perf"]) = "difficulty", # noqa (flake8 bug?)
-         refresh: bool = typer.Option(False, help="Updates the plot every minute.")):
+         refresh: bool = typer.Option(False, help="Updates the plot every minute."),
+         finetune : bool = False):
     logdirs = [os.path.expanduser(logdir),]
     print(x_axis.value)
     if refresh:
         while True:
             plt.ion()
-            plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value)
+            plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value, finetune=finetune)
             plt.pause(60)
     else:
-        plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value)
+        plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value, finetune=finetune)
         plt.show()
 
 

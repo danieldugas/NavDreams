@@ -33,6 +33,7 @@ variant_colors = {
     "E2E": "grey",
 }
 
+SMOOTHNESS = 0.999
 def smooth(x, weight):
     """ Weight between 0 and 1 """
     last = x[0]  # First value in the plot (first timestep)
@@ -56,6 +57,8 @@ def color_and_style(variant, envname):
     return color, style
 
 def get_variant(logpath):
+    if "E2E" in logpath:
+        return "E2E"
     variant = None
     string = logpath.split("V64M64_")[-1]
     string = string.split(".")[0]
@@ -194,16 +197,18 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     if difficulty == "worst":
                         for perf in all_perfs:
                             perf[0] = 0
-                        rewards = np.nanmin([smooth(perf, 0.99) for perf in all_perfs], axis=0)
+                        rewards = np.nanmin([smooth(perf, SMOOTHNESS) for perf in all_perfs], axis=0)
                 else:
                     raise NotImplementedError
                 y = rewards
-                smooth_y = smooth(y, 0.99)
+                smooth_y = smooth(y, SMOOTHNESS)
                 # plot main reward line
                 line, = ax.plot(x, smooth_y, linewidth=1, linestyle=style, color=color)
                 color = line.get_c()
                 # add episode reward scatter
                 scatter, = ax.plot(x, y, color=color, marker=',', linewidth=0, label=scenario)
+                top = ax.scatter(x[np.argmax(smooth_y)], np.max(smooth_y), marker='o', facecolor="none", edgecolor=color)
+
                 # add vertical line at end of finished runs
                 if x_axis == "wall_time":
                     if n > N_:
@@ -226,6 +231,8 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     linegroup.append(line)
                 if scatter is not None:
                     linegroup.append(scatter)
+                if top is not None:
+                    linegroup.append(top)
         if linegroup:
             linegroups.append(linegroup)
             legends.append(parent + ": " + logname)

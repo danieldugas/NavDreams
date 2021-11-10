@@ -34,7 +34,7 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
 
     TRAIN_STEPS = n
     if TRAIN_STEPS is None:
-        TRAIN_STEPS = 60 * MILLION
+        TRAIN_STEPS = 5 * MILLION
 
     if True:
         N_ENVS = 4

@@ -13,7 +13,7 @@ if __name__ == "__main__":
     args, _ = parse_common_args()
 
     MILLION = 1000000
-    TRAIN_STEPS = 60 * MILLION
+    TRAIN_STEPS = 5 * MILLION
     _C = 64
     DIR = os.path.expanduser("~/navrep3d/models/gym")
     LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")

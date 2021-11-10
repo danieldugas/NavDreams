@@ -17,6 +17,8 @@ class NavRep3DLogCallback(BaseCallback):
         super(NavRep3DLogCallback, self).__init__(verbose)
         # self.model = None  # type: BaseRLModel
         # self.training_env = None  # type: Union[gym.Env, VecEnv, None]
+        if "_ckpt" not in savepath:
+            raise ValueError("expected checkpoint path to contain '_ckpt'")
         self.logpath = logpath
         self.savepath = savepath
         self.eval_freq = eval_freq
@@ -56,7 +58,9 @@ class NavRep3DLogCallback(BaseCallback):
 
             save_log(S, self.logpath, self.verbose)
             print_statistics(new_S, 0, 0, self.n_calls, self.num_timesteps, self.verbose)
-            save_model_if_improved(new_avg_reward, self.best_avg_reward, self.model, self.savepath)
+            save_model_if_improved(new_avg_reward, self.best_avg_reward, self.model,
+                                   self.savepath.replace("_ckpt", "_bestckpt"))
+            save_model_if_improved(1., [0], self.model, self.savepath)
 
             self.last_len_statistics = len(S)
         return True

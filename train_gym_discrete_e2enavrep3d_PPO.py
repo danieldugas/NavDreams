@@ -22,7 +22,14 @@ if __name__ == "__main__":
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     CONTROLLER_ARCH = "_VCARCH_C{}".format(_C)
-    LOGNAME = "navrep3dtrainenv_" + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH
+    BUILD_NAME = "./alternate.x86_64"
+    if BUILD_NAME == "./build.x86_64":
+        ENV_NAME = "navrep3dtrainenv_"
+    elif BUILD_NAME == "./alternate.x86_64":
+        ENV_NAME = "navrep3daltenv_"
+    else:
+        raise NotImplementedError
+    LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH
     LOGPATH = os.path.join(LOGDIR, LOGNAME + ".csv")
     MODELPATH = os.path.join(DIR, LOGNAME + "_ckpt")
     if not os.path.exists(DIR):
@@ -32,10 +39,10 @@ if __name__ == "__main__":
 
     if True:
         env = SubprocVecEnv([
-            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=170, port=25002),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=0, port=25003),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=0, port=25004),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(debug_export_every_n_episodes=0, port=25005),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=170, port=25002),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=0, port=25003),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=0, port=25004),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=0, port=25005),
         ])
     else:
         env = NavRep3DTrainEnvDiscreteFlattened(verbose=0, debug_export_every_n_episodes=170)

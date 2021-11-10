@@ -26,16 +26,16 @@ if __name__ == "__main__":
         raise NotImplementedError
     model = PPO.load(MODELPATH, env=env)
 
-    HOME = os.path.expanduser("~")
-    TRAIN_STEPS = 1000000
-    FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0]
-    LOGDIR = os.path.join(HOME, "finetune/logs/gym")
-    SAVEDIR = os.path.join(HOME, "finetune/models/gym")
+    BASE = os.path.expanduser("~/navrep3d")
+    TRAIN_STEPS = 2000000
+    FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0].replace("_ckpt", "")
+    LOGDIR = os.path.join(BASE, "logs/finetune")
+    SAVEDIR = os.path.join(BASE, "models/finetune")
     if not os.path.exists(SAVEDIR):
         os.makedirs(SAVEDIR)
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
     LOGPATH = os.path.join(LOGDIR, FILENAME + ".csv")
-    SAVEPATH = os.path.join(SAVEDIR, FILENAME + ".zip")
+    SAVEPATH = os.path.join(SAVEDIR, FILENAME + "_ckpt.zip")
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=SAVEPATH, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS+1, callback=cb)

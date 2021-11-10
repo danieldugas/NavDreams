@@ -9,7 +9,8 @@ from navrep3d.sb3_callbacks import NavRep3DLogCallback
 if __name__ == "__main__":
     args, _ = parse_common_args()
 
-    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
+    MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
+    MODELPATH = os.path.expanduser(MODELPATH)
 
     if "DISCRETE" in MODELPATH:
         env = SubprocVecEnv([

@@ -31,7 +31,6 @@ variant_colors = {
     "E2E": "grey",
 }
 
-SMOOTHNESS = 0.999
 def smooth(x, weight):
     """ Weight between 0 and 1 """
     last = x[0]  # First value in the plot (first timestep)
@@ -104,7 +103,10 @@ def parse_logfiles(navrep_dirs, logfolder=None):
         all_parents.extend(logparents)
     return all_logpaths, all_parents
 
-def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward", finetune=False):
+def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward",
+                           finetune=False, smoothness=None):
+    if smoothness is None:
+        smoothness = 0.999
     logfolder = "logs/finetune" if finetune else None
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 
@@ -213,11 +215,11 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     if difficulty == "worst":
                         for perf in all_perfs:
                             perf[0] = 0
-                        rewards = np.nanmin([smooth(perf, SMOOTHNESS) for perf in all_perfs], axis=0)
+                        rewards = np.nanmin([smooth(perf, smoothness) for perf in all_perfs], axis=0)
                 else:
                     raise NotImplementedError
                 y = rewards
-                smooth_y = smooth(y, SMOOTHNESS)
+                smooth_y = smooth(y, smoothness)
                 # plot main reward line
                 line, = ax.plot(x, smooth_y, linewidth=1, linestyle=style, color=color)
                 color = line.get_c()
@@ -295,16 +297,20 @@ def main(logdir="~/navrep3d",
          x_axis: str_enum(["wall_time", "total_steps"]) = "wall_time", # noqa
          y_axis: str_enum(["reward", "difficulty", "progress", "worst_perf"]) = "difficulty", # noqa (flake8 bug?)
          refresh: bool = typer.Option(False, help="Updates the plot every minute."),
-         finetune : bool = False):
+         finetune : bool = False,
+         smoothness : float = None,
+         ):
     logdirs = [os.path.expanduser(logdir),]
     print(x_axis.value)
     if refresh:
         while True:
             plt.ion()
-            plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value, finetune=finetune)
+            plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
+                                   finetune=finetune, smoothness=smoothness)
             plt.pause(60)
     else:
-        plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value, finetune=finetune)
+        plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
+                               finetune=finetune, smoothness=smoothness)
         plt.show()
 
 

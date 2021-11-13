@@ -35,8 +35,9 @@ BLOCK_SIZE = 32  # sequence length (context)
 class DreamEnv(object):
     """ Generic class for generating dreams from trained world models """
     def __init__(self,
-                 gpt_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt"),
+                 gpt_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_SC"),
                  gpu=False,
+                 alongside_sim=False,
                  ):
         self.observation_space = gym.spaces.Tuple((
             gym.spaces.Box(low=0, high=255, shape=(_H, _W, _C), dtype=np.uint8),
@@ -44,6 +45,7 @@ class DreamEnv(object):
         ))
         # params
         self.DT = 0.2
+        self.alongside_sim = alongside_sim
         # load world model
         mconf = GPTConfig(BLOCK_SIZE, _H)
         mconf.image_channels = _C
@@ -57,15 +59,17 @@ class DreamEnv(object):
         self.reset()
 
     def _sample_zero_state(self):
-#         if self.simenv is None:
-#             self.simenv = NavRep3DTrainEnv()
-#         obs = self.simenv.reset()
-#         image_obs, robot_state = obs
-#         image_nobs = self._normalize_obs(image_obs)
-#         goal_state = robot_state[:2]
-        from zero import zero_image_nobs, zero_goal_state
-        image_nobs = zero_image_nobs * 1.
-        goal_state = zero_goal_state * 1.
+        if self.alongside_sim:
+            if self.simenv is None:
+                self.simenv = NavRep3DTrainEnv()
+            obs = self.simenv.reset()
+            image_obs, robot_state = obs
+            image_nobs = self._normalize_obs(image_obs)
+            goal_state = robot_state[:2]
+        else:
+            from zero import zero_image_nobs, zero_goal_state
+            image_nobs = zero_image_nobs * 1.
+            goal_state = zero_goal_state * 1.
         return image_nobs, goal_state
 
     def reset(self):
@@ -96,6 +100,7 @@ class DreamEnv(object):
         return (nobs * 255).astype(np.uint8)
 
     def step(self, action):
+        done = False
         self.gpt_sequence[-1]['action'] = action * 1.
         img_npred, goal_pred = self.worldmodel.get_next(self.gpt_sequence)
 
@@ -109,10 +114,16 @@ class DreamEnv(object):
 
         img_pred = self._unnormalize_obs(img_npred)
         obs = (img_pred, goal_pred)
-        return obs, 0, False, {}
+
+        if self.alongside_sim and self.simenv is not None:
+            _, _, done, _ = self.simenv.step(action)
+
+        return obs, 0, done, {}
 
     def render(self, mode="human", close=False, save_to_file=False):
         """ renders true and encoded image side by side """
+        if self.alongside_sim and self.simenv is not None:
+            self.simenv.render()
         if close:
             self.viewer.close()
             return
@@ -190,6 +201,6 @@ if __name__ == "__main__":
     from navrep.tools.envplayer import EnvPlayer
     np.set_printoptions(precision=1, suppress=True)
 #     env = StrictFire(DreamEnv)
-    env = DreamEnv()
+    env = DreamEnv(alongside_sim=True)
     player = EnvPlayer(env)
     player.run()

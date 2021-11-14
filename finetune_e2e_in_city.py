@@ -3,13 +3,16 @@ from navrep.tools.commonargs import parse_common_args
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from navrep3d.custom_policy import NavRep3DTrainEnvDiscreteFlattened
+from navrep3d.custom_policy import NavRep3DTrainEnvDiscreteFlattened, NavRep3DTupleCNN
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 
 if __name__ == "__main__":
     args, _ = parse_common_args()
+    from_scratch = False
 
     MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
+    if from_scratch:
+        MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_from_scratch_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
     MODELPATH = os.path.expanduser(MODELPATH)
 
     if "DISCRETE" in MODELPATH:
@@ -25,7 +28,15 @@ if __name__ == "__main__":
         ])
     else:
         raise NotImplementedError
-    model = PPO.load(MODELPATH, env=env)
+    if from_scratch:
+        _C = 64
+        policy_kwargs = dict(
+            features_extractor_class=NavRep3DTupleCNN,
+            features_extractor_kwargs=dict(cnn_features_dim=_C),
+        )
+        model = PPO("CnnPolicy", env, policy_kwargs=policy_kwargs, verbose=1)
+    else:
+        model = PPO.load(MODELPATH, env=env)
 
     BASE = os.path.expanduser("~/navrep3d")
     TRAIN_STEPS = 2000000

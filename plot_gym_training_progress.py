@@ -268,6 +268,83 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
 
     console.print(table)
 
+
+def plot_training_results(logdirs, logfolder=None):
+    smoothness = 0.999
+    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
+
+    x_axis = "total_steps"
+    y_axis = "difficulty"
+    scenario = "navrep3dalt"
+    max_difficulty = 18.
+    all_variants = ["SC", "Salt", "E2E"]
+
+    fig, ax = plt.subplots(1, 1, num="training results")
+
+    linegroups = []
+    legends = []
+    for variant in all_variants:
+        # calculate smoothed lines for each plot
+        smoothed_curves = []
+        for logpath, parent in zip(logpaths, parents):
+            line = None
+            if variant != get_variant(logpath):
+                continue
+            envname = get_envname(logpath)
+            color, _ = color_and_style(variant, envname)
+            S = pd.read_csv(logpath)
+            scenario_S = S[S["scenario"] == scenario]
+            if len(scenario_S.values) == 0:
+                continue
+            # x axis
+            if x_axis == "total_steps":
+                x = scenario_S["total_steps"].values
+                x = x / MILLION
+                xlabel = "Million Train Steps"
+            else:
+                raise NotImplementedError
+            # y axis
+            if y_axis == "difficulty":
+                ylabel = "average scenario difficulty"
+                ylim = [-0., 1.]
+                rewards = scenario_S["num_walls"].values / max_difficulty
+            else:
+                raise NotImplementedError
+            y = rewards
+            smooth_y = smooth(y, smoothness)
+            smoothed_curves.append((x, smooth_y))
+
+        # minmax curve
+        if len(smoothed_curves) == 0:
+            continue
+        style = None
+        if len(smoothed_curves) < 3:
+            style = "dotted"
+        end = np.min([np.max(x) for x, y in smoothed_curves])
+        common_x = np.arange(0, end, 10000. / MILLION)
+        filled_smoothed_curves = [np.interp(common_x, x, y) for x, y in smoothed_curves]
+        Y = np.array(filled_smoothed_curves)
+        mean_ = np.mean(Y, axis=0)
+        min_ = np.min(Y, axis=0)
+        max_ = np.max(Y, axis=0)
+
+        linegroup = [] # regroup all lines from this variant
+        ax.set_ylim(ylim)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_title("{}".format(scenario))
+        line, = ax.plot(common_x, mean_, linewidth=1, linestyle=style, color=color)
+        color = line.get_c()
+        area = plt.fill_between(common_x, min_, max_, color=color, alpha=0.1)
+        linegroup.append(line)
+        linegroup.append(area)
+        if linegroup:
+            linegroups.append(linegroup)
+            legends.append(variant)
+
+    L = fig.legend([lines[0] for lines in linegroups], legends)
+    make_legend_pickable(L, linegroups)
+
 def make_legend_pickable(legend, lines):
     """ Allows clicking the legend to toggle line visibility
     arguments:
@@ -299,9 +376,14 @@ def main(logdir="~/navrep3d",
          refresh: bool = typer.Option(False, help="Updates the plot every minute."),
          finetune : bool = False,
          smoothness : float = None,
+         paper : bool = False,
          ):
     logdirs = [os.path.expanduser(logdir),]
     print(x_axis.value)
+    if paper:
+        plot_training_results(logdirs)
+        plt.show()
+        return
     if refresh:
         while True:
             plt.ion()

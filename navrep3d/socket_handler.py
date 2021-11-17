@@ -24,7 +24,7 @@ def send_and_receive(s, data, end_char="@"):
         if ready[0]:
             chunk = s.recv(4096).decode("utf-8")
         else:
-            print("recv timed out. retrying")
+            print("recv timed out. retrying ({} retries)".format(retries))
             retries += 1
             if retries > 100:
                 raise IOError("Maximum retries reached while waiting to receive from remote {}".format(s))

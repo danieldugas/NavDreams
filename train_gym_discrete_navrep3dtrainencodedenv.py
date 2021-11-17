@@ -11,7 +11,7 @@ from navrep3d.auto_debug import enable_auto_debug
 
 MILLION = 1000000
 
-def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=60*MILLION):
+def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=None):
     shared_encoder = NavRep3DTrainEncoder(backend, encoding, variant, gpu=not no_gpu)
     _Z = shared_encoder._Z
     _H = shared_encoder._H

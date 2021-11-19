@@ -857,6 +857,19 @@ class NavRep3DTrainEnvDiscrete(NavRep3DTrainEnv):
         cont_actions = convert_discrete_to_continuous_action(actions)
         return super(NavRep3DTrainEnvDiscrete, self).step(cont_actions)
 
+class DiscreteActionWrapper(gym.core.ActionWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.action_space = gym.spaces.Discrete(3)
+        self.zero_action = 0
+
+    def action(self, action):
+        if action is None:
+            action = 1
+        cont_actions = convert_discrete_to_continuous_action(action)
+        return cont_actions
+
+
 def check_stablebaselines_compat(env):
     from stable_baselines.common.env_checker import check_env
     check_env(env)

@@ -1,4 +1,5 @@
 from gym import spaces, Env
+from gym.core import ObservationWrapper
 import numpy as np
 import os
 from stable_baselines3.common.vec_env import SubprocVecEnv
@@ -28,6 +29,25 @@ class NavRep3DTrainEncoder(EnvEncoder):
             gpu=gpu,
             encoder_to_share_model_with=None,
         )
+
+class EncoderObsWrapper(ObservationWrapper):
+    """
+    Wrapper for compatibility with dreamer
+    """
+
+    def __init__(self, env, backend="GPT", encoding="V_ONLY", variant="S",
+                 gpu=False, shared_encoder=None, encoder=None):
+        super().__init__(env)
+        if encoder is None:
+            encoder = NavRep3DTrainEncoder(backend, encoding,
+                                           gpu=gpu, encoder_to_share_model_with=shared_encoder)
+        self.encoder = encoder
+        self.observation_space = self.encoder.observation_space
+
+    def observation(self, obs):
+        action = self.unwrapped.last_action
+        h = self.encoder._encode_obs(obs, action)
+        return h
 
 class NavRep3DTrainEncodedEnv(Env):
     """ takes a (3) action as input

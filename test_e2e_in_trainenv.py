@@ -6,7 +6,7 @@ from navrep3d.custom_policy import NavRep3DTrainEnvDiscreteFlattened, NavRep3DTr
 if __name__ == "__main__":
     args, _ = parse_common_args()
 
-    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dtrainenv_2021_08_17__19_37_32_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip"
+    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3daltenv_2021_11_10__12_38_52_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip"
 
     model = PPO.load(MODELPATH)
     if "DISCRETE" in MODELPATH:

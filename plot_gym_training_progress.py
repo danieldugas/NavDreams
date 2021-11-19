@@ -50,7 +50,8 @@ def color_and_style(variant, envname):
     if variant is not None:
         color = variant_colors[variant]
     if envname is not None:
-        style = envname_styles[envname]
+        if envname in envname_styles:
+            style = envname_styles[envname]
     return color, style
 
 def get_variant(logpath):

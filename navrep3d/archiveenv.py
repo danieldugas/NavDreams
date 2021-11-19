@@ -29,12 +29,14 @@ class ArchiveEnv(gym.Env):
         if len(self.data["scans"]) == 0:
             raise ValueError
         self.current_iteration = None
+        self.last_action = None
         self.data["dones"][-1] = 1
         self.viewer = None
         self.shuffle_episodes = shuffle_episodes
 
     def _step(self, action):
         """ preserved when inherited classes overrite step() """
+        self.last_action = action
         scan = self.data["scans"][self.current_iteration].astype(np.float32)
         robotstate = self.data["robotstates"][self.current_iteration]
         reward = self.data["rewards"][self.current_iteration]
@@ -166,6 +168,38 @@ class ArchiveEnv(gym.Env):
                 gl.glVertex3f(VP_W, VP_H, 0)
                 gl.glVertex3f(VP_W, 0, 0)
                 gl.glVertex3f(0, 0, 0)
+                gl.glEnd()
+                # Action arrow
+                i = WINDOW_W / 2.0
+                j = WINDOW_H / 2.0
+                r = (0.3 + np.linalg.norm(self.last_action[:2])) / M_PER_PX
+                angle = np.pi / 2.0 + np.arctan2(self.last_action[1], self.last_action[0])
+                color = np.array([0.9, 0.3, 0.0])
+                inose = i + r * np.cos(angle)
+                jnose = j + r * np.sin(angle)
+                iright = i + 0.3 * r * -np.sin(angle)
+                jright = j + 0.3 * r * np.cos(angle)
+                ileft = i - 0.3 * r * -np.sin(angle)
+                jleft = j - 0.3 * r * np.cos(angle)
+                gl.glBegin(gl.GL_TRIANGLES)
+                gl.glColor4f(color[0], color[1], color[2], 1)
+                gl.glVertex3f(inose, jnose, 0)
+                gl.glVertex3f(iright, jright, 0)
+                gl.glVertex3f(ileft, jleft, 0)
+                gl.glEnd()
+                r = (0.3 + self.last_action[2]) / M_PER_PX
+                angle = np.pi / 2.0 + np.arctan2(self.last_action[2], 0)
+                inose = i + r * np.cos(angle)
+                jnose = j + r * np.sin(angle)
+                iright = i + 0.3 * r * -np.sin(angle)
+                jright = j + 0.3 * r * np.cos(angle)
+                ileft = i - 0.3 * r * -np.sin(angle)
+                jleft = j - 0.3 * r * np.cos(angle)
+                gl.glBegin(gl.GL_TRIANGLES)
+                gl.glColor4f(color[0], color[1], color[2], 1)
+                gl.glVertex3f(inose, jnose, 0)
+                gl.glVertex3f(iright, jright, 0)
+                gl.glVertex3f(ileft, jleft, 0)
                 gl.glEnd()
                 # Agent body
                 i = WINDOW_W / 2.0

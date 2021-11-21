@@ -9,9 +9,12 @@ from plot_gym_training_progress import get_variant
 
 if __name__ == "__main__":
     args, _ = parse_common_args()
+    from_scratch = False
 
 #     MODELPATH = "~/navrep3d/models/gym/navrep3dtrainencodedenv_2021_10_02__12_44_20_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
     MODELPATH = "~/navrep3d/models/gym/navrep3daltencodedenv_2021_10_25__15_01_28_DISCRETE_PPO_GPT_V_ONLY_V64M64_SC_ckpt.zip" # noqa
+    if from_scratch:
+        MODELPATH = "~/navrep3d/models/gym/navrep3daltencodedenv_from_scratch_DISCRETE_PPO_GPT_V_ONLY_V64M64_Random_ckpt.zip" # noqa
     MODELPATH = os.path.expanduser(MODELPATH)
 
     variant = get_variant(os.path.basename(MODELPATH))
@@ -24,7 +27,10 @@ if __name__ == "__main__":
                                                    debug_export_every_n_episodes=170)
     else:
         raise NotImplementedError
-    model = PPO.load(MODELPATH, env=env)
+    if from_scratch:
+        model = PPO("MlpPolicy", env, verbose=1)
+    else:
+        model = PPO.load(MODELPATH, env=env)
 
     BASE = os.path.expanduser("~/navrep3d")
     TRAIN_STEPS = 2000000

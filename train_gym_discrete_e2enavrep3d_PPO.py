@@ -1,32 +1,38 @@
 import os
-from navrep.tools.commonargs import parse_common_args
 from datetime import datetime
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import PPO
+from strictfire import StrictFire
 
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
 from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvDiscreteFlattened
 from navrep3d.auto_debug import enable_auto_debug
 
-if __name__ == "__main__":
-    enable_auto_debug()
-    args, _ = parse_common_args()
+MILLION = 1000000
 
-    MILLION = 1000000
-    TRAIN_STEPS = 5 * MILLION
+def main(dry_run=False, n=None, build_name=None):
+
+    TRAIN_STEPS = n
+    if TRAIN_STEPS is None:
+        TRAIN_STEPS = 5 * MILLION
     _C = 64
     DIR = os.path.expanduser("~/navrep3d/models/gym")
     LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")
-    if args.dry_run:
+    if dry_run:
         DIR = "/tmp/navrep3d/models/gym"
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     CONTROLLER_ARCH = "_VCARCH_C{}".format(_C)
-    BUILD_NAME = "./alternate.x86_64"
-    if BUILD_NAME == "./build.x86_64":
+    if build_name is None:
+        build_name = "./alternate.x86_64"
+    build_names = [build_name] * 4
+    if build_name == "./build.x86_64":
         ENV_NAME = "navrep3dtrainenv_"
-    elif BUILD_NAME == "./alternate.x86_64":
+    elif build_name == "./alternate.x86_64":
         ENV_NAME = "navrep3daltenv_"
+    elif build_name == "SC":
+        ENV_NAME = "navrep3dSCenv_"
+        build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH
@@ -39,10 +45,10 @@ if __name__ == "__main__":
 
     if True:
         env = SubprocVecEnv([
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=170, port=25002),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=0, port=25003),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=0, port=25004),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=BUILD_NAME, debug_export_every_n_episodes=0, port=25005),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[0], debug_export_every_n_episodes=170, port=25002),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[1], debug_export_every_n_episodes=0, port=25003),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[2], debug_export_every_n_episodes=0, port=25004),
+            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[3], debug_export_every_n_episodes=0, port=25005),
         ])
     else:
         env = NavRep3DTrainEnvDiscreteFlattened(verbose=0, debug_export_every_n_episodes=170)
@@ -70,3 +76,7 @@ if __name__ == "__main__":
         if dones:
             env.reset()
         env.render()
+
+if __name__ == "__main__":
+    enable_auto_debug()
+    StrictFire(main)

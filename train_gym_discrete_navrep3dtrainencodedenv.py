@@ -11,7 +11,7 @@ from navrep3d.auto_debug import enable_auto_debug
 
 MILLION = 1000000
 
-def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=None):
+def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=None, build_name=None):
     shared_encoder = NavRep3DTrainEncoder(backend, encoding, variant, gpu=not no_gpu)
     _Z = shared_encoder._Z
     _H = shared_encoder._H
@@ -23,11 +23,16 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(backend, encoding, _Z, _H, variant)
-    BUILD_NAME = "./alternate.x86_64"
-    if BUILD_NAME == "./build.x86_64":
+    if build_name is None:
+        build_name = "./alternate.x86_64"
+    build_names = build_name
+    if build_name == "./build.x86_64":
         ENV_NAME = "navrep3dtrainencodedenv_"
-    elif BUILD_NAME == "./alternate.x86_64":
+    elif build_name == "./alternate.x86_64":
         ENV_NAME = "navrep3daltencodedenv_"
+    elif build_name == "SC":
+        ENV_NAME = "navrep3dSCencodedenv_"
+        build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH
@@ -46,7 +51,7 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
     if True:
         N_ENVS = 4
         env = SubprocVecNavRep3DEncodedEnvDiscrete(backend, encoding, variant, N_ENVS,
-                                                   build_name=BUILD_NAME,
+                                                   build_name=build_names,
                                                    debug_export_every_n_episodes=170)
 #     else:
 #         env = NavRep3DTrainEncodedEnv(backend, encoding,

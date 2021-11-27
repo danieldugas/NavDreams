@@ -182,7 +182,7 @@ class NavRep3DRendererEnvWrapper(gym.core.Wrapper):
                 topdown_in_vp = rendering.Transform()
                 topdown_in_vp.set_scale(10, 10)
                 topdown_in_vp.set_translation(_256 // 2, _256 // 2)
-                topdown_in_vp.set_rotation(-np.pi/2.)
+                topdown_in_vp.set_rotation(np.pi/2.)
                 # colors
                 bgcolor = np.array([0.4, 0.8, 0.4])
                 obstcolor = np.array([0.3, 0.3, 0.3])
@@ -271,6 +271,12 @@ class NavRep3DRendererEnvWrapper(gym.core.Wrapper):
                 for vert in triangle:
                     gl.glVertex3f(vert[0], vert[1], 0)
                 gl.glEnd()
+                if self.last_odom is not None:
+                    gl.glBegin(gl.GL_LINES)
+                    gl.glColor4f(goalcolor[0], goalcolor[1], goalcolor[2], 0.5)
+                    gl.glVertex3f(self.last_odom[0], self.last_odom[1], 0)
+                    gl.glVertex3f(xgoal, ygoal, 0)
+                    gl.glEnd()
                 topdown_in_vp.disable()
             # Render image
             image_in_vp.enable()

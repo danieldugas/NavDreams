@@ -319,6 +319,7 @@ def plot_training_results(logdirs, logfolder=None):
         if len(smoothed_curves) == 0:
             continue
         style = None
+        print("{}: {} timeseries".format(variant, len(smoothed_curves)))
         if len(smoothed_curves) < 3:
             style = "dotted"
         end = np.min([np.max(x) for x, y in smoothed_curves])

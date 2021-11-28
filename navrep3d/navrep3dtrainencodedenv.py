@@ -6,8 +6,9 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from functools import partial
 
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnvDiscrete, convert_discrete_to_continuous_action
+from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
 from navrep3d.encodedenv3d import EnvEncoder
+from navrep3d.mlagents_gym_wrapper import NavRep3DAnyEnvDiscrete
 
 class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding, variant="S",
@@ -184,7 +185,7 @@ class SubprocVecNavRep3DEncodedEnvDiscrete(SubprocVecEnv):
         # create multiprocessed simulators
         env_init_funcs = [
             partial(
-                lambda i: NavRep3DTrainEnvDiscrete(
+                lambda i: NavRep3DAnyEnvDiscrete(
                     verbose=verbose, collect_statistics=collect_statistics, build_name=build_names[i],
                     debug_export_every_n_episodes=debug_export_every_n_episodes if i == 0 else 0,
                     port=25002+i

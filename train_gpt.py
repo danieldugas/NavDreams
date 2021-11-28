@@ -90,6 +90,16 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_Random_step")
         max_steps = 0
+    elif dataset == "SCR":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/transformer_SCR_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCR")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_R_step")
     elif dataset == "R":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
         log_path = os.path.expanduser(
@@ -124,19 +134,28 @@ def main(max_steps=222222, dataset="S", dry_run=False):
     class N3DWorldModelDataset(WorldModelDataset):
         def _partial_regen(self, n_new_sequences=1):
             from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
-            from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
-            if self.regen in ["S", "SC", "Salt"]:
-                build_name = "./build.x86_64"
-                if self.regen == "Salt":
+            from navrep3d.navrep3danyenv import NavRep3DAnyEnv
+            if self.regen in ["S", "SC", "Salt", "SCR", "R"]:
+                if self.regen == "S":
+                    build_name = "./build.x86_64"
+                elif self.regen == "Salt":
                     build_name = "./alternate.x86_64"
-                if self.regen == "SC":
-                    build_name = "./alternate.x86_64"
-                    if np.random.random() > 0.33:
-                        build_name = "./city.x86_64" if np.random.random() < 0.5 else "./office.x86_64"
+                elif self.regen == "SC":
+                    build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64"]
+                    build_name = np.random.choice(build_names)
+                elif self.regen == "SCR":
+                    build_names = [
+                        "./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl", "rosbag"]
+                    build_name = np.random.choice(build_names)
+                elif self.regen == "R":
+                    build_names = ["staticasl", "rosbag"]
+                    build_name = np.random.choice(build_names)
+                else:
+                    raise NotImplementedError
                 try:
-                    env = NavRep3DTrainEnv(verbose=0, collect_statistics=False,
-                                           build_name=build_name, port=25005+np.random.randint(10),
-                                           tolerate_corruption=False)
+                    env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
+                                         build_name=build_name, port=25005+np.random.randint(10),
+                                         tolerate_corruption=False)
                     policy = SemiRandomMomentumPolicy()
                     data = generate_vae_dataset(
                         env, n_sequences=n_new_sequences, policy=policy,
@@ -167,6 +186,8 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         regen=dataset,
         lidar_mode="images",
     )
+    if dry_run:
+        train_dataset._partial_regen()
 
     # training params
     # optimization parameters

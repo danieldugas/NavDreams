@@ -8,7 +8,7 @@ from functools import partial
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
 from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
 from navrep3d.encodedenv3d import EnvEncoder
-from navrep3d.mlagents_gym_wrapper import NavRep3DAnyEnvDiscrete
+from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
 
 class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding, variant="S",

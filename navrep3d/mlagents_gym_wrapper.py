@@ -6,7 +6,7 @@ from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
-from navrep3d.navrep3dtrainenv import DiscreteActionWrapper, NavRep3DTrainEnvDiscrete
+from navrep3d.navrep3dtrainenv import DiscreteActionWrapper
 
 
 class MLAgentsGymEnvWrapper(gym.Env):
@@ -406,12 +406,15 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             self.viewer = None
         super().close()
 
-def NavRep3DStaticASLEnvDiscrete(verbose=0, collect_statistics=True,
-                                 debug_export_every_n_episodes=0, port=25001,
-                                 unity_player_dir="LFS/executables", build_name="staticasl",
-                                 start_with_random_rot=True, tolerate_corruption=True):
-    """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnvDiscrete,
-    used in the subprocvecenv initializer to run alongside navrep3dtrainenvs """
+def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv signature
+    """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnv,
+    """
+    build_name = kwargs.pop('build_name', "staticasl")
+    unity_player_dir = kwargs.pop('unity_player_dir', "LFS/executables")
+    start_with_random_rot = kwargs.pop('start_with_random_rot', True)
+    port = kwargs.pop('port', 25001)
+    collect_statistics = kwargs.pop('collect_statistics', True)
+    debug_export_every_n_episodes = kwargs.pop('debug_export_every_n_episodes', 0)
     if build_name != "staticasl":
         raise ValueError
     if unity_player_dir is None:
@@ -426,30 +429,14 @@ def NavRep3DStaticASLEnvDiscrete(verbose=0, collect_statistics=True,
     unity_env = UnityEnvironment(file_name=file_name, seed=1, worker_id=worker_id, side_channels=[])
     env = MLAgentsGymEnvWrapper(unity_env)
     env = StaticASLToNavRep3DEnvWrapper(env, collect_statistics, debug_export_every_n_episodes)
-    env = DiscreteActionWrapper(env)
     return env
 
-def NavRep3DAnyEnvDiscrete(verbose=0, collect_statistics=True,
-                           debug_export_every_n_episodes=0, port=25001,
-                           unity_player_dir="DEFAULT_UNITY_EXE", build_name=None,
-                           start_with_random_rot=True, tolerate_corruption=True):
-    """
-    wrapper to hide the difference between the two kinds of navrep3d environments
-    (crowdbotchallenge vs mlagents)
-    allows creating either a navrep3dtrainenv (train, alt, city, office) or navprep3dstaticasl env
-    depending on build name """
-    if build_name == "staticasl":
-        if unity_player_dir == "DEFAULT_UNITY_EXE":
-            unity_player_dir = "LFS/executables"
-        return NavRep3DStaticASLEnvDiscrete(verbose, collect_statistics,
-                                            debug_export_every_n_episodes,
-                                            port, unity_player_dir, build_name,
-                                            start_with_random_rot, tolerate_corruption)
-    else:
-        return NavRep3DTrainEnvDiscrete(verbose, collect_statistics,
-                                        debug_export_every_n_episodes,
-                                        port, unity_player_dir, build_name,
-                                        start_with_random_rot, tolerate_corruption)
+def NavRep3DStaticASLEnvDiscrete(**kwargs):
+    """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnvDiscrete,
+    used in the subprocvecenv initializer to run alongside navrep3dtrainenvs """
+    env = NavRep3DStaticASLEnv(**kwargs)
+    env = DiscreteActionWrapper(env)
+    return env
 
 def main(step_by_step=False, render_mode='human'):
     np.set_printoptions(precision=1, suppress=True)

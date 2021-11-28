@@ -3,6 +3,7 @@ import time
 from pandas import DataFrame
 import numpy as np
 from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
@@ -90,6 +91,9 @@ class MLAgentsGymEnvWrapper(gym.Env):
         raise ValueError("Expected either a decision ({}) or a terminal step ({}).".format(
             len(decision_steps), len(terminal_steps)))
 
+    def close(self):
+        self.unity_env.close()
+
 class StaticASLToNavRep3DEnvWrapper(gym.Env):
     """
     Specific wrapper to transform staticASL scene inputs and outputs for navrep3d compatibility
@@ -172,7 +176,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.last_action = action # hack which allows encodedenv wrapper to get last action
         self.current_scenario = obs['VectorSensor_size6'][5]
         goal_is_reached = reward > 50.0
-        self.unwrapped.episode_statistics.loc[len(self.episode_statistics)] = [
+        self.episode_statistics.loc[len(self.episode_statistics)] = [
             self.total_steps,
             self.scenario_name,
             np.nan,
@@ -405,6 +409,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             self.viewer.close()
             self.viewer = None
         super().close()
+        self.staticasl_env.close()
 
 def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv signature
     """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnv,
@@ -415,6 +420,9 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     port = kwargs.pop('port', 25001)
     collect_statistics = kwargs.pop('collect_statistics', True)
     debug_export_every_n_episodes = kwargs.pop('debug_export_every_n_episodes', 0)
+    # these args are unityenv specific
+    time_scale = kwargs.pop('time_scale', 20.0) # 20 is the value used when I run the default mlagents-learn
+    seed = kwargs.pop('seed', 1)
     if build_name != "staticasl":
         raise ValueError
     if unity_player_dir is None:
@@ -426,7 +434,9 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     if not start_with_random_rot:
         raise ValueError
     worker_id = port - 25001
-    unity_env = UnityEnvironment(file_name=file_name, seed=1, worker_id=worker_id, side_channels=[])
+    channel = EngineConfigurationChannel()
+    unity_env = UnityEnvironment(file_name=file_name, seed=seed, worker_id=worker_id, side_channels=[])
+    channel.set_configuration_parameters(time_scale=time_scale)
     env = MLAgentsGymEnvWrapper(unity_env)
     env = StaticASLToNavRep3DEnvWrapper(env, collect_statistics, debug_export_every_n_episodes)
     return env

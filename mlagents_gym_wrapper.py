@@ -1,7 +1,12 @@
 import gym
+import time
+from pandas import DataFrame
 import numpy as np
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.base_env import ActionTuple
+# from gym_unity.envs import UnityToGymWrapper
+
+from navrep3d.navrep3dtrainenv import DiscreteActionWrapper
 
 def obs_spec_to_obs_space(obs_spec):
     """
@@ -70,6 +75,54 @@ class MLAgentsGymEnvWrapper(gym.Env):
         raise ValueError("Expected either a decision ({}) or a terminal step ({}).".format(
             len(decision_steps), len(terminal_steps)))
 
+class NavRep3DStatisticsEnvWrapper(gym.core.Wrapper):
+    """
+    Wrapper which adds a NavRep3D compatible statistics collection (used to log training performance)
+    """
+    def __init__(self, env):
+        super().__init__(env)
+        self.unwrapped.episode_statistics = DataFrame(
+            columns=[
+                "total_steps",
+                "scenario",
+                "damage",
+                "steps",
+                "goal_reached",
+                "reward",
+                "num_agents",
+                "num_walls",
+                "wall_time",
+            ])
+        self.total_steps = 0
+        self.scenario_name = "navrep3dasl"
+        self.steps_since_reset = 0
+
+    def reset(self):
+        self.episode_reward = 0
+        self.steps_since_reset = 0
+        obs = super().reset()
+        return obs
+
+    def step(self, action):
+        obs, reward, done, info = super().step(action)
+        self.steps_since_reset += 1
+        self.total_steps += 1
+        self.episode_reward += reward
+        goal_is_reached = reward > 50.0
+        current_scenario = 0
+        raise NotImplementedError("Set up difficulty side channel")
+        self.unwrapped.episode_statistics.loc[len(self.episode_statistics)] = [
+            self.total_steps,
+            self.scenario_name,
+            np.nan,
+            self.steps_since_reset,
+            goal_is_reached,
+            self.episode_reward,
+            current_scenario,
+            100,
+            time.time(),
+        ]
+        return obs, reward, done, info
 
 class NavRep3DRendererEnvWrapper(gym.core.Wrapper):
     """
@@ -98,6 +151,7 @@ class NavRep3DRendererEnvWrapper(gym.core.Wrapper):
         self.last_image = (obs['CameraSensor'] * 255).astype(np.uint8)
         self.goal_xy = obs['VectorSensor_size5'][:2]
         self.last_odom = np.array([0, 0, 0, 0, 0, 0, 0])
+        self.unwrapped.last_action = np.zeros((3,)) # hack which allows encodedenv wrapper to get last action
         return obs
 
     def step(self, action):
@@ -111,6 +165,7 @@ class NavRep3DRendererEnvWrapper(gym.core.Wrapper):
         self.goal_xy = obs['VectorSensor_size5'][:2]
         self.last_odom = np.array([0, 0, 0, 0, 0, 0, 0])
         self.last_action = action
+        self.unwrapped.last_action = action # hack which allows encodedenv wrapper to get last action
         return obs, reward, done, info
 
     def render(self, mode='human', close=False, save_to_file=False):
@@ -325,11 +380,48 @@ class NavRep3DRendererEnvWrapper(gym.core.Wrapper):
             self.viewer = None
         super().close()
 
+class DictToTupleObsWrapper(gym.core.ObservationWrapper):
+    """
+    Wrapper for compatibility
+    """
+
+    def __init__(self, env):
+        super().__init__(env)
+        self.observation_space = gym.spaces.Tuple(
+            [env.observation_space[key] for key in env.observation_space])
+
+    def observation(self, obs):
+        obs_tuple = tuple([obs[key] for key in obs])
+        return obs_tuple
+
+def NavRep3DStaticASLEnvDiscrete(verbose=0, collect_statistics=True,
+                                 debug_export_every_n_episodes=0, port=25001,
+                                 unity_player_dir="LFS/executables", build_name="staticasl",
+                                 start_with_random_rot=True, tolerate_corruption=True):
+    """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnvDiscrete """
+    if unity_player_dir != "LFS/executables":
+        raise ValueError
+    if build_name != "staticasl":
+        raise ValueError
+    if debug_export_every_n_episodes != 0:
+        raise ValueError
+    if not start_with_random_rot:
+        raise ValueError
+    unity_env = UnityEnvironment(file_name="LFS/executables/staticasl", seed=1, side_channels=[])
+    env = MLAgentsGymEnvWrapper(unity_env)
+    env = NavRep3DRendererEnvWrapper(env)
+    env = NavRep3DStatisticsEnvWrapper(env)
+    env = DictToTupleObsWrapper(env)
+    env = DiscreteActionWrapper(env)
+    WIP
+    return env
+
 def main(step_by_step=False, render_mode='human'):
     np.set_printoptions(precision=1, suppress=True)
     # This is a non-blocking call that only loads the environment.
-    unity_env = UnityEnvironment(file_name=None, seed=1, side_channels=[])
+    unity_env = UnityEnvironment(file_name="LFS/executables/staticasl", seed=1, side_channels=[])
     env = MLAgentsGymEnvWrapper(unity_env)
+#     env = UnityToGymWrapper(unity_env, uint8_visual=True)
     env = NavRep3DRendererEnvWrapper(env)
 
     from navrep.tools.envplayer import EnvPlayer

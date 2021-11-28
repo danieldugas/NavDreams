@@ -38,6 +38,18 @@ class NavRep3DTrainEnvDiscreteFlattened(NavRep3DTrainEnvDiscrete):
         obs = np.concatenate([(np.moveaxis(obs[0], -1, 0) / 255.).flatten(), (obs[1]).flatten()], axis=0)
         return obs, reward, done, info
 
+class FlattenN3DObsWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+        super(FlattenN3DObsWrapper, self).__init__(env)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(
+            np.prod(env.observation_space[0].shape)+env.observation_space[1].shape[0],), dtype=np.float32)
+
+    def observation(self, observation):
+        # image: channels first, normalized flattened. vector: same
+        flatobs = np.concatenate([(np.moveaxis(observation[0], -1, 0) / 255.).flatten(),
+                                  (observation[1]).flatten()], axis=0)
+        return flatobs
+
 class NavRep3DTupleCNN(BaseFeaturesExtractor):
     """
     :param observation_space: (gym.Space)

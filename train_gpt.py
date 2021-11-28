@@ -91,7 +91,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_Random_step")
         max_steps = 0
     elif dataset == "SCR":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain"),
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
@@ -132,26 +132,27 @@ def main(max_steps=222222, dataset="S", dry_run=False):
     mconf.image_channels = 3
 
     class N3DWorldModelDataset(WorldModelDataset):
-        def _partial_regen(self, n_new_sequences=1):
+        def _partial_regen(self, n_new_sequences=1, build_name=None):
             from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
             from navrep3d.navrep3danyenv import NavRep3DAnyEnv
             if self.regen in ["S", "SC", "Salt", "SCR", "R"]:
-                if self.regen == "S":
-                    build_name = "./build.x86_64"
-                elif self.regen == "Salt":
-                    build_name = "./alternate.x86_64"
-                elif self.regen == "SC":
-                    build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64"]
-                    build_name = np.random.choice(build_names)
-                elif self.regen == "SCR":
-                    build_names = [
-                        "./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl", "rosbag"]
-                    build_name = np.random.choice(build_names)
-                elif self.regen == "R":
-                    build_names = ["staticasl", "rosbag"]
-                    build_name = np.random.choice(build_names)
-                else:
-                    raise NotImplementedError
+                if build_name is None:
+                    if self.regen == "S":
+                        build_name = "./build.x86_64"
+                    elif self.regen == "Salt":
+                        build_name = "./alternate.x86_64"
+                    elif self.regen == "SC":
+                        build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64"]
+                        build_name = np.random.choice(build_names)
+                    elif self.regen == "SCR":
+                        build_names = [
+                            "./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl", "rosbag"]
+                        build_name = np.random.choice(build_names)
+                    elif self.regen == "R":
+                        build_names = ["staticasl", "rosbag"]
+                        build_name = np.random.choice(build_names)
+                    else:
+                        raise NotImplementedError
                 try:
                     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                                          build_name=build_name, port=25005+np.random.randint(10),
@@ -161,8 +162,8 @@ def main(max_steps=222222, dataset="S", dry_run=False):
                         env, n_sequences=n_new_sequences, policy=policy,
                         render=False, archive_dir=None)
                 except: # noqa
-                    print("Failed to regenerate dataset. retrying.")
-                    self._partial_regen(n_new_sequences=n_new_sequences)
+                    print("Failed to regenerate dataset {}. retrying.".format(build_name))
+                    self._partial_regen(n_new_sequences=n_new_sequences, build_name=build_name)
                     return
                 if self.pre_convert_obs:
                     data["obs"] = scans_to_lidar_obs(
@@ -178,6 +179,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
                 # replace data
                 i = self.regen_head_index
                 self.data[k][i : i + N] = data[k]
+            print("Regenerated {} steps of {}".format(N, build_name))
             self.regen_head_index += N
 
     train_dataset = N3DWorldModelDataset(

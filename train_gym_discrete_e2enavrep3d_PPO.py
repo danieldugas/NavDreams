@@ -5,7 +5,8 @@ from stable_baselines3 import PPO
 from strictfire import StrictFire
 
 from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvDiscreteFlattened
+from navrep3d.custom_policy import NavRep3DTupleCNN
+from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscreteFlattened
 from navrep3d.auto_debug import enable_auto_debug
 
 MILLION = 1000000
@@ -33,6 +34,11 @@ def main(dry_run=False, n=None, build_name=None):
     elif build_name == "SC":
         ENV_NAME = "navrep3dSCenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]
+    elif build_name == "SCR":
+        ENV_NAME = "navrep3dSCRencodedenv_"
+        build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl"]
+    elif build_name == "staticasl":
+        ENV_NAME = "navrep3daslencodedenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH
@@ -43,15 +49,12 @@ def main(dry_run=False, n=None, build_name=None):
     if not os.path.exists(LOGDIR):
         os.makedirs(LOGDIR)
 
-    if True:
-        env = SubprocVecEnv([
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[0], debug_export_every_n_episodes=170, port=25002),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[1], debug_export_every_n_episodes=0, port=25003),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[2], debug_export_every_n_episodes=0, port=25004),
-            lambda: NavRep3DTrainEnvDiscreteFlattened(build_name=build_names[3], debug_export_every_n_episodes=0, port=25005),
-        ])
-    else:
-        env = NavRep3DTrainEnvDiscreteFlattened(verbose=0, debug_export_every_n_episodes=170)
+    env = SubprocVecEnv([
+        lambda: NavRep3DAnyEnvDiscreteFlattened(build_name=build_names[0], debug_export_every_n_episodes=170, port=25002),
+        lambda: NavRep3DAnyEnvDiscreteFlattened(build_name=build_names[1], debug_export_every_n_episodes=0, port=25003),
+        lambda: NavRep3DAnyEnvDiscreteFlattened(build_name=build_names[2], debug_export_every_n_episodes=0, port=25004),
+        lambda: NavRep3DAnyEnvDiscreteFlattened(build_name=build_names[3], debug_export_every_n_episodes=0, port=25005),
+    ])
 
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
 

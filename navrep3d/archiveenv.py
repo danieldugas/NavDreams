@@ -29,14 +29,12 @@ class ArchiveEnv(gym.Env):
         if len(self.data["scans"]) == 0:
             raise ValueError
         self.current_iteration = None
-        self.last_action = None
         self.data["dones"][-1] = 1
         self.viewer = None
         self.shuffle_episodes = shuffle_episodes
 
     def _step(self, action):
         """ preserved when inherited classes overrite step() """
-        self.last_action = action
         scan = self.data["scans"][self.current_iteration].astype(np.float32)
         robotstate = self.data["robotstates"][self.current_iteration]
         reward = self.data["rewards"][self.current_iteration]
@@ -77,7 +75,7 @@ class ArchiveEnv(gym.Env):
         return 0.25
 
     def render(self, mode="human", close=False, image_override=None, save_to_file=False,
-               draw_score=True):
+               action_override=None, draw_score=True):
         if close:
             if self.viewer is not None:
                 self.viewer.close()
@@ -89,6 +87,8 @@ class ArchiveEnv(gym.Env):
         image = self.data["scans"][self.current_iteration-1]
         if image_override is not None:
             image = image_override
+        if action_override is not None:
+            action = action_override
 
         if mode == "rgb_array":
             raise NotImplementedError
@@ -172,8 +172,8 @@ class ArchiveEnv(gym.Env):
                 # Action arrow
                 i = WINDOW_W / 2.0
                 j = WINDOW_H / 2.0
-                r = (0.3 + np.linalg.norm(self.last_action[:2])) / M_PER_PX
-                angle = np.pi / 2.0 + np.arctan2(self.last_action[1], self.last_action[0])
+                r = (0.3 + np.linalg.norm(action[:2])) / M_PER_PX
+                angle = np.pi / 2.0 + np.arctan2(action[1], action[0])
                 color = np.array([0.9, 0.3, 0.0])
                 inose = i + r * np.cos(angle)
                 jnose = j + r * np.sin(angle)
@@ -187,8 +187,8 @@ class ArchiveEnv(gym.Env):
                 gl.glVertex3f(iright, jright, 0)
                 gl.glVertex3f(ileft, jleft, 0)
                 gl.glEnd()
-                r = (0.3 + self.last_action[2]) / M_PER_PX
-                angle = np.pi / 2.0 + np.arctan2(self.last_action[2], 0)
+                r = (0.3 + abs(action[2])) / M_PER_PX
+                angle = np.pi / 2.0 + np.arctan2(action[2], 0)
                 inose = i + r * np.cos(angle)
                 jnose = j + r * np.sin(angle)
                 iright = i + 0.3 * r * -np.sin(angle)
@@ -277,12 +277,13 @@ class ArchiveEnv(gym.Env):
 def main(
     # Env args
     shuffle=False,
+    directory="~/navrep3d_W/datasets/V/rosbag",
     # Player args
     render_mode='human', step_by_step=False,
 ):
     np.set_printoptions(precision=2, suppress=True)
-    directory = [os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
-    env = ArchiveEnv(directory, shuffle_episodes=shuffle)
+    directories = [os.path.expanduser(directory)]
+    env = ArchiveEnv(directories, shuffle_episodes=shuffle)
     player = EnvPlayer(env, render_mode, step_by_step)
     player.run()
 

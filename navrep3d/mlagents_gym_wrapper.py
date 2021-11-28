@@ -1,3 +1,4 @@
+import os
 import gym
 import time
 from pandas import DataFrame
@@ -9,6 +10,9 @@ from mlagents_envs.base_env import ActionTuple
 
 from navrep3d.navrep3dtrainenv import DiscreteActionWrapper
 
+HOMEDIR = os.path.expanduser("~")
+DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
+# TODO: RELEASE - make a tool which downloads LFS files
 
 class MLAgentsGymEnvWrapper(gym.Env):
     """
@@ -103,7 +107,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
     This should be the lowest level env, accessed as 'unwrapped' by all wrappers above.
     """
     def __init__(self, staticasl_env,
-                 collect_statistics=True, debug_export_every_n_episodes=0):
+                 verbose=0, collect_statistics=True, debug_export_every_n_episodes=0):
         super().__init__()
         self.staticasl_env = staticasl_env
         # navrep3dtrainenv spaces
@@ -415,7 +419,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnv,
     """
     build_name = kwargs.pop('build_name', "staticasl")
-    unity_player_dir = kwargs.pop('unity_player_dir', "LFS/executables")
+    unity_player_dir = kwargs.pop('unity_player_dir', DEFAULT_UNITY_EXE)
     start_with_random_rot = kwargs.pop('start_with_random_rot', True)
     port = kwargs.pop('port', 25001)
     collect_statistics = kwargs.pop('collect_statistics', True)
@@ -423,22 +427,26 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     # these args are unityenv specific
     time_scale = kwargs.pop('time_scale', 20.0) # 20 is the value used when I run the default mlagents-learn
     seed = kwargs.pop('seed', 1)
+    verbose = kwargs.pop('verbose', 0)
+    kwargs.pop('tolerate_corruption', 0)
+    if kwargs:
+        raise ValueError("Unexpected kwargs: {}".format(kwargs))
     if build_name != "staticasl":
         raise ValueError
     if unity_player_dir is None:
         file_name = None
-    elif unity_player_dir == "LFS/executables":
-        file_name = "LFS/executables/staticasl"
     else:
-        raise ValueError
+        file_name = os.path.join(unity_player_dir, build_name)
     if not start_with_random_rot:
         raise ValueError
     worker_id = port - 25001
     channel = EngineConfigurationChannel()
-    unity_env = UnityEnvironment(file_name=file_name, seed=seed, worker_id=worker_id, side_channels=[])
+    unity_env = UnityEnvironment(file_name=file_name, seed=seed, worker_id=worker_id, side_channels=[channel])
     channel.set_configuration_parameters(time_scale=time_scale)
     env = MLAgentsGymEnvWrapper(unity_env)
-    env = StaticASLToNavRep3DEnvWrapper(env, collect_statistics, debug_export_every_n_episodes)
+    env = StaticASLToNavRep3DEnvWrapper(env,
+                                        verbose=verbose, collect_statistics=collect_statistics,
+                                        debug_export_every_n_episodes=debug_export_every_n_episodes)
     return env
 
 def NavRep3DStaticASLEnvDiscrete(**kwargs):
@@ -451,7 +459,7 @@ def NavRep3DStaticASLEnvDiscrete(**kwargs):
 def main(step_by_step=False, render_mode='human'):
     np.set_printoptions(precision=1, suppress=True)
     # This is a non-blocking call that only loads the environment.
-    unity_env = UnityEnvironment(file_name="LFS/executables/staticasl", seed=1, side_channels=[])
+    unity_env = UnityEnvironment(file_name="LFS/mlagents_executables/staticasl", seed=1, side_channels=[])
 #     env = UnityToGymWrapper(unity_env, uint8_visual=True)
     env = MLAgentsGymEnvWrapper(unity_env)
     env = StaticASLToNavRep3DEnvWrapper(env)

@@ -36,18 +36,24 @@ bridge = CvBridge()
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-12-04-58.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-01-00.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-08-23.bag" # noqa
-bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-12-11.bag" # noqa
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-12-11.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/corridor_koze_kids.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/2019-12-13-20-11-46.bag" # noqa
+bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/rosbags/meet_your_lab1.bag"
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/rosbags/meet_your_lab2.bag"
 
 archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 
 DT = 0.2
-FIXED_FRAME = "odom" # StefanKiss, merged_demo
+FIXED_FRAME = "odom" # StefanKiss, merged_demo, meet_your_lab
 # FIXED_FRAME = "map" # crowdbot CLA
 # FIXED_FRAME = "reference_map" # open-lab
 ROBOT_FRAME = "base_footprint"
 GOAL_REACHED_DIST = 0.5
+MANUALLY_ADDED_GOALS = []
+# MANUALLY_ADDED_GOALS = [[-23.2, -24.1]] # meet_your_lab1
+# MANUALLY_ADDED_GOALS = [[4.23, -28.5]] # meet_your_lab2
+
 
 resize_dim = (64, 64)
 _W, _H = resize_dim
@@ -180,6 +186,11 @@ def find_close_to_goal(steps, times, goals_in_fix, robot_in_fix, GOAL_REACHED_DI
             close_to_goal[step] = np.linalg.norm(
                 robot_in_fix[step, :2] - goals_in_fix[step]
             ) < GOAL_REACHED_DIST
+        for manual_goal_in_fix in MANUALLY_ADDED_GOALS:
+            close_to_manual_goal = np.linalg.norm(
+                robot_in_fix[step, :2] - manual_goal_in_fix
+            ) < GOAL_REACHED_DIST
+            close_to_goal[step] = close_to_goal[step] or close_to_manual_goal
     return close_to_goal
 
 

@@ -59,7 +59,9 @@ class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
                  unity_player_dir=DEFAULT_UNITY_EXE, build_name=None,
-                 start_with_random_rot=True, tolerate_corruption=True):
+                 start_with_random_rot=True, tolerate_corruption=True,
+                 randomize_difficulty=False):
+        # randomize difficulty is not implemented, but included for compat with NavRep3DAnyEnv
         # default args
         if build_name is None:
             build_name = "./build.x86_64"

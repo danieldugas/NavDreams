@@ -107,7 +107,8 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
     This should be the lowest level env, accessed as 'unwrapped' by all wrappers above.
     """
     def __init__(self, staticasl_env,
-                 verbose=0, collect_statistics=True, debug_export_every_n_episodes=0):
+                 verbose=0, collect_statistics=True, debug_export_every_n_episodes=0,
+                 randomize_difficulty=False):
         super().__init__()
         self.staticasl_env = staticasl_env
         # navrep3dtrainenv spaces
@@ -129,7 +130,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.last_lidar = None
         self.goal_xy = None
         self.reset_in_progress = False
-        self.verbose = False
+        self.verbose = verbose
         self.total_steps = 0
         self.episode_statistics = DataFrame(
             columns=[
@@ -147,6 +148,12 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.steps_since_reset = 0
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.total_episodes = 0
+        self.randomize_difficulty = randomize_difficulty
+        self.difficulty_to_set = None
+
+    def set_difficulty(self, difficulty):
+        """ difficulty [0, 1] """
+        self.difficulty_to_set = difficulty
 
     def reset(self):
         self.episode_reward = 0
@@ -163,12 +170,17 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             obs['CameraSensor'],
             obs['VectorSensor_size6'][:5]
         )
+        if self.randomize_difficulty:
+            self.set_difficulty(np.random.uniform())
         return obs_tuple
 
     def step(self, action):
         # the env player passes a len 3 action, but our environment expects action_space
         action_corrected = np.zeros(self.staticasl_env.action_space.shape)
         action_corrected[:3] = action
+        if self.difficulty_to_set is not None:
+            action_corrected[4] = self.difficulty_to_set
+            self.difficulty_to_set = None
         obs, reward, done, info = self.staticasl_env.step(action_corrected)
         self.total_steps += 1
         self.steps_since_reset += 1
@@ -412,7 +424,6 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         if self.viewer is not None:
             self.viewer.close()
             self.viewer = None
-        super().close()
         self.staticasl_env.close()
 
 def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv signature
@@ -428,6 +439,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     time_scale = kwargs.pop('time_scale', 20.0) # 20 is the value used when I run the default mlagents-learn
     seed = kwargs.pop('seed', 1)
     verbose = kwargs.pop('verbose', 0)
+    randomize_difficulty = kwargs.pop('randomize_difficulty', False)
     kwargs.pop('tolerate_corruption', 0)
     if kwargs:
         raise ValueError("Unexpected kwargs: {}".format(kwargs))
@@ -446,7 +458,8 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     env = MLAgentsGymEnvWrapper(unity_env)
     env = StaticASLToNavRep3DEnvWrapper(env,
                                         verbose=verbose, collect_statistics=collect_statistics,
-                                        debug_export_every_n_episodes=debug_export_every_n_episodes)
+                                        debug_export_every_n_episodes=debug_export_every_n_episodes,
+                                        randomize_difficulty=randomize_difficulty)
     return env
 
 def NavRep3DStaticASLEnvDiscrete(**kwargs):

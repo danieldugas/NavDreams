@@ -191,18 +191,19 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.last_action = action
         self.last_action = action # hack which allows encodedenv wrapper to get last action
         self.current_scenario = obs['VectorSensor_size6'][5]
-        goal_is_reached = reward > 50.0
-        self.episode_statistics.loc[len(self.episode_statistics)] = [
-            self.total_steps,
-            self.scenario_name,
-            np.nan,
-            self.steps_since_reset,
-            goal_is_reached,
-            self.episode_reward,
-            self.current_scenario,
-            self.current_scenario, # hack: num_walls is used to plot difficulty but for this env is fixed
-            time.time(),
-        ]
+        if done:
+            goal_is_reached = reward > 50.0
+            self.episode_statistics.loc[len(self.episode_statistics)] = [
+                self.total_steps,
+                self.scenario_name,
+                np.nan,
+                self.steps_since_reset,
+                goal_is_reached,
+                self.episode_reward,
+                self.current_scenario,
+                self.current_scenario, # hack: num_walls is used to plot difficulty but for this env is fixed
+                time.time(),
+            ]
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:
             print("{} {}".format(self.total_steps, self.total_episodes), end="\r", flush=True)

@@ -33,6 +33,8 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
     elif env == "rosbag": # only for testing, used in regen
         archive_dir = "/tmp/navrep3d/datasets/V/navrep3drosbag"
         build_name = "rosbag"
+    else:
+        raise NotImplementedError
     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                          build_name=build_name, port=25005+subproc_id,
                          tolerate_corruption=False, randomize_difficulty=True)

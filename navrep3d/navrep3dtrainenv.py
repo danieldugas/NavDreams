@@ -59,6 +59,16 @@ def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=No
     """ creates a file in /tmp/ to indicate that a port is in use """
     # check if file already exists
     filepath = f"/tmp/navrep3d_port_{port}_in_use"
+    class PortLockHandle(object):
+        def __init__(self, port, filehandle):
+            self.port = port
+            self.filehandle = filehandle
+        def write(self, message):
+            self.filehandle.write(message)
+            self.filehandle.write("\n")
+            self.filehandle.flush()
+        def free(self):
+            mark_port_use(self.port, False, filehandle=self.filehandle)
     if occupy:
         if os.path.exists(filepath):
             if auto_switch:
@@ -73,13 +83,13 @@ def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=No
             filehandle.write(process_info)
             filehandle.write("\n")
             filehandle.flush()
+            return PortLockHandle(port, filehandle)
     else:
         if os.path.exists(filepath):
             filehandle.close()
             os.remove(filepath)
         else:
             print(f"Warning: File {filepath} missing when trying to free port")
-    return port, filehandle
 
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
@@ -103,8 +113,7 @@ class NavRep3DTrainEnv(gym.Env):
         HOST = '127.0.0.1'
         self.socket_host = HOST
         self.build_name = build_name
-        self.socket_port, self.port_lock_handle = mark_port_use(
-            port, True, auto_switch=True, process_info=f"{self.build_name}")
+        self.port_lock_handle = mark_port_use(port, True, auto_switch=True, process_info=f"{self.build_name}")
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
@@ -163,19 +172,16 @@ class NavRep3DTrainEnv(gym.Env):
         if self.unity_process is not None:
             socket_handler.stop(self.s)
             self.port_lock_handle.write("stopping")
-            self.port_lock_handle.flush()
             self.unity_process.wait()
             self.port_lock_handle.write("stopped")
-            self.port_lock_handle.flush()
         # start unity player and connect
         if self.unity_player_dir is not None:
-            self.unity_process = subprocess.Popen([self.build_name, "-port", str(self.socket_port)],
+            self.unity_process = subprocess.Popen([self.build_name, "-port", str(self.port_lock_handle.port)],
                                                   cwd=self.unity_player_dir,
                                                   )
             self.port_lock_handle.write(f"pid:{self.unity_process.pid} args:{self.unity_process.args}")
-            self.port_lock_handle.flush()
             time.sleep(10.0) # long, but necessary on some machines
-        self.s = socket_handler.init_socket(self.socket_host, self.socket_port)
+        self.s = socket_handler.init_socket(self.socket_host, self.port_lock_handle.port)
 
     def _get_dt(self):
         return self.time_step
@@ -534,10 +540,9 @@ class NavRep3DTrainEnv(gym.Env):
             self.viewer.close()
         socket_handler.stop(self.s)
         self.port_lock_handle.write("closing")
-        self.port_lock_handle.flush()
         if self.unity_process is not None:
             self.unity_process.wait(timeout=10)
-        mark_port_use(self.socket_port, False, filehandle=self.port_lock_handle)
+        self.port_lock_handle.free()
         time.sleep(1)
 
     def render(self, mode='human', close=False, save_to_file=False):

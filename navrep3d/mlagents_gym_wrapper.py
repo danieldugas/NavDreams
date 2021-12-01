@@ -8,7 +8,7 @@ from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
-from navrep3d.navrep3dtrainenv import DiscreteActionWrapper
+from navrep3d.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use
 
 HOMEDIR = os.path.expanduser("~")
 DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
@@ -18,7 +18,8 @@ class MLAgentsGymEnvWrapper(gym.Env):
     """
     A generic wrapper, takes a unity_env and turns it into a gym env
     """
-    def __init__(self, unity_env):
+    def __init__(self, unity_env, port_lock_handle):
+        self.port_lock_handle = port_lock_handle
         self.visual_to_uint8 = True
         self.unity_env = unity_env
         self.unity_env.reset()
@@ -96,7 +97,9 @@ class MLAgentsGymEnvWrapper(gym.Env):
             len(decision_steps), len(terminal_steps)))
 
     def close(self):
+        print("Closing unity environment...")
         self.unity_env.close()
+        self.port_lock_handle.free()
 
 class StaticASLToNavRep3DEnvWrapper(gym.Env):
     """
@@ -452,11 +455,13 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
         file_name = os.path.join(unity_player_dir, build_name)
     if not start_with_random_rot:
         raise ValueError
-    worker_id = port - 25001
+    port_lock_handle = mark_port_use(port, True, auto_switch=True, process_info="staticasl")
+    worker_id = port_lock_handle.port - 25001
     channel = EngineConfigurationChannel()
     unity_env = UnityEnvironment(file_name=file_name, seed=seed, worker_id=worker_id, side_channels=[channel])
+    port_lock_handle.write(f"actual port {unity_env._port}\n")
     channel.set_configuration_parameters(time_scale=time_scale)
-    env = MLAgentsGymEnvWrapper(unity_env)
+    env = MLAgentsGymEnvWrapper(unity_env, port_lock_handle)
     env = StaticASLToNavRep3DEnvWrapper(env,
                                         verbose=verbose, collect_statistics=collect_statistics,
                                         debug_export_every_n_episodes=debug_export_every_n_episodes,

@@ -13,5 +13,9 @@ pip install matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet navrep 
 pip install keras==2.6.* # later version is not compatible with python 3.6
 pip install dreamerv2
 pip install tensorflow==2.6.0 tensorflow_probability ruamel.yaml 'gym[atari]' dm_control
+pip install mlflow
+
+cd ~/Code/
+git clone git@github.com:danieldugas/pydreamer.git
 # on RTX 3070 (sm_86)
 # pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html

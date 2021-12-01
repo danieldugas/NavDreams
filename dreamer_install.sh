@@ -20,5 +20,7 @@ git clone git@github.com:danieldugas/pydreamer.git --branch n3d
 # TODO RELEASE - change this
 cd ~/Code/cbsim/navrep3d
 pip install -e .
+pip install mlagents
+
 # on RTX 3070 (sm_86)
 # pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html

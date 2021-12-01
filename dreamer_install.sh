@@ -16,7 +16,7 @@ pip install tensorflow==2.6.0 tensorflow_probability ruamel.yaml 'gym[atari]' dm
 pip install mlflow
 
 cd ~/Code/
-git clone git@github.com:danieldugas/pydreamer.git
+git clone git@github.com:danieldugas/pydreamer.git --branch n3d
 # TODO RELEASE - change this
 cd ~/Code/cbsim/navrep3d
 pip install -e .

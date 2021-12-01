@@ -55,6 +55,32 @@ def angle_difference(a, b):
     delta = (delta + np.pi) % (2.*np.pi) - np.pi
     return delta
 
+def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=None):
+    """ creates a file in /tmp/ to indicate that a port is in use """
+    # check if file already exists
+    filepath = f"/tmp/navrep3d_port_{port}_in_use"
+    if occupy:
+        if os.path.exists(filepath):
+            if auto_switch:
+                print(f"Port {port} already in use. Trying port {port+1}.")
+                port = port + 1
+                return mark_port_use(port, occupy,
+                                     auto_switch=True, process_info=process_info, filehandle=filehandle)
+            else:
+                raise ValueError(f"Port {port} is already in use")
+        else:
+            filehandle = open(filepath, "w")
+            filehandle.write(process_info)
+            filehandle.write("\n")
+            filehandle.flush()
+    else:
+        if os.path.exists(filepath):
+            filehandle.close()
+            os.remove(filepath)
+        else:
+            print(f"Warning: File {filepath} missing when trying to free port")
+    return port, filehandle
+
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,
                  debug_export_every_n_episodes=0, port=25001,
@@ -77,7 +103,8 @@ class NavRep3DTrainEnv(gym.Env):
         HOST = '127.0.0.1'
         self.socket_host = HOST
         self.build_name = build_name
-        self.socket_port = port
+        self.socket_port, self.port_lock_handle = mark_port_use(
+            port, True, auto_switch=True, process_info=f"{self.build_name}")
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
@@ -135,12 +162,18 @@ class NavRep3DTrainEnv(gym.Env):
         # close unity player and socket
         if self.unity_process is not None:
             socket_handler.stop(self.s)
+            self.port_lock_handle.write("stopping")
+            self.port_lock_handle.flush()
             self.unity_process.wait()
+            self.port_lock_handle.write("stopped")
+            self.port_lock_handle.flush()
         # start unity player and connect
         if self.unity_player_dir is not None:
             self.unity_process = subprocess.Popen([self.build_name, "-port", str(self.socket_port)],
                                                   cwd=self.unity_player_dir,
                                                   )
+            self.port_lock_handle.write(f"pid:{self.unity_process.pid} args:{self.unity_process.args}")
+            self.port_lock_handle.flush()
             time.sleep(10.0) # long, but necessary on some machines
         self.s = socket_handler.init_socket(self.socket_host, self.socket_port)
 
@@ -500,8 +533,11 @@ class NavRep3DTrainEnv(gym.Env):
         if self.viewer is not None:
             self.viewer.close()
         socket_handler.stop(self.s)
+        self.port_lock_handle.write("closing")
+        self.port_lock_handle.flush()
         if self.unity_process is not None:
             self.unity_process.wait(timeout=10)
+        mark_port_use(self.socket_port, False, filehandle=self.port_lock_handle)
         time.sleep(1)
 
     def render(self, mode='human', close=False, save_to_file=False):

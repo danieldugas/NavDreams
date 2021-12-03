@@ -171,7 +171,8 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 else:
                     if difficulty == "worst":
                         # will be used to compute worst of all
-                        all_perfs = [scenario_S["goal_reached"].values.astype(np.float32) for _ in all_difficulties[:-1]]
+                        all_perfs = [scenario_S["goal_reached"].values.astype(np.float32)
+                                     for _ in all_difficulties[:-1]]
                         for i in range(len(all_perfs)):
                             all_perfs[i][scenario_S["num_walls"] != all_difficulties[i]] = np.nan
                     else:
@@ -212,7 +213,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     ylabel = "success rate [0-1]"
                     ylim = [-0.1, 1.1]
                     rewards = scenario_S["goal_reached"].values
-                    rewards[0] = 0 # better would be to add a point at 0, 0, so the initial assumption is failure
+                    rewards[0] = 0 # better would be to add a point at 0, 0, so the init. assumpt. is failure
                     if difficulty == "worst":
                         for perf in all_perfs:
                             perf[0] = 0
@@ -226,7 +227,8 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 color = line.get_c()
                 # add episode reward scatter
                 scatter, = ax.plot(x, y, color=color, marker=',', linewidth=0, label=scenario)
-                top = ax.scatter(x[np.argmax(smooth_y)], np.max(smooth_y), marker='o', facecolor="none", edgecolor=color)
+                top = ax.scatter(x[np.argmax(smooth_y)], np.max(smooth_y), marker='o', facecolor="none",
+                                 edgecolor=color)
 
                 # add vertical line at end of finished runs
                 if x_axis == "wall_time":
@@ -264,7 +266,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 if x_axis == "wall_time":
                     ax.axvline(md.epoch2num(time.time()), color='k', linewidth=1)
 
-    L = fig.legend([lines[0] for lines in linegroups], legends, bbox_to_anchor=(1.05, 1.))
+    L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
 
     console.print(table)

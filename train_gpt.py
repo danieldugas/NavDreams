@@ -99,7 +99,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         log_path = os.path.expanduser(
             "~/navrep3d_W/logs/W/transformer_SCR_train_log_{}.csv".format(START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCR")
-        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_R_step")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SCR_step")
     elif dataset == "R":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]

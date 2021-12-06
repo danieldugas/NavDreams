@@ -16,12 +16,14 @@ class NavRep3DTrainEncoder(EnvEncoder):
         assert backend == "GPT"
         if variant == "S":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
+        elif variant == "Salt":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
         elif variant == "SC":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
         elif variant == "SCR":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCR")
-        elif variant == "Salt":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+        elif variant == "R":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_R")
         elif variant == "Random":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
         else:

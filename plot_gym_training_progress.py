@@ -216,6 +216,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     x = scenario_S["total_steps"].values
                     x = x / MILLION
                     xlabel = "Million Train Steps"
+                    ax.set_xlim([0, 5])
                 elif x_axis == "wall_time":
                     try:
                         x = scenario_S["wall_time"].values

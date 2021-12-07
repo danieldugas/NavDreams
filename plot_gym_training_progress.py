@@ -69,7 +69,8 @@ def get_variant(logpath):
     return variant
 
 def get_envname(logpath):
-    return os.path.basename(logpath).split("_")[0]
+    envname = os.path.basename(logpath).split("_")[0]
+    return envname.replace("encoded", "")
 
 def set_visible(lines, visible):
     if isinstance(lines, list):
@@ -105,6 +106,7 @@ def parse_logfiles(navrep_dirs, logfolder=None):
     return all_logpaths, all_parents
 
 def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward",
+                           environment=None,
                            finetune=False, smoothness=None):
     if smoothness is None:
         smoothness = 0.999
@@ -113,31 +115,53 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
 
     # get set of all scenarios in all logpaths
     all_scenarios = []
+    all_environments = []
     for logpath in logpaths:
         S = pd.read_csv(logpath)
         scenarios = sorted(list(set(S["scenario"].values)))
         all_scenarios.extend(scenarios)
+        envname = get_envname(logpath)
+        all_environments.append(envname)
     all_scenarios = sorted(list(set(all_scenarios)))
+    all_environments = sorted(list(set(all_environments)))
+    def custom_sort(to_sort, sortlist):
+        to_sort = sorted(to_sort)
+        for scenario in sortlist[::-1]:
+            if scenario in to_sort:
+                to_sort.insert(0, to_sort.pop(to_sort.index(scenario)))
+        return to_sort
+    sortlist = ["navrep3dtrain", "navrep3dalt", "navrep3dcity", "navrep3doffice", "navrep3dasl"]
+    all_scenarios = custom_sort(all_scenarios, sortlist)
+    sortlist = ["navrep3dtrainenv", "navrep3daltenv", "navrep3dSCenv", "navrep3dSCRenv", "navrep3dstaticaslenv"]
+    all_environments = custom_sort(all_environments, sortlist)
     all_difficulties = ["all_difficulties"]
+    rows_are_environments = True
 
     if scenario is not None:
         all_scenarios = [scenario]
 
+    if environment is not None:
+        all_environments = [environment]
+
     if y_axis == "worst_perf":
         all_difficulties = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, "worst"]
+        all_environments = ["all_environments"] if len(all_environments) > 1 else all_environments
+        rows_are_environments = False
 
     if x_axis == "wall_time":
         all_scenarios = ["all_scenarios"]
         all_difficulties = ["all_difficulties"]
+        all_environments = ["all_environments"]
 
     print()
     print("Plotting scenario rewards")
     print()
     plt.figure("scenario rewards")
     plt.clf()
-    fig, axes = plt.subplots(len(all_difficulties), len(all_scenarios), num="scenario rewards")
-    axes = np.array(axes).reshape((len(all_difficulties),len(all_scenarios))).T
-    ax_key = {scenario: {diff: ax for diff, ax in zip(all_difficulties, ax_row)}
+    row_names = all_environments if rows_are_environments else all_difficulties
+    fig, axes = plt.subplots(len(row_names), len(all_scenarios), num="scenario rewards")
+    axes = np.array(axes).reshape((len(row_names),len(all_scenarios))).T
+    ax_key = {scenario: {name: ax for name, ax in zip(row_names, ax_row)}
               for scenario, ax_row in zip(all_scenarios, axes)}
 
     console = Console()
@@ -152,8 +176,8 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
     for logpath, parent in zip(logpaths, parents):
         linegroup = [] # regroup all lines from this log
         for scenario in all_scenarios:
-            for difficulty in all_difficulties:
-                ax = ax_key[scenario][difficulty]
+            for row_name in row_names:
+                ax = ax_key[scenario][row_name]
                 logname = os.path.basename(logpath)
                 line = None
                 variant = get_variant(logpath)
@@ -166,17 +190,23 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 else:
                     style = None
                     scenario_S = S[S["scenario"] == scenario]
-                if difficulty == "all_difficulties":
-                    scenario_S = scenario_S
+                if rows_are_environments:
+                    ax_environment = row_name
+                    if envname != ax_environment:
+                        continue
                 else:
-                    if difficulty == "worst":
-                        # will be used to compute worst of all
-                        all_perfs = [scenario_S["goal_reached"].values.astype(np.float32)
-                                     for _ in all_difficulties[:-1]]
-                        for i in range(len(all_perfs)):
-                            all_perfs[i][scenario_S["num_walls"] != all_difficulties[i]] = np.nan
+                    ax_difficulty = row_name
+                    if ax_difficulty == "all_difficulties":
+                        scenario_S = scenario_S
                     else:
-                        scenario_S = scenario_S[scenario_S["num_walls"] == difficulty]
+                        if ax_difficulty == "worst":
+                            # will be used to compute worst of all
+                            all_perfs = [scenario_S["goal_reached"].values.astype(np.float32)
+                                         for _ in all_difficulties[:-1]]
+                            for i in range(len(all_perfs)):
+                                all_perfs[i][scenario_S["num_walls"] != all_difficulties[i]] = np.nan
+                        else:
+                            scenario_S = scenario_S[scenario_S["num_walls"] == ax_difficulty]
                 if len(scenario_S.values) == 0:
                     continue
                 # million steps
@@ -214,7 +244,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     ylim = [-0.1, 1.1]
                     rewards = scenario_S["goal_reached"].values
                     rewards[0] = 0 # better would be to add a point at 0, 0, so the init. assumpt. is failure
-                    if difficulty == "worst":
+                    if ax_difficulty == "worst":
                         for perf in all_perfs:
                             perf[0] = 0
                         rewards = np.nanmin([smooth(perf, smoothness) for perf in all_perfs], axis=0)
@@ -239,7 +269,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 ax.set_ylim(ylim)
                 ax.set_ylabel(ylabel)
                 ax.set_xlabel(xlabel)
-                ax.set_title("{} - {}".format(scenario, difficulty))
+                ax.set_title("{} - {}".format(scenario, row_name))
                 if x_axis == "wall_time":
                     xfmt = md.DateFormatter('%d-%b-%Y %H:%M:%S')
                     ax.xaxis.set_major_formatter(xfmt)
@@ -259,8 +289,8 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
             legends.append(parent + ": " + logname)
 
     for scenario in all_scenarios:
-        for difficulty in all_difficulties:
-            ax = ax_key[scenario][difficulty]
+        for row_name in row_names:
+            ax = ax_key[scenario][row_name]
             # add current time
             for ax in axes.reshape((-1,)):
                 if x_axis == "wall_time":

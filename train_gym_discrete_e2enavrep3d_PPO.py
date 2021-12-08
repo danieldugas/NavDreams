@@ -12,7 +12,6 @@ from navrep3d.auto_debug import enable_auto_debug
 MILLION = 1000000
 
 def main(dry_run=False, n=None, build_name=None):
-
     TRAIN_STEPS = n
     if TRAIN_STEPS is None:
         TRAIN_STEPS = 5 * MILLION
@@ -65,20 +64,24 @@ def main(dry_run=False, n=None, build_name=None):
     model = PPO("CnnPolicy", env, policy_kwargs=policy_kwargs, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS, callback=cb)
 
-    print("Saving model to {}".format(MODELPATH))
-    model.save(MODELPATH)
+    if False:
+        print("Saving model to {}".format(MODELPATH))
+        model.save(MODELPATH)
 
-    del model # remove to demonstrate saving and loading
+        del model # remove to demonstrate saving and loading
 
-    model = PPO.load(MODELPATH)
+        model = PPO.load(MODELPATH)
 
-    obs = env.reset()
-    while True:
-        action, _states = model.predict(obs)
-        obs, rewards, dones, info = env.step(action)
-        if dones:
-            env.reset()
-        env.render()
+        obs = env.reset()
+        while True:
+            action, _states = model.predict(obs)
+            obs, rewards, dones, info = env.step(action)
+            if dones:
+                env.reset()
+            env.render()
+
+    env.close()
+
 
 if __name__ == "__main__":
     enable_auto_debug()

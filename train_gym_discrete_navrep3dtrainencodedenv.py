@@ -66,27 +66,28 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
     cb = NavRep3DLogCallback(logpath=LOGPATH, savepath=MODELPATH, verbose=1)
     model = PPO("MlpPolicy", env, verbose=1)
     model.learn(total_timesteps=TRAIN_STEPS+1, callback=cb)
-    obs = env.reset()
 
-    model.save(MODELPATH)
-    model.save(MODELPATH2)
-    print("Model '{}' saved".format(MODELPATH))
+    if False:
+        obs = env.reset()
 
-    del model
+        model.save(MODELPATH)
+        model.save(MODELPATH2)
+        print("Model '{}' saved".format(MODELPATH))
+
+        del model
+        env.close()
+
+        model = PPO.load(MODELPATH)
+
+        obs = env.reset()
+        for i in range(512):
+            action, _states = model.predict(obs, deterministic=True)
+            obs, _, done, _ = env.step(action)
+            if done:
+                env.reset()
+    #         env.render()
+
     env.close()
-
-    model = PPO.load(MODELPATH)
-
-    obs = env.reset()
-    for i in range(512):
-        action, _states = model.predict(obs, deterministic=True)
-        obs, _, done, _ = env.step(action)
-        if done:
-            env.reset()
-#         env.render()
-
-    print("exiting.")
-    exit()
 
 
 if __name__ == "__main__":

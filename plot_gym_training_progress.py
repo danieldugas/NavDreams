@@ -27,6 +27,8 @@ variant_colors = {
     "S": "lightskyblue",
     "Salt": "mediumseagreen",
     "SC": "khaki",
+    "SCR": "red",
+    "R": "blue",
     "Random": "brown",
     "E2E": "grey",
 }
@@ -132,7 +134,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
         return to_sort
     sortlist = ["navrep3dtrain", "navrep3dalt", "navrep3dcity", "navrep3doffice", "navrep3dasl"]
     all_scenarios = custom_sort(all_scenarios, sortlist)
-    sortlist = ["navrep3dtrainenv", "navrep3daltenv", "navrep3dSCenv", "navrep3dSCRenv", "navrep3dstaticaslenv"]
+    sortlist = ["navrep3dtrainenv", "navrep3daltenv", "navrep3dSCenv", "navrep3dSCRenv", "navrep3dstaticaslenv"] # noqa
     all_environments = custom_sort(all_environments, sortlist)
     all_difficulties = ["all_difficulties"]
     rows_are_environments = True
@@ -192,8 +194,9 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                     scenario_S = S[S["scenario"] == scenario]
                 if rows_are_environments:
                     ax_environment = row_name
-                    if envname != ax_environment:
-                        continue
+                    if ax_environment != "all_environments":
+                        if envname != ax_environment:
+                            continue
                 else:
                     ax_difficulty = row_name
                     if ax_difficulty == "all_difficulties":

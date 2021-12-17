@@ -3,3 +3,4 @@
 Python-RVO2/
 *.zip
 *.dat
+*.egg-info

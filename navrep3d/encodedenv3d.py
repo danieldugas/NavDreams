@@ -161,7 +161,7 @@ class EnvEncoder(object):
     def _encode_obs(self, obs, action):
         """
     obs is (image, other_obs)
-    where image is (w, h, channel)
+    where image is (w, h, channel) with values 0-255 (uint8)
     and other_obs is (5,) - [goal_x, goal_y, vel_x, vel_y, vel_theta] all in robot frame
     """
         # obs to z, mu, logvar

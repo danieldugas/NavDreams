@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  <arg name="start_time" default="0." />
+  <arg name="speed" default="1" />
+
+  <param name="use_sim_time" value="true" />
+  <node pkg="rosbag" type="play" name="player" output="screen"
+    args="-s $(arg start_time) -r $(arg speed) --clock $(env HOME)/Insync/daniel@dugas.ch/Google\ Drive\ -\ Shared\ drives/Pepper/rosbags/meet_your_lab1.bag"/>
+  <include file="$(find pepper_description)/launch/pepper_upload.launch"/>
+
+</launch>

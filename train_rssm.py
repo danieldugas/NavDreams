@@ -77,7 +77,7 @@ class RSSMWMConf(object):
     adam_lr_actor = 0.0001
     adam_lr_critic = 0.0001
     amp = True
-    batch_length = 50
+    batch_length = 32
     batch_size = 50
     buffer_size = 10000000
     clip_rewards = None
@@ -187,6 +187,7 @@ class RSSMWorldModel(nn.Module):
 
     def __init__(self, conf, gpu=True):
         super().__init__()
+        self.block_size = conf.batch_length
         self.deter_dim = conf.deter_dim
         self.stoch_dim = conf.stoch_dim
         self.stoch_discrete = conf.stoch_discrete

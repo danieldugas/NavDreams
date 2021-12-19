@@ -313,8 +313,9 @@ def plot_training_results(logdirs, logfolder=None):
     x_axis = "total_steps"
     y_axis = "difficulty"
     scenario = "navrep3dalt"
+    envname = "navrep3daltenv"
     max_difficulty = 18.
-    all_variants = ["SC", "Salt", "E2E"]
+    all_variants = ["R", "SCR", "SC", "Salt", "E2E"]
 
     fig, ax = plt.subplots(1, 1, num="training results")
 
@@ -327,7 +328,8 @@ def plot_training_results(logdirs, logfolder=None):
             line = None
             if variant != get_variant(logpath):
                 continue
-            envname = get_envname(logpath)
+            if envname != get_envname(logpath):
+                continue
             color, _ = color_and_style(variant, envname)
             S = pd.read_csv(logpath)
             scenario_S = S[S["scenario"] == scenario]

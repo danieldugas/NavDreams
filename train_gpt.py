@@ -60,6 +60,58 @@ def gpt_worldmodel_error(gpt, test_dataset_folder, device):
 _Z = _H = 64
 _S = 32  # sequence length
 
+class N3DWorldModelDataset(WorldModelDataset):
+    def _partial_regen(self, n_new_sequences=1, build_name=None):
+        from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
+        from navrep3d.navrep3danyenv import NavRep3DAnyEnv
+        if self.regen in ["S", "SC", "Salt", "SCR", "R"]:
+            if build_name is None:
+                if self.regen == "S":
+                    build_name = "./build.x86_64"
+                elif self.regen == "Salt":
+                    build_name = "./alternate.x86_64"
+                elif self.regen == "SC":
+                    build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64"]
+                    build_name = np.random.choice(build_names)
+                elif self.regen == "SCR":
+                    build_names = [
+                        "./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl", "rosbag"]
+                    build_name = np.random.choice(build_names)
+                elif self.regen == "R":
+                    build_names = ["staticasl", "rosbag"]
+                    build_name = np.random.choice(build_names)
+                else:
+                    raise NotImplementedError
+            try:
+                env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
+                                     build_name=build_name, port=25005+np.random.randint(10),
+                                     tolerate_corruption=False, randomize_difficulty=True)
+                policy = SemiRandomMomentumPolicy()
+                data = generate_vae_dataset(
+                    env, n_sequences=n_new_sequences, policy=policy,
+                    render=False, archive_dir=None)
+            except: # noqa
+                print("Failed to regenerate dataset {}. retrying.".format(build_name))
+                self._partial_regen(n_new_sequences=n_new_sequences, build_name=build_name)
+                return
+            if self.pre_convert_obs:
+                data["obs"] = scans_to_lidar_obs(
+                    data["scans"], self.lidar_mode, self.rings_def, self.channel_first)
+        else:
+            print("Regen {} failed".format(self.regen))
+            return
+        for k in self.data.keys():
+            N = len(data[k])  # should be the same for each key
+            # check end inside loop to avoid having to pick an arbitrary key
+            if self.regen_head_index + N > len(self.data[k]):
+                self.regen_head_index = 0
+            # replace data
+            i = self.regen_head_index
+            self.data[k][i : i + N] = data[k]
+        print("Regenerated {} steps of {}".format(N, build_name))
+        self.regen_head_index += N
+
+
 def main(max_steps=222222, dataset="S", dry_run=False):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
@@ -131,58 +183,6 @@ def main(max_steps=222222, dataset="S", dry_run=False):
 
     mconf = GPTConfig(_S, _H)
     mconf.image_channels = 3
-
-    class N3DWorldModelDataset(WorldModelDataset):
-        def _partial_regen(self, n_new_sequences=1, build_name=None):
-            from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
-            from navrep3d.navrep3danyenv import NavRep3DAnyEnv
-            if self.regen in ["S", "SC", "Salt", "SCR", "R"]:
-                if build_name is None:
-                    if self.regen == "S":
-                        build_name = "./build.x86_64"
-                    elif self.regen == "Salt":
-                        build_name = "./alternate.x86_64"
-                    elif self.regen == "SC":
-                        build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64"]
-                        build_name = np.random.choice(build_names)
-                    elif self.regen == "SCR":
-                        build_names = [
-                            "./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl", "rosbag"]
-                        build_name = np.random.choice(build_names)
-                    elif self.regen == "R":
-                        build_names = ["staticasl", "rosbag"]
-                        build_name = np.random.choice(build_names)
-                    else:
-                        raise NotImplementedError
-                try:
-                    env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
-                                         build_name=build_name, port=25005+np.random.randint(10),
-                                         tolerate_corruption=False, randomize_difficulty=True)
-                    policy = SemiRandomMomentumPolicy()
-                    data = generate_vae_dataset(
-                        env, n_sequences=n_new_sequences, policy=policy,
-                        render=False, archive_dir=None)
-                except: # noqa
-                    print("Failed to regenerate dataset {}. retrying.".format(build_name))
-                    self._partial_regen(n_new_sequences=n_new_sequences, build_name=build_name)
-                    return
-                if self.pre_convert_obs:
-                    data["obs"] = scans_to_lidar_obs(
-                        data["scans"], self.lidar_mode, self.rings_def, self.channel_first)
-            else:
-                print("Regen {} failed".format(self.regen))
-                return
-            for k in self.data.keys():
-                N = len(data[k])  # should be the same for each key
-                # check end inside loop to avoid having to pick an arbitrary key
-                if self.regen_head_index + N > len(self.data[k]):
-                    self.regen_head_index = 0
-                # replace data
-                i = self.regen_head_index
-                self.data[k][i : i + N] = data[k]
-            print("Regenerated {} steps of {}".format(N, build_name))
-            self.regen_head_index += N
-
     train_dataset = N3DWorldModelDataset(
         dataset_dir, _S,
         pre_convert_obs=False,

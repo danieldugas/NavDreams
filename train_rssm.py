@@ -160,6 +160,7 @@ class RSSMWMConf(object):
     test_batch_size = 10
     test_batches = 61
     vecobs_weight = 1.0
+    vecobs_size = 2
     verbose = False
 
 # original
@@ -250,7 +251,7 @@ class RSSMWorldModel(nn.Module):
         obs = {}
         obs["action"] = action.moveaxis(1, 0)
         obs["terminal"] = dones.moveaxis(1, 0)
-        obs["reset"] = torch.roll(obs["terminal"], 1, 0)
+        obs["reset"] = torch.roll(obs["terminal"], 1, 0) > 0
         obs["image"] = img.moveaxis(1, 0)
         obs["vecobs"] = state.moveaxis(1, 0)
         obs["reward"] = obs["terminal"] * 0.0
@@ -290,14 +291,13 @@ class RSSMWorldModel(nn.Module):
         assert loss_kl.shape == loss_reconstr.shape
         loss_model_tbi = self.kl_weight * loss_kl + loss_reconstr
         loss_model = -logavgexp(-loss_model_tbi, dim=2)
-        # reconstructions
+        # t+1 predictions (using next-step prior)
         with torch.no_grad():
             prior_samples = self.core.zdistr(prior).sample().reshape(post_samples.shape)
             features_prior = self.core.feature_replace_z(features, prior_samples)
-            # Decode from prior
             _, _, tens = self.decoder.training_step(features_prior, obs, extra_metrics=True)
-            img_pred = tens["image_pred"]
-            state_pred = tens["state_pred"]
+            img_pred = tens["image_rec"].moveaxis(1, 0)
+            state_pred = tens["vecobs_rec"].moveaxis(1, 0)
 #         return loss_model.mean(), features, states, out_state, metrics, tensors
         x = features
         if h is not None:

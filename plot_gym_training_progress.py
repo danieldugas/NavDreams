@@ -385,6 +385,99 @@ def plot_training_results(logdirs, logfolder=None):
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
 
+def plot_xtraining_results(logdirs, logfolder=None):
+    smoothness = 0.999
+    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
+
+    x_axis = "total_steps"
+    y_axis = "difficulty"
+    scenarios = ["navrep3dalt", "navrep3dcity", "navrep3doffice", "navrep3dasl"]
+    envnames = ["navrep3daltenv", "navrep3dSCenv", "navrep3dSCRenv", "navrep3daslenv"]
+    all_variants = ["R", "SCR", "SC", "Salt", "E2E"]
+
+    fig, axes = plt.subplots(len(envnames), len(scenarios), num="x training results")
+
+    def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax):
+        max_difficulty = 18.
+        if scenario == "navrep3doffice":
+            max_difficulty = 10.
+        if scenario == "navrep3dasl":
+            max_difficulty = 20.
+        # calculate smoothed lines for each plot
+        smoothed_curves = []
+        for logpath, parent in zip(logpaths, parents):
+            line = None
+            if variant != get_variant(logpath):
+                continue
+            if envname != get_envname(logpath):
+                continue
+            color, _ = color_and_style(variant, envname)
+            S = pd.read_csv(logpath)
+            scenario_S = S[S["scenario"] == scenario]
+            if len(scenario_S.values) == 0:
+                continue
+            # x axis
+            if x_axis == "total_steps":
+                x = scenario_S["total_steps"].values
+                x = x / MILLION
+                xlabel = "Million Train Steps"
+            else:
+                raise NotImplementedError
+            # y axis
+            if y_axis == "difficulty":
+                ylabel = "average scenario difficulty"
+                ylim = [-0., 1.]
+                rewards = scenario_S["num_walls"].values / max_difficulty
+            else:
+                raise NotImplementedError
+            y = rewards
+            smooth_y = smooth(y, smoothness)
+            smoothed_curves.append((x, smooth_y))
+
+        # minmax curve
+        if len(smoothed_curves) == 0:
+            return []
+        style = None
+        print("{}: {} timeseries".format(variant, len(smoothed_curves)))
+        if len(smoothed_curves) < 3:
+            style = "dotted"
+        end = np.min([np.max(x) for x, y in smoothed_curves])
+        common_x = np.arange(0, end, 10000. / MILLION)
+        filled_smoothed_curves = [np.interp(common_x, x, y) for x, y in smoothed_curves]
+        Y = np.array(filled_smoothed_curves)
+        mean_ = np.mean(Y, axis=0)
+        min_ = np.min(Y, axis=0)
+        max_ = np.max(Y, axis=0)
+
+        linegroup = [] # regroup all lines from this variant
+        ax.set_ylim(ylim)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.set_title("{}".format(scenario))
+        line, = ax.plot(common_x, mean_, linewidth=1, linestyle=style, color=color)
+        color = line.get_c()
+        area = ax.fill_between(common_x, min_, max_, color=color, alpha=0.1)
+        linegroup.append(line)
+        linegroup.append(area)
+        return linegroup
+
+    linegroups = []
+    legends = []
+    for variant in all_variants:
+        variant_linegroup = []
+        for envname, ax_row in zip(envnames, axes):
+            for scenario, ax in zip(scenarios, ax_row):
+                print("{} {}".format(envname, scenario))
+                linegroup = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
+                if linegroup:
+                    variant_linegroup.extend(linegroup)
+        if variant_linegroup:
+            linegroups.append(variant_linegroup)
+            legends.append(variant)
+
+    L = fig.legend([lines[0] for lines in linegroups], legends)
+    make_legend_pickable(L, linegroups)
+
 def make_legend_pickable(legend, lines):
     """ Allows clicking the legend to toggle line visibility
     arguments:
@@ -422,6 +515,7 @@ def main(logdir="~/navrep3d",
     print(x_axis.value)
     if paper:
         plot_training_results(logdirs)
+        plot_xtraining_results(logdirs)
         plt.show()
         return
     if refresh:

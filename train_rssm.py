@@ -326,6 +326,7 @@ _S = 32  # sequence length
 
 
 def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
+    namestring = "RSSM_A{}".format(ablation)
     if ablation is None:
         raise ValueError("ablation must be specified")
     elif ablation == 0:
@@ -342,9 +343,9 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
                        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/RSSM_SCR_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/RSSM_SCR")
-        plot_path = os.path.expanduser("~/tmp_navrep3d/RSSM_SCR_step")
+            "~/navrep3d_W/logs/W/{}_SCR_train_log_{}.csv".format(namestring, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_SCR".format(namestring))
+        plot_path = os.path.expanduser("~/tmp_navrep3d/{}_SCR_step".format(namestring))
     else:
         raise NotImplementedError(dataset)
 

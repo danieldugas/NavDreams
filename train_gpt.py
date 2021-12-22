@@ -61,6 +61,7 @@ _Z = _H = 64
 _S = 32  # sequence length
 
 class N3DWorldModelDataset(WorldModelDataset):
+    """ same as a WorldModelDataset, but data regeneration is specialized for navrep3d """
     def _partial_regen(self, n_new_sequences=1, build_name=None):
         from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
         from navrep3d.navrep3danyenv import NavRep3DAnyEnv

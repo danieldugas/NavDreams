@@ -18,11 +18,12 @@ from pyniel.python_tools.path_tools import make_dir_if_not_exists
 from strictfire import StrictFire
 from pydreamer.models.dreamer import RSSMCore, MultiDecoder, MultiEncoder, init_weights_tf2, D, logavgexp
 
-from navrep.models.gpt import GPT, GPTConfig, save_checkpoint, set_seed
+from navrep.models.gpt import save_checkpoint, set_seed
 from navrep.tools.wdataset import WorldModelDataset
 from navrep.tools.test_worldmodel import mse
 
 from navrep3d.auto_debug import enable_auto_debug
+from navrep3d.worldmodel import WorldModel
 from train_gpt import N3DWorldModelDataset
 
 def gpt_worldmodel_error(gpt, test_dataset_folder, device):
@@ -183,7 +184,7 @@ class RSSMWMConf(object):
 
 # y_pred, y_rs_pred, loss = model(x, x_rs, a, dones, targets=(y, y_rs))
 
-class RSSMWorldModel(nn.Module):
+class RSSMWorldModel(WorldModel):
     """ A prediction model based on DreamerV2's RSSM architecture """
 
     def __init__(self, conf, gpu=True):
@@ -225,6 +226,9 @@ class RSSMWorldModel(nn.Module):
         targets: None or (img_targets, state_targets)
             img_targets: same shape as img
             state_targets: same shape as state
+        h: None or []
+            if None, will be ignored
+            if [] will be filled with RNN state (batch, sequence, H)
 
         OUTPUTS
         img_pred: same shape as img
@@ -239,11 +243,11 @@ class RSSMWorldModel(nn.Module):
         iwae_samples = 1 # always 1 for training
         # do_image_pred seems to be for logging only (nograd). in training loop:
         # do_image_pred=steps % conf.log_interval >= int(conf.log_interval * 0.9)  # 10% of batches
-        do_image_pred = False
+        # do_image_pred = False
         do_open_loop = False # always closed loop for training. open loop for eval
-        # obs.keys() = (['reset', 'action', 'reward', 'image', 'mission', 'terminal', 'map', 'map_seen_mask', 'map_coord', 'vecobs'])
+        # obs.keys() = (['reset', 'action', 'reward', 'image', 'mission', 'terminal', 'map', 'map_seen_mask', 'map_coord', 'vecobs']) # noqa
         # actually_used = ["action", "reset", "terminal", "image", "vecobs", "reward"]
-        # action is discrete onehot (T, B, 3)  [0 1 0] 
+        # action is discrete onehot (T, B, 3)  [0 1 0]
         # if obs terminal is 0 0 0 1 0 then obs reset is 0 0 0 0 1 (T, B)
         # image is 0-1, float16, (T, B, C, H, W)
         # vecobs is float, robotstate (T, B, 5)
@@ -299,24 +303,54 @@ class RSSMWorldModel(nn.Module):
             img_pred = tens["image_rec"].moveaxis(1, 0)
             state_pred = tens["vecobs_rec"].moveaxis(1, 0)
 #         return loss_model.mean(), features, states, out_state, metrics, tensors
-        x = features
+        # x = features
         if h is not None:
-            h[0] = states[0]
+            h[0] = states
+            # TODO: is this right
         return img_pred, state_pred, loss_model
     # -----------------------------
 
-    def _to_correct_device(self, tensor):
-        raise NotImplementedError
-    def encode(self, img):
-        raise NotImplementedError
     def encode_mu_logvar(self, img):
-        raise NotImplementedError
+        """
+        img: numpy (batch, W, H, CH)
+
+
+        OUTPUTS
+        mu: (batch, Z)
+        logvar: (batch, Z)
+        """
+        b, W, H, CH = img.shape
+
+        img_t = torch.tensor(np.moveaxis(img, -1, 1), dtype=torch.float)
+        img_t = self._to_correct_device(img_t) # B, CH, W, H
+
+        embed = self.encoder.encoder_image.forward(img_t.view((1, b, CH, W, H)))  # (T,B,E)
+        z = embed.view((b, -1))
+
+        mu = z.detach().cpu().numpy()
+        logvar = np.zeros_like(mu)
+        return mu, logvar
+
     def decode(self, z):
-        raise NotImplementedError
-    def get_h(self, gpt_sequence):
-        raise NotImplementedError
-    def get_next(self, gpt_sequence):
-        raise NotImplementedError
+        """
+        z: numpy (batch, Z)
+
+        OUTPUTS
+        img_rec: (batch, W, H, CH)
+        """
+        b, Z = z.shape
+
+        z_t = torch.tensor(z, dtype=torch.float)
+        z_t = self._to_correct_device(z_t)
+
+        # decoder expects features (T, B, I, Z) - T is sequence, I is samples (both irrelevant here)
+        z_t = z_t.view((1, b, 1, Z))
+        img_rec_t = self.decoder.image.forward(z_t) # t, b, I, CH, W, H
+        T, B, I, CH, W, H = img_rec_t.shape
+        img_rec_t = img_rec_t.view((B, CH, W, H))
+
+        img_rec = np.moveaxis(img_rec_t.detach().cpu().numpy(), 1, -1)
+        return img_rec
 
 
 # In the pydreamer version, _Z is around 1500, _H is large too.
@@ -368,7 +402,6 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
     )
     logger = logging.getLogger(__name__)
 
-#     mconf = GPTConfig(_S, _H)
     mconf = RSSMWMConf()
     if ablation.embedding_size != AblationOptionType.ORIGINAL:
         raise NotImplementedError

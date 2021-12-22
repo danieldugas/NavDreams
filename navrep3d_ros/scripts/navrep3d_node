@@ -99,6 +99,8 @@ class NavrepNode(object):
             # in robot frame:
             robot_state[0] = goal_in_robot[0]
             robot_state[1] = goal_in_robot[1]
+#             robot_state[0] = goal_in_robot[1]
+#             robot_state[1] = -goal_in_robot[0]
             robot_state[2] = self.latest_odom.twist.twist.linear.x
             robot_state[3] = self.latest_odom.twist.twist.linear.y
             robot_state[4] = self.latest_odom.twist.twist.angular.z
@@ -127,6 +129,7 @@ class NavrepNode(object):
             postproc_action[0] = postproc_action[0] * 0.2
             postproc_action[1] = postproc_action[1] * 0.2
 
+            print(robot_state)
             print(action)
 
             if not self.STOP:
@@ -195,4 +198,5 @@ class NavrepNode(object):
 
 
 if __name__ == "__main__":
+    np.set_printoptions(precision=2, suppress=True)
     navrep_node = StrictFire(NavrepNode)

@@ -476,20 +476,14 @@ def NavRep3DStaticASLEnvDiscrete(**kwargs):
     return env
 
 def main(step_by_step=False, render_mode='human'):
+    from navrep.tools.envplayer import EnvPlayer
     np.set_printoptions(precision=1, suppress=True)
-    # This is a non-blocking call that only loads the environment.
-    unity_env = UnityEnvironment(file_name="LFS/mlagents_executables/staticasl", seed=1, side_channels=[])
-#     env = UnityToGymWrapper(unity_env, uint8_visual=True)
-    env = MLAgentsGymEnvWrapper(unity_env)
-    env = StaticASLToNavRep3DEnvWrapper(env)
-
-    env2 = NavRep3DStaticASLEnvDiscrete(
+    env = NavRep3DStaticASLEnv(
         verbose=0, collect_statistics=True, build_name="staticasl",
         debug_export_every_n_episodes=0, port=25004)
-    from navrep.tools.envplayer import EnvPlayer
     player = EnvPlayer(env, render_mode, step_by_step)
     player.run()
-    env2.close()
+    env.close()
 
 
 if __name__ == "__main__":

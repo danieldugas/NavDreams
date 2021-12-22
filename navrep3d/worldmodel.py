@@ -6,7 +6,8 @@ class WorldModel(nn.Module):
     """ abstract world model class """
     gpu = True
 
-    def __init__(self):
+    def __init__(self, gpu):
+        self.gpu = gpu
         super().__init__()
 
     def forward(self, img, state, action, dones, targets=None, h=None):

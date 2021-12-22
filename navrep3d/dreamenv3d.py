@@ -2,20 +2,12 @@ from __future__ import print_function
 import numpy as np
 import os
 import gym
+from strictfire import StrictFire
 
-from navrep.tools.rings import generate_rings
-from navrep.envs.ianenv import IANEnv
-from navrep.models.rnn import (reset_graph, sample_hps_params, MDNRNN,
-                               rnn_init_state, rnn_next_state, MAX_GOAL_DIST)
-from navrep.models.vae2d import ConvVAE
-from navrep.models.vae1d import Conv1DVAE
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
-from navrep.models.gpt1d import GPT1D
-from navrep.models.vae1dlstm import VAE1DLSTM, VAE1DLSTMConfig
-from navrep.models.vaelstm import VAELSTM, VAELSTMConfig
-from navrep.tools.wdataset import scans_to_lidar_obs
 
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 
 PUNISH_SPIN = True
 
@@ -35,7 +27,8 @@ BLOCK_SIZE = 32  # sequence length (context)
 class DreamEnv(object):
     """ Generic class for generating dreams from trained world models """
     def __init__(self,
-                 gpt_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_SC"),
+                 wm_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_SC"),
+                 worldmodel_type="Transformer",
                  gpu=False,
                  alongside_sim=False,
                  ):
@@ -47,11 +40,18 @@ class DreamEnv(object):
         self.DT = 0.2
         self.alongside_sim = alongside_sim
         # load world model
-        mconf = GPTConfig(BLOCK_SIZE, _H)
-        mconf.image_channels = _C
-        model = GPT(mconf, gpu=gpu)
-        load_checkpoint(model, gpt_model_path, gpu=gpu)
-        self.worldmodel = model
+        if worldmodel_type == "Transformer":
+            mconf = GPTConfig(BLOCK_SIZE, _H)
+            mconf.image_channels = _C
+            model = GPT(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            self.worldmodel = model
+        elif worldmodel_type == "RSSM":
+            mconf = RSSMWMConf()
+            mconf.image_channels = 3
+            model = RSSMWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            self.worldmodel = model
         # other tools
         self.viewer = None
         self.simenv = None
@@ -195,12 +195,16 @@ class DreamEnv(object):
         self.rendering_iteration += 1
         return self.viewer.isopen
 
-
-if __name__ == "__main__":
-    from strictfire import StrictFire
+def main(wm_type="Transformer"):
     from navrep.tools.envplayer import EnvPlayer
-    np.set_printoptions(precision=1, suppress=True)
-#     env = StrictFire(DreamEnv)
-    env = DreamEnv(alongside_sim=True)
+    wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
+    if wm_type == "RSSM":
+        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/RSSM_A0_SCR")
+    env = DreamEnv(alongside_sim=True, wm_model_path=wm_model_path, worldmodel_type=wm_type)
     player = EnvPlayer(env)
     player.run()
+
+
+if __name__ == "__main__":
+    np.set_printoptions(precision=1, suppress=True)
+    StrictFire(main)

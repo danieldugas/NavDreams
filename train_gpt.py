@@ -23,9 +23,8 @@ from navrep.tools.test_worldmodel import mse
 
 from navrep3d.auto_debug import enable_auto_debug
 
-def gpt_worldmodel_error(gpt, test_dataset_folder, device):
+def gpt_worldmodel_error(gpt, test_dataset_folder, device, batch_size=128):
     sequence_size = gpt.module.block_size
-    batch_size = 128
     # load dataset
     seq_loader = WorldModelDataset(test_dataset_folder, sequence_size, lidar_mode="images",
                                    channel_first=True, as_torch_tensors=True, file_limit=64)

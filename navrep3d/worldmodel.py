@@ -81,7 +81,7 @@ class WorldModel(nn.Module):
         action = action.reshape((_b, *action.shape))
         action_t = torch.tensor(action, dtype=torch.float)
         action_t = self._to_correct_device(action_t)
-        dones = np.zeros((_b, len(gpt_sequence), 1))
+        dones = np.zeros((_b, len(gpt_sequence)))
         dones_t = torch.tensor(dones, dtype=torch.float)
         dones_t = self._to_correct_device(dones_t)
         h_container = [None]
@@ -115,7 +115,7 @@ class WorldModel(nn.Module):
         action = action.reshape((_b, *action.shape))
         action_t = torch.tensor(action, dtype=torch.float)
         action_t = self._to_correct_device(action_t)
-        dones = np.zeros((_b, len(gpt_sequence), 1))
+        dones = np.zeros((_b, len(gpt_sequence)))
         dones_t = torch.tensor(dones, dtype=torch.float)
         dones_t = self._to_correct_device(dones_t)
         h_container = [None]

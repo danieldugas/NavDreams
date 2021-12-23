@@ -143,7 +143,6 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
         from torch.cuda.amp import GradScaler
         optimizer = torch.optim.AdamW(model.parameters(), lr=mconf.adam_lr, eps=mconf.adam_eps)
         scaler = GradScaler(enabled=mconf.amp)
-        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), mconf.grad_clip)
 
     global_step = 0
     tokens = 0  # counter used for learning rate decay
@@ -187,7 +186,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
                     optimizer.zero_grad()
                     scaler.scale(loss).backward()
                     scaler.unscale_(optimizer)
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), mconf.grad_clip)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), mconf.grad_clip)
                     scaler.step(optimizer)
                     scaler.update()
                     lr = mconf.adam_lr
@@ -215,7 +214,6 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
                             param_group["lr"] = lr
                     else:
                         lr = learning_rate
-
 
                 # report progress
                 pbar.set_description(

@@ -30,7 +30,7 @@ class TSSMWMConf(object):
     # optimizer
     grad_clip = 200
     # loss
-    kld_weight = 0.001
+    kld_weight = 0.01
     kl_balance = 0.8
     # transformer block params
     block_size = 32 # sequence length
@@ -163,6 +163,7 @@ class TSSMWorldModel(WorldModel):
                 raise ValueError("Cannot calculate prediction loss, sequence length is < 2.")
             img_targets, vecobs_targets = targets
             rec_loss = F.mse_loss(img_rec, img)  # input-reconstruction loss
+            rec_loss_weight = 10.0
 #             pred_loss = F.binary_cross_entropy(img_pred, img_targets)  # reconstructed prediction loss
             # prediction loss is the KL divergence between the prior and the posterior
             STATE_NORM_FACTOR = 25.  # maximum typical goal distance, meters
@@ -177,7 +178,7 @@ class TSSMWorldModel(WorldModel):
             loss_kl_postgrad = D.kl.kl_divergence(dpost, dprior_nograd)
             loss_kl_priograd = D.kl.kl_divergence(dpost_nograd, dprior)
             loss_kl = (1 - self.conf.kl_balance) * loss_kl_postgrad + self.conf.kl_balance * loss_kl_priograd
-            loss = rec_loss + vecobs_loss + self.conf.kld_weight * loss_kl
+            loss = rec_loss_weight * rec_loss + vecobs_loss + self.conf.kld_weight * loss_kl
 
         return img_pred, vecobs_pred, loss
 

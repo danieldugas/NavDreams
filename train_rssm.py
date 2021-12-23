@@ -96,7 +96,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
     # training params
     # optimization parameters
     max_epochs = max_steps  # don't stop based on epoch
-    batch_size = 128
+    batch_size = 64
     learning_rate = 6e-4
     betas = (0.9, 0.95)
     grad_norm_clip = 1.0

@@ -50,6 +50,12 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
             "~/navrep3d_W/logs/W/{}_SCR_train_log_{}.csv".format(namestring, START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_SCR".format(namestring))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_SCR_step".format(namestring))
+    elif dataset == "staticasl":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/{}_staticasl_train_log_{}.csv".format(namestring, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_staticasl".format(namestring))
+        plot_path = os.path.expanduser("~/tmp_navrep3d/{}_staticasl_step".format(namestring))
     else:
         raise NotImplementedError(dataset)
 

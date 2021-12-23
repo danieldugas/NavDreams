@@ -11,6 +11,7 @@ class AblationOptionType(object):
 class Ablation(object):
     embedding_size = AblationOptionType.ORIGINAL
     hidden_state_size = AblationOptionType.ORIGINAL
+    optimizer = AblationOptionType.ORIGINAL
 
 # ----------------------------------------------
 class RSSMWMConf(object):

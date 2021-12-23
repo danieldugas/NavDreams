@@ -133,6 +133,10 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
         {"params": params_nodecay, "weight_decay": 0.0},
     ]
     optimizer = optim.AdamW(optim_groups, lr=learning_rate, betas=betas)
+    if ablation.optimizer == AblationOptionType.ORIGINAL:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=conf.adam_lr, eps=conf.adam_eps)
+        scaler = GradScaler(enabled=conf.amp)
+        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), conf.grad_clip)
 
     global_step = 0
     tokens = 0  # counter used for learning rate decay
@@ -172,30 +176,38 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
             if is_train:
 
                 # backprop and update the parameters
-                model.zero_grad()
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_norm_clip)
-                optimizer.step()
-
-                # decay the learning rate based on our progress
-                if lr_decay:
-                    tokens += (
-                        a.shape[0] * a.shape[1]
-                    )  # number of tokens processed this step
-                    if tokens < warmup_tokens:
-                        # linear warmup
-                        lr_mult = float(tokens) / float(max(1, warmup_tokens))
-                    else:
-                        # cosine learning rate decay
-                        progress = float(tokens - warmup_tokens) / float(
-                            max(1, final_tokens - warmup_tokens)
-                        )
-                        lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
-                    lr = learning_rate * lr_mult
-                    for param_group in optimizer.param_groups:
-                        param_group["lr"] = lr
+                if ablation.optimizer == AblationOptionType.ORIGINAL:
+                    optimizer.zero_grad()
+                    scaler.scale(loss).backward()
+                    scaler.unscale_(optimizer)
+                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), conf.grad_clip)
+                    scaler.step(optimizer)
+                    scaler.update()
                 else:
-                    lr = learning_rate
+                    model.zero_grad()
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), grad_norm_clip)
+                    optimizer.step()
+                    # decay the learning rate based on our progress
+                    if lr_decay:
+                        tokens += (
+                            a.shape[0] * a.shape[1]
+                        )  # number of tokens processed this step
+                        if tokens < warmup_tokens:
+                            # linear warmup
+                            lr_mult = float(tokens) / float(max(1, warmup_tokens))
+                        else:
+                            # cosine learning rate decay
+                            progress = float(tokens - warmup_tokens) / float(
+                                max(1, final_tokens - warmup_tokens)
+                            )
+                            lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
+                        lr = learning_rate * lr_mult
+                        for param_group in optimizer.param_groups:
+                            param_group["lr"] = lr
+                    else:
+                        lr = learning_rate
+
 
                 # report progress
                 pbar.set_description(

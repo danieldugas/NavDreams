@@ -20,11 +20,8 @@ from strictfire import StrictFire
 from navrep.models.gpt import save_checkpoint, set_seed
 
 from navrep3d.auto_debug import enable_auto_debug
-from navrep3d.tssm import TSSMWMConf, TSSMWorldModel, version
+from navrep3d.tssm import TSSMWMConf, TSSMWorldModel, version, _S
 from train_gpt import N3DWorldModelDataset, gpt_worldmodel_error
-
-_Z = _H = 2048
-_S = 32  # sequence length
 
 
 def main(max_steps=222222, dataset="SCR", dry_run=False):
@@ -93,7 +90,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False):
     num_workers = 0  # for DataLoader
 
     # create model
-    model = TSSMWorldModel(mconf)
+    model = TSSMWorldModel(mconf, gpu=True)
     print("TSSM trainable params: {}".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
 

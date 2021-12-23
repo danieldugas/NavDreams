@@ -11,19 +11,24 @@ from navrep3d.worldmodel import WorldModel
 
 version = 0
 
+_Z = 1024
+_H = _Z + 32 * 32
+_S = 32  # sequence length
+
 class TSSMWMConf(object):
     adam_eps = 1e-05
     adam_lr = 0.0003
     amp = True
-    batch_size = 64
 
     stoch_dim = 32
     stoch_discrete = 32
-    n_embd = 2048
+    n_embd = _Z
     image_size = 64
     image_channels = 3
     vecobs_size = 2
     n_action = 3
+    # optimizer
+    grad_clip = 200
     # loss
     kld_weight = 0.001
     kl_balance = 0.8
@@ -38,11 +43,11 @@ class TSSMWMConf(object):
 
 class TSSMWorldModel(WorldModel):
     def __init__(self, config, gpu=True):
-        super().__init__()
+        super().__init__(gpu=gpu)
         self.conf = config
 
         self.prior_size = config.stoch_dim * config.stoch_discrete # stochastic state size * # categories
-        sampled_state_size = config.n_embd + self.prior_size
+        self.sampled_state_size = config.n_embd + self.prior_size
 
         # input embedding stem
         self.convVAE = VAE(z_dim=config.n_embd, gpu=gpu, image_channels=config.image_channels)
@@ -75,8 +80,8 @@ class TSSMWorldModel(WorldModel):
             return distr
         self.to_distribution = to_distribution
         # decoder head
-        self.z_head = nn.Linear(sampled_state_size, config.n_embd)
-        self.vecobs_head = nn.Linear(sampled_state_size, config.vecobs_size)
+        self.z_head = nn.Linear(self.sampled_state_size, config.n_embd)
+        self.vecobs_head = nn.Linear(self.sampled_state_size, config.vecobs_size)
 
         self.block_size = config.block_size
         self.n_embd = config.n_embd
@@ -118,6 +123,7 @@ class TSSMWorldModel(WorldModel):
         _, _, S = vecobs.size()
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
         E = self.n_embd
+        FS = self.sampled_state_size
 
         # encode embedding with vae
         z, mu, logvar = self.convVAE.encode(img.view(b * t, CH, W, H))  # each image maps to a vector
@@ -136,7 +142,7 @@ class TSSMWorldModel(WorldModel):
             + self.embedding_to_mix(full_embeddings.view(b * t, E))
         ).view(b, t, self.prior_size)
         nextprior = self.dstate_to_nextprior(
-            deterministic_state.view(b * t * E)).view(b, t, self.prior_size)
+            deterministic_state.view(b * t, E)).view(b, t, self.prior_size)
         # sample from posterior
         posterior_distr = self.to_distribution(posterior)
         posterior_sample = posterior_distr.rsample().view(b, t, self.prior_size)
@@ -145,10 +151,10 @@ class TSSMWorldModel(WorldModel):
         if h is not None:
             h[0] = sampled_fullstate # this is the predicted "world state"
         # decode embedding with vae
-        z_pred = self.z_head(sampled_fullstate.view(b * t, E))
+        z_pred = self.z_head(sampled_fullstate.view(b * t, FS))
         img_rec = self.convVAE.decode(z).view(b, t, CH, W, H)
         img_pred = self.convVAE.decode(z_pred).view(b, t, CH, W, H)
-        vecobs_pred = self.vecobs_head(sampled_fullstate.view(b * t, E)).view(b, t, S)
+        vecobs_pred = self.vecobs_head(sampled_fullstate.view(b * t, FS)).view(b, t, S)
 
         # if we are given some desired targets also calculate the loss
         loss = None

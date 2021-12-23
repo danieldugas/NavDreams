@@ -5,6 +5,7 @@ from strictfire import StrictFire
 
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
+from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 
 def main(dataset="SCR",
          gpu=False,
@@ -27,7 +28,7 @@ def main(dataset="SCR",
     else:
         raise NotImplementedError(dataset)
 
-    worldmodel_types = ["Transformer", "RSSM_A0"]
+    worldmodel_types = ["Transformer", "RSSM_A0", "TSSM_V0"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "Transformer":
@@ -47,6 +48,14 @@ def main(dataset="SCR",
             mconf = RSSMWMConf()
             mconf.image_channels = 3
             model = RSSMWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            worldmodel = model
+        elif worldmodel_type == "TSSM_V0":
+            wm_model_path = "~/navrep3d_W/models/W/TSSM_V0_{}".format(dataset)
+            wm_model_path = os.path.expanduser(wm_model_path)
+            mconf = TSSMWMConf()
+            mconf.image_channels = 3
+            model = TSSMWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
         worldmodels.append(worldmodel)

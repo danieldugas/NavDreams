@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from enum import Enum
 import typer
+from tqdm import tqdm
 
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
@@ -310,10 +311,12 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
     y_axis = "difficulty"
     smoothness = 0.999
     max_difficulty = 18.
+    y_max = 1.0
     if scenario == "navrep3doffice":
         max_difficulty = 10.
     if scenario == "navrep3dasl":
-        max_difficulty = 20.
+        max_difficulty = 50.
+        y_max = 0.4
     # calculate smoothed lines for each plot
     smoothed_curves = []
     for logpath, parent in zip(logpaths, parents):
@@ -337,7 +340,7 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
         # y axis
         if y_axis == "difficulty":
             ylabel = "average scenario difficulty"
-            ylim = [-0., 1.]
+            ylim = [-0., y_max]
             rewards = scenario_S["num_walls"].values / max_difficulty
         else:
             raise NotImplementedError
@@ -346,11 +349,11 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
         smoothed_curves.append((x, smooth_y))
 
     # minmax curve
-    if len(smoothed_curves) == 0:
-        return []
+    n_seeds = len(smoothed_curves)
+    if n_seeds == 0:
+        return [], 0
     style = None
-    print("{}: {} timeseries".format(variant, len(smoothed_curves)))
-    if len(smoothed_curves) < 3:
+    if n_seeds < 3:
         style = "dotted"
     end = np.min([np.max(x) for x, y in smoothed_curves])
     common_x = np.arange(0, end, 10000. / MILLION)
@@ -371,7 +374,7 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
     area = ax.fill_between(common_x, min_, max_, color=color, alpha=0.1)
     linegroup.append(line)
     linegroup.append(area)
-    return linegroup
+    return linegroup, n_seeds
 
 def plot_training_results(logdirs, logfolder=None):
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
@@ -385,7 +388,7 @@ def plot_training_results(logdirs, logfolder=None):
     linegroups = []
     legends = []
     for variant in all_variants:
-        linegroup = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
+        linegroup, n = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
         if linegroup:
             linegroups.append(linegroup)
             legends.append(variant)
@@ -404,20 +407,32 @@ def plot_xtraining_results(logdirs, logfolder=None):
 
     linegroups = []
     legends = []
-    for variant in all_variants:
+    seeds_count = {}
+    for variant in tqdm(all_variants):
         variant_linegroup = []
         for envname, ax_row in zip(envnames, axes):
+            n_seeds = 0
             for scenario, ax in zip(scenarios, ax_row):
-                print("{} {}".format(envname, scenario))
-                linegroup = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
+                linegroup, n = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
                 if linegroup:
                     variant_linegroup.extend(linegroup)
+                n_seeds = max(n_seeds, n)
+            seeds_count[(variant, envname)] = n_seeds
         if variant_linegroup:
             linegroups.append(variant_linegroup)
             legends.append(variant)
 
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
+
+    console = Console()
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("")
+    for variant in all_variants:
+        table.add_column(variant)
+    for envname in envnames:
+        table.add_row(envname, *[str(seeds_count[(variant, envname)]) for variant in all_variants])
+    console.print(table)
 
 def make_legend_pickable(legend, lines):
     """ Allows clicking the legend to toggle line visibility

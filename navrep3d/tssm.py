@@ -9,7 +9,7 @@ from pydreamer.models.dreamer import D
 
 from navrep3d.worldmodel import WorldModel
 
-version = 0
+version = 1
 
 _Z = 1024
 _H = _Z + 32 * 32
@@ -162,12 +162,13 @@ class TSSMWorldModel(WorldModel):
             if t < 2:
                 raise ValueError("Cannot calculate prediction loss, sequence length is < 2.")
             img_targets, vecobs_targets = targets
-            rec_loss = F.mse_loss(img_rec, img)  # input-reconstruction loss
-            rec_loss_weight = 10.0
+            img_loss = F.mse_loss(img_pred, img)  # prediction-reconstruction loss
+            img_rec_loss = F.mse_loss(img_rec, img)  # samestep-reconstruction loss
+            img_pred_weight = 10.0
 #             pred_loss = F.binary_cross_entropy(img_pred, img_targets)  # reconstructed prediction loss
             # prediction loss is the KL divergence between the prior and the posterior
             STATE_NORM_FACTOR = 25.  # maximum typical goal distance, meters
-            vecobs_loss = F.mse_loss(vecobs_pred, vecobs_targets) / STATE_NORM_FACTOR**2
+            vecobs_pred_loss = F.mse_loss(vecobs_pred, vecobs_targets) / STATE_NORM_FACTOR**2
             # posterior from prior prediction
             prior_1_to_n = nextprior[:, :-1, :]
             posterior_1_to_n = posterior[:, 1:, :]
@@ -178,7 +179,10 @@ class TSSMWorldModel(WorldModel):
             loss_kl_postgrad = D.kl.kl_divergence(dpost, dprior_nograd)
             loss_kl_priograd = D.kl.kl_divergence(dpost_nograd, dprior)
             loss_kl = (1 - self.conf.kl_balance) * loss_kl_postgrad + self.conf.kl_balance * loss_kl_priograd
-            loss = rec_loss_weight * rec_loss + vecobs_loss + self.conf.kld_weight * loss_kl
+            loss = (img_pred_weight * img_loss
+                    + img_rec_loss
+                    + vecobs_pred_loss
+                    + self.conf.kld_weight * loss_kl)
 
         return img_pred, vecobs_pred, loss
 

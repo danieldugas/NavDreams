@@ -14,22 +14,22 @@ class WorldModel(nn.Module):
     def get_block_size():
         raise NotImplementedError
 
-    def forward(self, img, state, action, dones, targets=None, h=None):
+    def forward(self, img, vecobs, action, dones, targets=None, h=None):
         """
         img: (batch, sequence, CH, W, H) [0, 1]
         action: (batch, sequence, A) [-inf, inf]
-        state: (batch, sequence, S) [-inf, inf]
+        vecobs: (batch, sequence, S) [-inf, inf]
         dones:  (batch, sequence,) {0, 1}
-        targets: None or (img_targets, state_targets)
+        targets: None or (img_targets, vecobs_targets)
             img_targets: same shape as img
-            state_targets: same shape as state
+            vecobs_targets: same shape as vecobs
         h: None or []
             if None, will be ignored
             if [] will be filled with RNN state (batch, sequence, H)
 
         OUTPUTS
         img_pred: same shape as img
-        state_pred: same shape as state
+        vecobs_pred: same shape as vecobs
         loss: torch loss
         """
         raise NotImplementedError
@@ -77,10 +77,10 @@ class WorldModel(nn.Module):
         img = img.reshape((_b, *img.shape))
         img_t = torch.tensor(img, dtype=torch.float)
         img_t = self._to_correct_device(img_t)
-        state = np.array([d["state"] for d in gpt_sequence])  # t, 2
-        state = state.reshape((_b, *state.shape))
-        state_t = torch.tensor(state, dtype=torch.float)
-        state_t = self._to_correct_device(state_t)
+        vecobs = np.array([d["state"] for d in gpt_sequence])  # t, 2
+        vecobs = vecobs.reshape((_b, *vecobs.shape))
+        vecobs_t = torch.tensor(vecobs, dtype=torch.float)
+        vecobs_t = self._to_correct_device(vecobs_t)
         action = np.array([d["action"] for d in gpt_sequence])  # t, 3
         action = action.reshape((_b, *action.shape))
         action_t = torch.tensor(action, dtype=torch.float)
@@ -89,7 +89,7 @@ class WorldModel(nn.Module):
         dones_t = torch.tensor(dones, dtype=torch.float)
         dones_t = self._to_correct_device(dones_t)
         h_container = [None]
-        self.forward(img_t, state_t, action_t, dones_t, h=h_container)
+        self.forward(img_t, vecobs_t, action_t, dones_t, h=h_container)
         h = h_container[0].detach().cpu().numpy()
         h = h[0, -1]  # only batch, last item in sequence
         return h
@@ -111,10 +111,10 @@ class WorldModel(nn.Module):
         img = img.reshape((_b, *img.shape))
         img_t = torch.tensor(img, dtype=torch.float)
         img_t = self._to_correct_device(img_t)
-        state = np.array([d["state"] for d in gpt_sequence])  # t, 2
-        state = state.reshape((_b, *state.shape))
-        state_t = torch.tensor(state, dtype=torch.float)
-        state_t = self._to_correct_device(state_t)
+        vecobs = np.array([d["state"] for d in gpt_sequence])  # t, 2
+        vecobs = vecobs.reshape((_b, *vecobs.shape))
+        vecobs_t = torch.tensor(vecobs, dtype=torch.float)
+        vecobs_t = self._to_correct_device(vecobs_t)
         action = np.array([d["action"] for d in gpt_sequence])  # t, 3
         action = action.reshape((_b, *action.shape))
         action_t = torch.tensor(action, dtype=torch.float)
@@ -123,13 +123,13 @@ class WorldModel(nn.Module):
         dones_t = torch.tensor(dones, dtype=torch.float)
         dones_t = self._to_correct_device(dones_t)
         h_container = [None]
-        img_pred_t, state_pred_t, _ = self.forward(img_t, state_t, action_t, dones_t, h=h_container)
+        img_pred_t, vecobs_pred_t, _ = self.forward(img_t, vecobs_t, action_t, dones_t, h=h_container)
         img_pred = img_pred_t.detach().cpu().numpy()
         img_pred = img_pred[0, -1]  # only batch, last item in sequence
         img_pred = np.moveaxis(img_pred, 0, -1)
-        state_pred = state_pred_t.detach().cpu().numpy()
-        state_pred = state_pred[0, -1]  # only batch, last item in sequence
-        return img_pred, state_pred
+        vecobs_pred = vecobs_pred_t.detach().cpu().numpy()
+        vecobs_pred = vecobs_pred[0, -1]  # only batch, last item in sequence
+        return img_pred, vecobs_pred
 
 def fill_dream_sequence(worldmodel, real_sequence, context_length):
     """ Fills dream sequence based on context from real_sequence
@@ -157,4 +157,3 @@ def fill_dream_sequence(worldmodel, real_sequence, context_length):
         dream_sequence.append(dict(obs=img_npred, state=goal_pred, action=None))
     dream_sequence[-1]['action'] = next_actions[-1] * 1.
     return dream_sequence
-

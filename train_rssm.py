@@ -20,7 +20,7 @@ from strictfire import StrictFire
 from navrep.models.gpt import save_checkpoint, set_seed
 
 from navrep3d.auto_debug import enable_auto_debug
-from navrep3d.rssm import RSSMWMConf, RSSMWorldModel, Ablation, AblationOptionType
+from navrep3d.rssm import RSSMWMConf, RSSMWorldModel, ablation
 from train_gpt import N3DWorldModelDataset, gpt_worldmodel_error
 
 # In the pydreamer version, _Z is around 1500, _H is large too.
@@ -29,15 +29,8 @@ _Z = _H = 64
 _S = 32  # sequence length
 
 
-def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
+def main(max_steps=222222, dataset="SCR", dry_run=False, gpu=True):
     namestring = "RSSM_A{}".format(ablation)
-    if ablation is None:
-        raise ValueError("ablation must be specified")
-    elif ablation == 0:
-        # original
-        ablation = Ablation()
-    else:
-        raise NotImplementedError
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
     if dataset == "SCR":
@@ -79,10 +72,6 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
     logger = logging.getLogger(__name__)
 
     mconf = RSSMWMConf()
-    if ablation.embedding_size != AblationOptionType.ORIGINAL:
-        raise NotImplementedError
-    if ablation.hidden_state_size != AblationOptionType.ORIGINAL:
-        raise NotImplementedError
     mconf.image_channels = 3
     train_dataset = N3DWorldModelDataset(
         dataset_dir, _S,
@@ -107,7 +96,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
     num_workers = 0  # for DataLoader
 
     # create model
-    model = RSSMWorldModel(mconf)
+    model = RSSMWorldModel(mconf, gpu=gpu)
     print("RSSM trainable params: {}".format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
@@ -139,7 +128,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
         {"params": params_nodecay, "weight_decay": 0.0},
     ]
     optimizer = optim.AdamW(optim_groups, lr=learning_rate, betas=betas)
-    if ablation.optimizer == AblationOptionType.ORIGINAL:
+    if mconf.amp:
         from torch.cuda.amp import GradScaler
         optimizer = torch.optim.AdamW(model.parameters(), lr=mconf.adam_lr, eps=mconf.adam_eps)
         scaler = GradScaler(enabled=mconf.amp)
@@ -182,7 +171,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, ablation=None):
             if is_train:
 
                 # backprop and update the parameters
-                if ablation.optimizer == AblationOptionType.ORIGINAL:
+                if mconf.amp:
                     optimizer.zero_grad()
                     scaler.scale(loss).backward()
                     scaler.unscale_(optimizer)

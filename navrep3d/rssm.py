@@ -1,17 +1,14 @@
 import numpy as np
 import torch
-from pydreamer.models.dreamer import RSSMCore, MultiDecoder, MultiEncoder, init_weights_tf2, D, logavgexp
+import torch.nn as nn
+from torch.nn import functional as F
+
+from navrep.models.torchvae import VAE
+from pydreamer.models.dreamer import RSSMCore, init_weights_tf2, D
 from navrep3d.worldmodel import WorldModel
 
-# enum with two values, "original" and "navrep"
-class AblationOptionType(object):
-    ORIGINAL = "original"
-    NAVREP = "navrep"
-
-class Ablation(object):
-    embedding_size = AblationOptionType.ORIGINAL
-    hidden_state_size = AblationOptionType.ORIGINAL
-    optimizer = AblationOptionType.ORIGINAL
+ablation = 1
+# ablated the encoder / decoder to the transformer one
 
 # ----------------------------------------------
 class RSSMWMConf(object):
@@ -67,7 +64,7 @@ class RSSMWMConf(object):
     iwae_samples = 1
     keep_state = True
     kl_balance = 0.8
-    kl_weight = 1.0
+    kl_weight = 0.01
     lambda_gae = 0.95
     layer_norm = True
     limit_step_ratio = 0
@@ -141,13 +138,15 @@ class RSSMWorldModel(WorldModel):
         self.stoch_discrete = conf.stoch_discrete
         self.kl_weight = conf.kl_weight
         self.kl_balance = None if conf.kl_balance == 0.5 else conf.kl_balance
-        # Encoder
-        self.encoder = MultiEncoder(conf)
-        # Decoders
         features_dim = conf.deter_dim + conf.stoch_dim * (conf.stoch_discrete or 1)
-        self.decoder = MultiDecoder(features_dim, conf)
+        # Encoder
+        self.convVAE = VAE(z_dim=features_dim, gpu=gpu, image_channels=conf.image_channels)
+        self.vecobs_emb = nn.Linear(conf.vecobs_size, features_dim)
+        # Decoders
+        self.vecobs_head = nn.Linear(features_dim, conf.vecobs_size)
+
         # RSSM
-        self.core = RSSMCore(embed_dim=self.encoder.out_dim,
+        self.core = RSSMCore(embed_dim=features_dim,
                              action_dim=conf.action_dim,
                              deter_dim=conf.deter_dim,
                              stoch_dim=conf.stoch_dim,
@@ -163,27 +162,27 @@ class RSSMWorldModel(WorldModel):
     def get_block_size(self):
         return self.block_size
 
-    def forward(self, img, state, action, dones, targets=None, h=None):
+    def forward(self, img, vecobs, action, dones, targets=None, h=None):
         """
         img: (batch, sequence, CH, W, H) [0, 1]
         action: (batch, sequence, A) [-inf, inf]
-        state: (batch, sequence, S) [-inf, inf]
+        vecobs: (batch, sequence, V) [-inf, inf]
         dones:  (batch, sequence,) {0, 1}
-        targets: None or (img_targets, state_targets)
+        targets: None or (img_targets, vecobs_targets)
             img_targets: same shape as img
-            state_targets: same shape as state
+            vecobs_targets: same shape as vecobs
         h: None or []
             if None, will be ignored
             if [] will be filled with RNN state (batch, sequence, H)
 
         OUTPUTS
         img_pred: same shape as img
-        state_pred: same shape as state
+        vecobs_pred: same shape as vecobs
         loss: torch loss
         """
         b, t, CH, W, H = img.size()
         _, _, A = action.size()
-        _, _, S = state.size()
+        _, _, V = vecobs.size()
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
         # ------------------------------------------
         iwae_samples = 1 # always 1 for training
@@ -203,13 +202,16 @@ class RSSMWorldModel(WorldModel):
         obs["terminal"] = dones.moveaxis(1, 0)
         obs["reset"] = torch.roll(obs["terminal"], 1, 0) > 0
         obs["image"] = img.moveaxis(1, 0)
-        obs["vecobs"] = state.moveaxis(1, 0)
+        obs["vecobs"] = vecobs.moveaxis(1, 0)
         obs["reward"] = obs["terminal"] * 0.0
         # in_state: Tuple[Tensor, Tensor],    # [(BI,D) (BI,S)] -> h, z
         # we could maintain state across forward but don't to be consistent with other models
         in_state = self.core.init_state(b * iwae_samples)
         # Encoder
-        embed = self.encoder(obs)
+        img_embed, _, _ = self.convVAE.encode(obs["image"].reshape(b * t, CH, W, H))
+        img_embed = img_embed.view(t, b, -1)
+        vecobs_embed = self.vecobs_emb(obs["vecobs"].reshape(b * t, V)).view(t, b, -1)
+        embed = img_embed + vecobs_embed
         # RSSM
         prior, post, post_samples, features, states, out_state = \
             self.core.forward(embed,
@@ -219,7 +221,12 @@ class RSSMWorldModel(WorldModel):
                               iwae_samples=iwae_samples,
                               do_open_loop=do_open_loop)
         # Decoder
-        loss_reconstr, metrics, tensors = self.decoder.training_step(features, obs)
+        img_rec = self.convVAE.decode(features.view(b * t, -1)).view(t, b, CH, W, H)
+        vecobs_rec = self.vecobs_head(features.view(b * t, -1)).view(t, b, V)
+        img_rec_loss = F.mse_loss(img_rec, obs["image"])  # samestep-reconstruction loss
+        STATE_NORM_FACTOR = 25.  # maximum typical goal distance, meters
+        vecobs_pred_loss = F.mse_loss(vecobs_rec, obs["vecobs"]) / STATE_NORM_FACTOR**2
+        loss_reconstr = img_rec_loss + vecobs_pred_loss
         # KL loss
         d = self.core.zdistr
         dprior = d(prior)
@@ -238,22 +245,20 @@ class RSSMWorldModel(WorldModel):
             z = post_samples.reshape(dpost.batch_shape + dpost.event_shape)
             loss_kl = dpost.log_prob(z) - dprior.log_prob(z)
         # Total loss
-        assert loss_kl.shape == loss_reconstr.shape
-        loss_model_tbi = self.kl_weight * loss_kl + loss_reconstr
-        loss_model = -logavgexp(-loss_model_tbi, dim=2)
+        loss_model = self.kl_weight * loss_kl.mean() + loss_reconstr
         # t+1 predictions (using next-step prior)
         with torch.no_grad():
             prior_samples = self.core.zdistr(prior).sample().reshape(post_samples.shape)
             features_prior = self.core.feature_replace_z(features, prior_samples)
-            _, _, tens = self.decoder.training_step(features_prior, obs, extra_metrics=True)
-            img_pred = tens["image_rec"].moveaxis(1, 0)
-            state_pred = tens["vecobs_rec"].moveaxis(1, 0)
-#         return loss_model.mean(), features, states, out_state, metrics, tensors
+            img_pred = self.convVAE.decode(features_prior.view(b * t, -1)).view(t, b, CH, W, H)
+            vecobs_pred = self.vecobs_head(features_prior.view(b * t, -1)).view(t, b, V)
+            img_pred = img_pred.moveaxis(1, 0)
+            vecobs_pred = vecobs_pred.moveaxis(1, 0)
         # x = features
         if h is not None:
             h_states = states[0] # T, B, I, H
             h[0] = h_states.view((t, b, -1)).moveaxis(1, 0)
-        return img_pred, state_pred, loss_model
+        return img_pred, vecobs_pred, loss_model
     # -----------------------------
 
     def encode_mu_logvar(self, img):
@@ -270,6 +275,8 @@ class RSSMWorldModel(WorldModel):
         img_t = torch.tensor(np.moveaxis(img, -1, 1), dtype=torch.float)
         img_t = self._to_correct_device(img_t) # B, CH, W, H
 
+        raise NotImplementedError
+        # correct way would be to run RSSM on sequence of length 1, get the features
         embed = self.encoder.encoder_image.forward(img_t.view((1, b, CH, W, H)))  # (T,B,E)
         z = embed.view((b, -1))
 
@@ -291,6 +298,7 @@ class RSSMWorldModel(WorldModel):
 
         # decoder expects features (T, B, I, Z) - T is sequence, I is samples (both irrelevant here)
         z_t = z_t.view((1, b, 1, Z))
+        raise NotImplementedError
         img_rec_t = self.decoder.image.forward(z_t) # t, b, I, CH, W, H
         T, B, I, CH, W, H = img_rec_t.shape
         img_rec_t = img_rec_t.view((B, CH, W, H))

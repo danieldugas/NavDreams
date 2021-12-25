@@ -8,6 +8,7 @@ from tqdm import tqdm
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
+from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
 from navrep3d.worldmodel import fill_dream_sequence
 from plot_gym_training_progress import make_legend_pickable
 
@@ -78,10 +79,10 @@ def main(dataset="SCR",
     else:
         raise NotImplementedError(dataset)
 
-    worldmodel_types = ["Transformer", "RSSM_A0", "TSSM_V1"]
+    worldmodel_types = ["transformer", "RSSM_A0", "TSSM_V2", "TransformerL_V0"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
-        if worldmodel_type == "Transformer":
+        if worldmodel_type == "transformer":
             wm_model_path = "~/navrep3d_W/models/W/transformer_{}".format(dataset)
             wm_model_path = os.path.expanduser(wm_model_path)
             BLOCK_SIZE = 32
@@ -100,12 +101,20 @@ def main(dataset="SCR",
             model = RSSMWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
-        elif worldmodel_type == "TSSM_V1":
-            wm_model_path = "~/navrep3d_W/models/W/TSSM_V1_{}".format(dataset)
+        elif worldmodel_type == "TSSM_V2":
+            wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
             wm_model_path = os.path.expanduser(wm_model_path)
             mconf = TSSMWMConf()
             mconf.image_channels = 3
             model = TSSMWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            worldmodel = model
+        elif worldmodel_type == "TransformerL_V0":
+            wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(dataset)
+            wm_model_path = os.path.expanduser(wm_model_path)
+            mconf = TransformerLWMConf()
+            mconf.image_channels = 3
+            model = TransformerLWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
         worldmodels.append(worldmodel)

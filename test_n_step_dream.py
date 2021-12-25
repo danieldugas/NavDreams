@@ -20,6 +20,8 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder, sequence_length=32,
     obs_error = np.ones((len(seq_loader), dream_length)) * np.nan
     vecobs_error = np.ones((len(seq_loader), dream_length)) * np.nan
     for i, (x, a, y, x_rs, y_rs, dones) in enumerate(seq_loader):
+        if i >= len(seq_loader):
+            break
         real_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i]) for i in range(sequence_length)]
         dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
         dream_obs = np.array([d["obs"] for d in dream_sequence[context_length:]]) # (D, W, H, C)
@@ -38,8 +40,8 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder, sequence_length=32,
         vecobs_error[i, ignore_error] = np.nan
         if i % 100 == 0:
             seq_loader.set_description(
-                f"1-step error {np.nanmean(obs_error, axis=0)[0]:.1f} \
-                  16-step error {np.nanmean(obs_error, axis=0)[15]:.1f}"
+                f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
+                  16-step error {np.nanmean(obs_error, axis=0)[15]:.5f}"
             )
     mean_obs_error = np.nanmean(obs_error, axis=0)
     mean_vecobs_error = np.nanmean(vecobs_error, axis=0)

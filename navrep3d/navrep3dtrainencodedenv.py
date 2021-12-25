@@ -54,6 +54,14 @@ class EncoderObsWrapper(ObservationWrapper):
         h = self.encoder._encode_obs(obs, action)
         return h
 
+    def reset(self, *args, **kwargs):
+        self.encoder.reset()
+        return super(EncoderObsWrapper, self).reset(*args, **kwargs)
+
+    def close(self):
+        self.encoder.close()
+        return super(EncoderObsWrapper, self).close()
+
 class NavRep3DTrainEncodedEnv(Env):
     """ takes a (3) action as input
     outputs encoded obs (546) """

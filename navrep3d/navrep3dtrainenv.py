@@ -7,6 +7,7 @@ import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
+from crowd_sim.envs.utils.info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 from pose2d import apply_tf_to_vel, inverse_pose2d, apply_tf_to_pose, apply_tf
 from pandas import DataFrame
 import gym
@@ -100,7 +101,7 @@ class NavRep3DTrainEnv(gym.Env):
         # randomize difficulty is not implemented, but included for compat with NavRep3DAnyEnv
         # default args
         if build_name is None:
-            build_name = "./build.x86_64"
+            build_name = "./alternate.x86_64"
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)
@@ -286,6 +287,7 @@ class NavRep3DTrainEnv(gym.Env):
 
     def step(self, actions):
         info = {}
+        info["event"] = None
         self.last_action = actions
         actions = np.array(actions)
         if rotation_deadzone is not None:
@@ -457,11 +459,13 @@ class NavRep3DTrainEnv(gym.Env):
                 if self.verbose > 0:
                     print("Time limit reached")
                 done = True
+                info["event"] = Timeout()
 
         if colliding_object:
             if self.verbose > 0:
                 print("Colliding static obstacle")
             done = True
+            info["event"] = Collision()
             reward = -25
             difficulty_increase = -1
 
@@ -469,6 +473,7 @@ class NavRep3DTrainEnv(gym.Env):
             if self.verbose > 0:
                 print("Colliding agent")
             done = True
+            info["event"] = CollisionOtherAgent()
             reward = -25
             difficulty_increase = -1
 
@@ -476,6 +481,7 @@ class NavRep3DTrainEnv(gym.Env):
             if self.verbose > 0:
                 print("Fallen through ground")
             done = True
+            info["event"] = Collision()
             reward = -25
             difficulty_increase = -1
 
@@ -483,6 +489,7 @@ class NavRep3DTrainEnv(gym.Env):
             if self.verbose > 0:
                 print("Flown off! (progress: {})".format(progress))
             done = True
+            info["event"] = Collision()
             reward = -25
             difficulty_increase = -1
 
@@ -490,6 +497,7 @@ class NavRep3DTrainEnv(gym.Env):
             if self.verbose > 0:
                 print("Goal reached")
             done = True
+            info["event"] = ReachGoal()
             reward = 100
             difficulty_increase = 1.
 
@@ -531,6 +539,8 @@ class NavRep3DTrainEnv(gym.Env):
 
         self.last_image = arrimg
         obs = (arrimg, robotstate_obs)
+        if self.output_lidar:
+            obs = (self.lidar_scan, robotstate_obs)
         if np.any(np.isnan(robotstate_obs)):
             raise ValueError("nan values in robotstate")
         return obs, reward, done, info
@@ -782,7 +792,7 @@ class NavRep3DTrainEnv(gym.Env):
         kLidarMergedMaxAngle = 6.27543783188 + kLidarAngleIncrement
         # preprocessing if necessary
         self._update_dist_travelled(crowd, crowd_vel)
-        if self.flat_contours is None and contours is not None:
+        if self.flat_contours is None and contours is not None and len(contours) > 0:
             self.flat_contours = flatten_contours([list(polygon) for polygon in contours])
         if self.converter_cmap2d is None:
             self.converter_cmap2d = CMap2D()
@@ -797,7 +807,7 @@ class NavRep3DTrainEnv(gym.Env):
         angles = np.linspace(kLidarMergedMinAngle,
                              kLidarMergedMaxAngle-kLidarAngleIncrement,
                              n_angles) + lidar_pos[2]
-        if contours is not None:
+        if flat_contours is not None:
             render_contours_in_lidar(ranges, angles, flat_contours, lidar_pos[:2])
         # agents
         if crowd is not None:

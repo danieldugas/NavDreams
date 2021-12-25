@@ -9,6 +9,26 @@ from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.worldmodel import fill_dream_sequence
+from plot_gym_training_progress import make_legend_pickable
+
+def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_length):
+    sequence_length = len(real_sequence)
+    dream_length = sequence_length - context_length
+    dream_obs = np.array([d["obs"] for d in dream_sequence[context_length:]]) # (D, W, H, C)
+    dream_vecobs = np.array([d["state"] for d in dream_sequence[context_length:]])
+    real_obs = np.array([d["obs"] for d in real_sequence[context_length:]])
+    real_vecobs = np.array([d["state"] for d in real_sequence[context_length:]])
+    obs_error = np.mean( # mean over all pixels and channels
+        np.reshape(np.square(dream_obs - real_obs), (dream_length, -1)),
+        axis=-1) # now (D,)
+    vecobs_error = np.mean(
+        np.reshape(np.square(dream_vecobs - real_vecobs), (dream_length, -1)),
+        axis=-1) # now (D, )
+    # if a reset is in the sequence, ignore predictions for subsequent frames
+    ignore_error = np.cumsum(dones[context_length:]) > 0 # (D,)
+    obs_error[ignore_error] = np.nan
+    vecobs_error[ignore_error] = np.nan
+    return obs_error, vecobs_error
 
 def worldmodel_n_step_error(worldmodel, test_dataset_folder, sequence_length=32, context_length=16):
     assert sequence_length <= worldmodel.get_block_size()
@@ -20,24 +40,12 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder, sequence_length=32,
     obs_error = np.ones((len(seq_loader), dream_length)) * np.nan
     vecobs_error = np.ones((len(seq_loader), dream_length)) * np.nan
     for i, (x, a, y, x_rs, y_rs, dones) in enumerate(seq_loader):
-        if i >= len(seq_loader):
+        if i >= len(seq_loader): # this shouldn't be necessary, but it is (len is not honored by for)
             break
         real_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i]) for i in range(sequence_length)]
         dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
-        dream_obs = np.array([d["obs"] for d in dream_sequence[context_length:]]) # (D, W, H, C)
-        dream_vecobs = np.array([d["state"] for d in dream_sequence[context_length:]])
-        real_obs = np.array([d["obs"] for d in real_sequence[context_length:]])
-        real_vecobs = np.array([d["state"] for d in real_sequence[context_length:]])
-        obs_error[i] = np.mean( # mean over all pixels and channels
-            np.reshape(np.square(dream_obs - real_obs), (dream_length, -1)),
-            axis=-1) # now (D,)
-        vecobs_error[i] = np.mean(
-            np.reshape(np.square(dream_vecobs - real_vecobs), (dream_length, -1)),
-            axis=-1) # now (D, )
-        # if a reset is in the sequence, ignore predictions for subsequent frames
-        ignore_error = np.cumsum(dones[context_length:]) > 0 # (D,)
-        obs_error[i, ignore_error] = np.nan
-        vecobs_error[i, ignore_error] = np.nan
+        obs_error[i], vecobs_error[i] = single_sequence_n_step_error(
+            real_sequence, dream_sequence, dones, context_length)
         if i % 100 == 0:
             seq_loader.set_description(
                 f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
@@ -104,11 +112,23 @@ def main(dataset="SCR",
 
     if error:
         print("Computing n-step error")
+        n_step_errors = []
         for worldmodel in worldmodels:
             obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
                 worldmodel, dataset_dir, sequence_length=sequence_length, context_length=context_length)
-            plt.plot(obs_n_step_error)
+            n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
+        fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
+        linegroups = []
+        legends = worldmodel_types
+        for obs_n_step_error, vecobs_n_step_error in n_step_errors:
+            line1, = ax1.plot(obs_n_step_error)
+            line2, = ax2.plot(vecobs_n_step_error)
+            linegroups.append([line1, line2])
+        L = fig.legend([lines[0] for lines in linegroups], legends)
+        make_legend_pickable(L, linegroups)
+        plt.savefig("/tmp/n_step_errors.png")
         plt.show()
+        return
 
     example_sequences = {examples[i]: None for i in range(n_examples)}
     seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
@@ -122,6 +142,7 @@ def main(dataset="SCR",
 
     n_rows_per_example = (len(worldmodels) + 1)
     fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream")
+    fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
     for n, id_ in enumerate(example_sequences):
         if example_sequences[id_] is None:
             continue
@@ -131,12 +152,24 @@ def main(dataset="SCR",
         for worldmodel in worldmodels:
             dream_sequences.append(fill_dream_sequence(worldmodel, real_sequence, context_length))
 
+        # plotting
         for i in range(sequence_length):
             axes[n_rows_per_example*n, i].imshow(real_sequence[i]['obs'])
             axes[n_rows_per_example*n, i].set_ylabel("GT")
-            for m, dream_sequence in enumerate(dream_sequences):
-                axes[n_rows_per_example*n+1+m, i].set_ylabel("{}".format(worldmodel_types[m]))
-                axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
+            if i > context_length:
+                for m, dream_sequence in enumerate(dream_sequences):
+                    axes[n_rows_per_example*n+1+m, i].set_ylabel("{}".format(worldmodel_types[m]))
+                    axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
+        linegroups = []
+        legends = worldmodel_types
+        for dream_sequence in dream_sequences:
+            obs_error, vecobs_error = single_sequence_n_step_error(
+                real_sequence, dream_sequence, dones, context_length)
+            line1, = axes2[n, 0].plot(obs_error)
+            line2, = axes2[n, 1].plot(vecobs_error)
+            linegroups.append([line1, line2])
+        L = fig2.legend([lines[0] for lines in linegroups], legends)
+        make_legend_pickable(L, linegroups)
     plt.show()
 
 

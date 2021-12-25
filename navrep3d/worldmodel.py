@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,6 +10,9 @@ class WorldModel(nn.Module):
     def __init__(self, gpu):
         self.gpu = gpu
         super().__init__()
+
+    def get_block_size():
+        raise NotImplementedError
 
     def forward(self, img, state, action, dones, targets=None, h=None):
         """
@@ -126,3 +130,31 @@ class WorldModel(nn.Module):
         state_pred = state_pred_t.detach().cpu().numpy()
         state_pred = state_pred[0, -1]  # only batch, last item in sequence
         return img_pred, state_pred
+
+def fill_dream_sequence(worldmodel, real_sequence, context_length):
+    """ Fills dream sequence based on context from real_sequence
+        real_sequence is a list of dicts, one for each step in the sequence.
+        each dict has
+        "obs": numpy image (W, H, CH) [0, 1]
+        "state": numpy (2,) [-inf, inf]
+        "action": numpy (3,) [-inf, inf]
+
+        context_length (int): number of steps of the real sequence to keep in the dream sequence
+
+        output:
+        dream_sequence: same length as the real_sequence, but observations and states are predicted
+                open-loop by the worldmodel, while actions are taken from the real sequence
+        """
+    sequence_length = len(real_sequence)
+    dream_sequence = copy.deepcopy(real_sequence[:context_length])
+    dream_sequence[-1]['action'] = None
+    real_actions = [d['action'] for d in real_sequence]
+    next_actions = real_actions[context_length-1:sequence_length-1]
+    for action in next_actions:
+        dream_sequence[-1]['action'] = action * 1.
+        img_npred, goal_pred = worldmodel.get_next(dream_sequence)
+        # update sequence
+        dream_sequence.append(dict(obs=img_npred, state=goal_pred, action=None))
+    dream_sequence[-1]['action'] = next_actions[-1] * 1.
+    return dream_sequence
+

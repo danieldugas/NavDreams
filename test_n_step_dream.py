@@ -79,7 +79,7 @@ def main(dataset="SCR",
     else:
         raise NotImplementedError(dataset)
 
-    worldmodel_types = ["transformer", "RSSM_A0", "TSSM_V2", "TransformerL_V0"]
+    worldmodel_types = ["transformer", "RSSM_A1", "TSSM_V2", "TransformerL_V0"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "transformer":
@@ -93,8 +93,8 @@ def main(dataset="SCR",
             model = GPT(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
-        elif worldmodel_type == "RSSM_A0":
-            wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
+        elif worldmodel_type == "RSSM_A1":
+            wm_model_path = "~/navrep3d_W/models/W/RSSM_A1_{}".format(dataset)
             wm_model_path = os.path.expanduser(wm_model_path)
             mconf = RSSMWMConf()
             mconf.image_channels = 3
@@ -126,7 +126,7 @@ def main(dataset="SCR",
             obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
                 worldmodel, dataset_dir, sequence_length=sequence_length, context_length=context_length)
             n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
-        fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
+        fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error", figsize=(1896 * 2, 989 * 2), dpi=100)
         linegroups = []
         legends = worldmodel_types
         for obs_n_step_error, vecobs_n_step_error in n_step_errors:
@@ -136,6 +136,7 @@ def main(dataset="SCR",
         L = fig.legend([lines[0] for lines in linegroups], legends)
         make_legend_pickable(L, linegroups)
         plt.savefig("/tmp/n_step_errors.png")
+        print("Saved figure.")
         plt.show()
         return
 
@@ -143,19 +144,19 @@ def main(dataset="SCR",
     seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
                                    channel_first=False, as_torch_tensors=False, file_limit=None)
     print("{} sequences available".format(len(seq_loader)))
-    for i, (x, a, y, x_rs, y_rs, dones) in tqdm(enumerate(seq_loader)):
-        if i in example_sequences:
-            example_sequences[i] = (x, a, y, x_rs, y_rs, dones)
-        if i > max(examples):
-            break
+    for idx in example_sequences:
+        (x, a, y, x_rs, y_rs, dones) = seq_loader[idx]
+        example_sequences[idx] = (x, a, y, x_rs, y_rs, dones)
 
     n_rows_per_example = (len(worldmodels) + 1)
     fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream")
     fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
-    for n, id_ in enumerate(example_sequences):
-        if example_sequences[id_] is None:
+    axes = np.array(axes).reshape((-1, sequence_length))
+    axes2 = np.array(axes2).reshape((-1, 2))
+    for n, idx in enumerate(tqdm(example_sequences)):
+        if example_sequences[idx] is None:
             continue
-        x, a, y, x_rs, y_rs, dones = example_sequences[id_]
+        x, a, y, x_rs, y_rs, dones = example_sequences[idx]
         real_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i]) for i in range(sequence_length)]
         dream_sequences = []
         for worldmodel in worldmodels:
@@ -164,11 +165,14 @@ def main(dataset="SCR",
         # plotting
         for i in range(sequence_length):
             axes[n_rows_per_example*n, i].imshow(real_sequence[i]['obs'])
-            axes[n_rows_per_example*n, i].set_ylabel("GT")
             if i > context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
-                    axes[n_rows_per_example*n+1+m, i].set_ylabel("{}".format(worldmodel_types[m]))
                     axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
+        axes[n_rows_per_example*n, 0].set_ylabel("GT")
+        for m in range(len(dream_sequences)):
+            axes[n_rows_per_example*n+1+m, 0].set_ylabel("{}".format(worldmodel_types[m]))
+        for ax in np.array(axes).flatten():
+            ax.set_axis_off()
         linegroups = []
         legends = worldmodel_types
         for dream_sequence in dream_sequences:
@@ -179,6 +183,9 @@ def main(dataset="SCR",
             linegroups.append([line1, line2])
         L = fig2.legend([lines[0] for lines in linegroups], legends)
         make_legend_pickable(L, linegroups)
+    fig.savefig("/tmp/dream_comparison.png", dpi=200)
+    fig2.savefig("/tmp/n_step_error_for_dream_comparison.png")
+    print("Saved figures.")
     plt.show()
 
 

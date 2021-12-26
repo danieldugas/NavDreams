@@ -56,6 +56,16 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder, sequence_length=32,
     mean_vecobs_error = np.nanmean(vecobs_error, axis=0)
     return mean_obs_error, mean_vecobs_error
 
+def hide_axes_but_keep_ylabel(ax):
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    if False:
+        ax.set_axis_off()
+
 def main(dataset="SCR",
          gpu=False,
          dream_length=16,
@@ -149,7 +159,8 @@ def main(dataset="SCR",
         example_sequences[idx] = (x, a, y, x_rs, y_rs, dones)
 
     n_rows_per_example = (len(worldmodels) + 1)
-    fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream")
+    fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream",
+                             figsize=(3.7, 1.4))
     fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
     axes = np.array(axes).reshape((-1, sequence_length))
     axes2 = np.array(axes2).reshape((-1, 2))
@@ -168,11 +179,11 @@ def main(dataset="SCR",
             if i > context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
                     axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
-        axes[n_rows_per_example*n, 0].set_ylabel("GT")
+        axes[n_rows_per_example*n, 0].set_ylabel("GT", rotation=0)
         for m in range(len(dream_sequences)):
-            axes[n_rows_per_example*n+1+m, 0].set_ylabel("{}".format(worldmodel_types[m]))
+            axes[n_rows_per_example*n+1+m, 0].set_ylabel("{}".format(worldmodel_types[m]), rotation=0)
         for ax in np.array(axes).flatten():
-            ax.set_axis_off()
+            hide_axes_but_keep_ylabel(ax)
         linegroups = []
         legends = worldmodel_types
         for dream_sequence in dream_sequences:
@@ -183,7 +194,7 @@ def main(dataset="SCR",
             linegroups.append([line1, line2])
         L = fig2.legend([lines[0] for lines in linegroups], legends)
         make_legend_pickable(L, linegroups)
-    fig.savefig("/tmp/dream_comparison.png", dpi=200)
+    fig.savefig("/tmp/dream_comparison.png", dpi=100)
     fig2.savefig("/tmp/n_step_error_for_dream_comparison.png")
     print("Saved figures.")
     plt.show()

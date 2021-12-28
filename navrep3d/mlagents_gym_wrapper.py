@@ -111,7 +111,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
     """
     def __init__(self, staticasl_env,
                  verbose=0, collect_statistics=True, debug_export_every_n_episodes=0,
-                 randomize_difficulty=False):
+                 difficulty_mode="progressive"):
         super().__init__()
         self.staticasl_env = staticasl_env
         # navrep3dtrainenv spaces
@@ -151,7 +151,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.steps_since_reset = 0
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.total_episodes = 0
-        self.randomize_difficulty = randomize_difficulty
+        self.difficulty_mode = difficulty_mode
         self.difficulty_to_set = None
 
     def set_difficulty(self, difficulty):
@@ -173,8 +173,16 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             obs['CameraSensor'],
             obs['VectorSensor_size6'][:5]
         )
-        if self.randomize_difficulty:
+        if self.difficulty_mode == "progressive":
+            pass
+        elif self.difficulty_mode == "random":
             self.set_difficulty(np.random.uniform())
+        elif self.difficulty_mode == "fixed":
+            self.set_difficulty(0.5)
+        elif self.difficulty_mode == "hardest":
+            self.set_difficulty(1.0)
+        else:
+            raise NotImplementedError
         return obs_tuple
 
     def step(self, action):
@@ -443,7 +451,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     time_scale = kwargs.pop('time_scale', 20.0) # 20 is the value used when I run the default mlagents-learn
     seed = kwargs.pop('seed', 1)
     verbose = kwargs.pop('verbose', 0)
-    randomize_difficulty = kwargs.pop('randomize_difficulty', False)
+    difficulty_mode = kwargs.pop('difficulty_mode', "progressive")
     kwargs.pop('tolerate_corruption', 0)
     if kwargs:
         raise ValueError("Unexpected kwargs: {}".format(kwargs))
@@ -465,7 +473,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     env = StaticASLToNavRep3DEnvWrapper(env,
                                         verbose=verbose, collect_statistics=collect_statistics,
                                         debug_export_every_n_episodes=debug_export_every_n_episodes,
-                                        randomize_difficulty=randomize_difficulty)
+                                        difficulty_mode=difficulty_mode)
     return env
 
 def NavRep3DStaticASLEnvDiscrete(**kwargs):
@@ -475,12 +483,12 @@ def NavRep3DStaticASLEnvDiscrete(**kwargs):
     env = DiscreteActionWrapper(env)
     return env
 
-def main(step_by_step=False, render_mode='human'):
+def main(step_by_step=False, render_mode='human', difficulty_mode="progressive"):
     from navrep.tools.envplayer import EnvPlayer
     np.set_printoptions(precision=1, suppress=True)
     env = NavRep3DStaticASLEnv(
         verbose=0, collect_statistics=True, build_name="staticasl",
-        debug_export_every_n_episodes=0, port=25004)
+        debug_export_every_n_episodes=0, port=25004, difficulty_mode=difficulty_mode)
     player = EnvPlayer(env, render_mode, step_by_step)
     player.run()
     env.close()

@@ -37,7 +37,7 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
         raise NotImplementedError
     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                          build_name=build_name, port=25005+subproc_id,
-                         tolerate_corruption=False, randomize_difficulty=True)
+                         tolerate_corruption=False, difficulty_mode="random")
     policy = SemiRandomMomentumPolicy() if True else HumanControlPolicy()
     generate_vae_dataset(
         env, n_sequences=n_sequences,

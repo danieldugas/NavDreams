@@ -97,8 +97,7 @@ class NavRep3DTrainEnv(gym.Env):
                  debug_export_every_n_episodes=0, port=25001,
                  unity_player_dir=DEFAULT_UNITY_EXE, build_name=None,
                  start_with_random_rot=True, tolerate_corruption=True,
-                 randomize_difficulty=False):
-        # randomize difficulty is not implemented, but included for compat with NavRep3DAnyEnv
+                 difficulty_mode="progressive"):
         # default args
         if build_name is None:
             build_name = "./alternate.x86_64"
@@ -128,6 +127,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.min_dif = 1.
         self.max_dif = 6. if build_name == "./office.x86_64" else 10.
         # variables
+        self.difficulty_mode = difficulty_mode
         self.target_difficulty = 1.
         self.last_odom = None
         self.last_crowd = None
@@ -195,6 +195,16 @@ class NavRep3DTrainEnv(gym.Env):
             if self.total_episodes % REBOOT_EVERY_N_EPISODES == 0:
                 self._reboot_unity()
         # change scenario if necessary
+        if self.difficulty_mode == "progressive":
+            pass # difficulty is incremented in step()
+        elif self.difficulty_mode == "random":
+            self.target_difficulty = np.random.uniform(self.min_dif, self.max_dif)
+        elif self.difficulty_mode == "fixed":
+            self.target_difficulty = self.max_dif
+        elif self.difficulty_mode == "hardest":
+            self.target_difficulty = self.max_dif
+        else:
+            raise NotImplementedError
         if self.verbose > 0:
             print("Scenario # {} complete. Loading {}".format(
                 self.infer_current_scenario(), self.target_difficulty))
@@ -932,6 +942,7 @@ def main(
     # NavRep3DTrainEnv args
     verbose=1, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
     unity_player_dir=DEFAULT_UNITY_EXE, build_name="./build.x86_64",
+    difficulty_mode="progressive",
     # Player args
     render_mode='human', step_by_step=False,
     # Task args
@@ -939,7 +950,7 @@ def main(
 ):
     np.set_printoptions(precision=1, suppress=True)
     env = NavRep3DTrainEnv(verbose, collect_statistics, debug_export_every_n_episodes, port,
-                           unity_player_dir, build_name)
+                           unity_player_dir, build_name, difficulty_mode=difficulty_mode)
     if check_compat:
         check_stablebaselines_compat(env)
     elif profile:

@@ -85,7 +85,7 @@ class N3DWorldModelDataset(WorldModelDataset):
             try:
                 env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                                      build_name=build_name, port=25005+np.random.randint(10),
-                                     tolerate_corruption=False, randomize_difficulty=True)
+                                     tolerate_corruption=False, difficulty_mode="random")
                 policy = SemiRandomMomentumPolicy()
                 data = generate_vae_dataset(
                     env, n_sequences=n_new_sequences, policy=policy,

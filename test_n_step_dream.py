@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import random
 from matplotlib import pyplot as plt
 from navrep.tools.wdataset import WorldModelDataset
 from strictfire import StrictFire
@@ -10,6 +11,7 @@ from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
 from navrep3d.worldmodel import fill_dream_sequence
+from navrep3d.auto_debug import enable_auto_debug
 from plot_gym_training_progress import make_legend_pickable
 
 def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_length):
@@ -31,24 +33,35 @@ def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_l
     vecobs_error[ignore_error] = np.nan
     return obs_error, vecobs_error
 
-def worldmodel_n_step_error(worldmodel, test_dataset_folder, sequence_length=32, context_length=16):
+def worldmodel_n_step_error(worldmodel, test_dataset_folder,
+                            sequence_length=32, context_length=16, samples=0):
+    # parameters
+    shuffle = True
     assert sequence_length <= worldmodel.get_block_size()
     dream_length = sequence_length - context_length
     # load dataset
     seq_loader = WorldModelDataset(test_dataset_folder, sequence_length, lidar_mode="images",
                                    channel_first=False, as_torch_tensors=False, file_limit=None)
-    seq_loader = tqdm(seq_loader, total=len(seq_loader))
-    obs_error = np.ones((len(seq_loader), dream_length)) * np.nan
-    vecobs_error = np.ones((len(seq_loader), dream_length)) * np.nan
-    for i, (x, a, y, x_rs, y_rs, dones) in enumerate(seq_loader):
-        if i >= len(seq_loader): # this shouldn't be necessary, but it is (len is not honored by for)
-            break
-        real_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i]) for i in range(sequence_length)]
+    N = min(samples, len(seq_loader))
+    if samples == 0:
+        N = len(seq_loader)
+    obs_error = np.ones((N, dream_length)) * np.nan
+    vecobs_error = np.ones((N, dream_length)) * np.nan
+    indices = list(range(len(seq_loader)))
+    if shuffle:
+        random.Random(4).shuffle(indices)
+    pbar = tqdm(indices[:N])
+#     for i, (x, a, y, x_rs, y_rs, dones) in enumerate(seq_loader):
+    for i, idx in enumerate(pbar):
+        if idx >= len(seq_loader): # this shouldn't be necessary, but it is (len is not honored by for)
+            continue
+        x, a, y, x_rs, y_rs, dones = seq_loader[idx]
+        real_sequence = [dict(obs=x[j], state=x_rs[j], action=a[j]) for j in range(sequence_length)]
         dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
         obs_error[i], vecobs_error[i] = single_sequence_n_step_error(
             real_sequence, dream_sequence, dones, context_length)
-        if i % 100 == 0:
-            seq_loader.set_description(
+        if i % 10 == 0:
+            pbar.set_description(
                 f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
                   16-step error {np.nanmean(obs_error, axis=0)[15]:.5f}"
             )
@@ -72,6 +85,8 @@ def main(dataset="SCR",
          context_length=16,
          n_examples=5,
          error=False,
+         offset=0,
+         samples=1000,
          ):
     sequence_length = dream_length + context_length
 
@@ -88,6 +103,7 @@ def main(dataset="SCR",
         examples = [34, 51, 23, 42, 79, 5, 120]
     else:
         raise NotImplementedError(dataset)
+    examples = [idx + offset for idx in examples]
 
     worldmodel_types = ["transformer", "RSSM_A1", "TSSM_V2", "TransformerL_V0"]
     worldmodels = []
@@ -134,9 +150,10 @@ def main(dataset="SCR",
         n_step_errors = []
         for worldmodel in worldmodels:
             obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
-                worldmodel, dataset_dir, sequence_length=sequence_length, context_length=context_length)
+                worldmodel, dataset_dir, sequence_length=sequence_length,
+                context_length=context_length, samples=samples)
             n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
-        fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error", figsize=(1896 * 2, 989 * 2), dpi=100)
+        fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
         linegroups = []
         legends = worldmodel_types
         for obs_n_step_error, vecobs_n_step_error in n_step_errors:
@@ -147,7 +164,7 @@ def main(dataset="SCR",
         make_legend_pickable(L, linegroups)
         plt.savefig("/tmp/n_step_errors.png")
         print("Saved figure.")
-        plt.show()
+#         plt.show()
         return
 
     example_sequences = {examples[i]: None for i in range(n_examples)}
@@ -160,7 +177,7 @@ def main(dataset="SCR",
 
     n_rows_per_example = (len(worldmodels) + 1)
     fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream",
-                             figsize=(3.7, 1.4))
+                             figsize=(22, 14), dpi=100)
     fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
     axes = np.array(axes).reshape((-1, sequence_length))
     axes2 = np.array(axes2).reshape((-1, 2))
@@ -179,9 +196,12 @@ def main(dataset="SCR",
             if i > context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
                     axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
-        axes[n_rows_per_example*n, 0].set_ylabel("GT", rotation=0)
+        axes[n_rows_per_example*n, -1].set_ylabel("GT", rotation=0, labelpad=50)
+        axes[n_rows_per_example*n, -1].yaxis.set_label_position("right")
         for m in range(len(dream_sequences)):
-            axes[n_rows_per_example*n+1+m, 0].set_ylabel("{}".format(worldmodel_types[m]), rotation=0)
+            axes[n_rows_per_example*n+1+m, -1].set_ylabel("{}".format(worldmodel_types[m]),
+                                                          rotation=0, labelpad=50)
+            axes[n_rows_per_example*n+1+m, -1].yaxis.set_label_position("right")
         for ax in np.array(axes).flatten():
             hide_axes_but_keep_ylabel(ax)
         linegroups = []
@@ -194,11 +214,12 @@ def main(dataset="SCR",
             linegroups.append([line1, line2])
         L = fig2.legend([lines[0] for lines in linegroups], legends)
         make_legend_pickable(L, linegroups)
-    fig.savefig("/tmp/dream_comparison.png", dpi=100)
-    fig2.savefig("/tmp/n_step_error_for_dream_comparison.png")
+    fig.savefig("/tmp/dream_comparison_{}.png".format(offset), dpi=100)
+    fig2.savefig("/tmp/n_step_error_for_dream_comparison_{}.png".format(offset))
     print("Saved figures.")
-    plt.show()
+#     plt.show()
 
 
 if __name__ == "__main__":
+    enable_auto_debug()
     StrictFire(main)

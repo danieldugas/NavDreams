@@ -9,6 +9,7 @@ from plot_gym_training_progress import make_legend_pickable
 def main(
     logdir="~/navrep3d_W",
     refresh=False,
+    y_axis="lidar_test_error",
 ):
     logdir = os.path.expanduser(logdir)
     logdir = os.path.join(logdir, "logs/W")
@@ -27,7 +28,6 @@ def main(
             path = os.path.join(logdir, log)
             data = pd.read_csv(path)
             x = data["step"].values
-            y_axis = "lidar_test_error"
             y = data[y_axis].values
             y_valid_mask = np.logical_not(np.isnan(y))
             y = y[y_valid_mask]

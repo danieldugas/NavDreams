@@ -8,6 +8,8 @@ from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
+from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
+from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
 
 PUNISH_SPIN = True
 
@@ -52,6 +54,21 @@ class DreamEnv(object):
             model = RSSMWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             self.worldmodel = model
+        elif worldmodel_type == "TSSM":
+            mconf = TSSMWMConf()
+            mconf.image_channels = 3
+            model = TSSMWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            self.worldmodel = model
+        elif worldmodel_type == "TransformerL":
+            mconf = TransformerLWMConf()
+            mconf.image_channels = 3
+            model = TransformerLWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            self.worldmodel = model
+        else:
+            raise NotImplementedError
+
         # other tools
         self.viewer = None
         self.simenv = None
@@ -61,7 +78,7 @@ class DreamEnv(object):
     def _sample_zero_state(self):
         if self.alongside_sim:
             if self.simenv is None:
-                self.simenv = NavRep3DTrainEnv()
+                self.simenv = NavRep3DTrainEnv(difficulty_mode="random")
             obs = self.simenv.reset()
             image_obs, robot_state = obs
             image_nobs = self._normalize_obs(image_obs)
@@ -77,7 +94,8 @@ class DreamEnv(object):
         self.gpt_sequence = [dict(obs=image_nobs, state=goal_state, action=None)]
         self.latest_image_nobs = image_nobs
         self.last_action = np.array([0,0,0])
-        self.zero_state = (image_nobs, goal_state)
+        self.zero_state = (image_nobs, goal_state) # in case we want to store it to file later
+        self.nondream_steps_to_go = 16
 
     def close(self):
         if self.viewer is not None:
@@ -104,6 +122,14 @@ class DreamEnv(object):
         self.gpt_sequence[-1]['action'] = action * 1.
         img_npred, goal_pred = self.worldmodel.get_next(self.gpt_sequence)
 
+        if self.alongside_sim and self.simenv is not None:
+            sim_obs, _, done, _ = self.simenv.step(action)
+            if self.nondream_steps_to_go > 0:
+                self.nondream_steps_to_go -= 1
+                img, robotstate = sim_obs
+                img_npred = img / 255.
+                goal_pred = robotstate[:2]
+
         # update sequence
         self.gpt_sequence.append(dict(obs=img_npred, state=goal_pred, action=None))
         self.gpt_sequence = self.gpt_sequence[:BLOCK_SIZE]
@@ -114,9 +140,6 @@ class DreamEnv(object):
 
         img_pred = self._unnormalize_obs(img_npred)
         obs = (img_pred, goal_pred)
-
-        if self.alongside_sim and self.simenv is not None:
-            _, _, done, _ = self.simenv.step(action)
 
         return obs, 0, done, {}
 
@@ -197,9 +220,16 @@ class DreamEnv(object):
 
 def main(wm_type="Transformer"):
     from navrep.tools.envplayer import EnvPlayer
-    wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
-    if wm_type == "RSSM":
-        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/RSSM_A0_SCR")
+    if wm_type == "Transformer":
+        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
+    elif wm_type == "RSSM":
+        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/RSSM_A1_SCR")
+    elif wm_type == "TSSM":
+        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TSSM_V2_SCR")
+    elif wm_type == "TransformerL":
+        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TransformerL_V0_SCR")
+    else:
+        raise NotImplementedError
     env = DreamEnv(alongside_sim=True, wm_model_path=wm_model_path, worldmodel_type=wm_type)
     player = EnvPlayer(env)
     player.run()

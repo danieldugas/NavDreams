@@ -468,7 +468,9 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     channel = EngineConfigurationChannel()
     unity_env = UnityEnvironment(file_name=file_name, seed=seed, worker_id=worker_id, side_channels=[channel])
     port_lock_handle.write(f"actual port {unity_env._port}\n")
-    channel.set_configuration_parameters(time_scale=time_scale)
+    dt = 0.2 # we want unity to render one frame per RL timestep (otherwise animations get messed up)
+    channel.set_configuration_parameters(time_scale=time_scale,
+                                         capture_frame_rate=int(time_scale/dt))
     env = MLAgentsGymEnvWrapper(unity_env, port_lock_handle)
     env = StaticASLToNavRep3DEnvWrapper(env,
                                         verbose=verbose, collect_statistics=collect_statistics,

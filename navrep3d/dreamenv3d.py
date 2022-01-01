@@ -121,13 +121,8 @@ class DreamEnv(object):
 
     def step(self, action):
         if self.discrete_worldmodel:
-            if action[2] >= 0.4:
-                action_quantized = np.array([0, 0, 0.5])
-            elif action[2] <= -0.4:
-                action_quantized = np.array([0, 0, -0.5])
-            else:
-                action_quantized = np.array([1.0, 0, 0])
-            action = action_quantized
+            # see make_vae_dataset
+            raise NotImplementedError
         done = False
         self.gpt_sequence[-1]['action'] = action * 1.
         img_npred, goal_pred = self.worldmodel.get_next(self.gpt_sequence)

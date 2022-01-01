@@ -4,6 +4,7 @@ from strictfire import StrictFire
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
 
 from navrep3d.navrep3danyenv import NavRep3DAnyEnv
+from navrep3d.navrep3dtrainenv import convert_continuous_to_discrete_action
 
 class QuantizedActionPolicyWrapper(object):
     def __init__(self, policy):
@@ -14,13 +15,10 @@ class QuantizedActionPolicyWrapper(object):
 
     def predict(self, obs, env):
         action = self.policy.predict(obs, env)
-        if action[2] >= 0.4:
-            action_quantized = np.array([0, 0, 0.5])
-        elif action[2] <= -0.4:
-            action_quantized = np.array([0, 0, -0.5])
-        else:
-            action_quantized = np.array([1.0, 0, 0])
-        return action_quantized
+        discrete_action = convert_continuous_to_discrete_action(action)
+        onehot_action = np.array([0, 0, 0, 0], dtype=np.uint8)
+        onehot_action[discrete_action] = 1
+        return onehot_action
 
 def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_subprocs=1,
          discrete_actions=False):

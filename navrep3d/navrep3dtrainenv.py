@@ -897,6 +897,7 @@ def convert_discrete_to_continuous_action(action):
     0: forward
     1: left
     2: right
+    3: stop
     """
     if action == 0:
         cont_actions = np.array([1, 0, 0])
@@ -904,9 +905,22 @@ def convert_discrete_to_continuous_action(action):
         cont_actions = np.array([0, 0, 0.5])
     elif action == 2:
         cont_actions = np.array([0, 0,-0.5])
+    elif action == 3:
+        cont_actions = np.array([0, 0, 0])
     else:
         raise ValueError
     return cont_actions
+
+def convert_continuous_to_discrete_action(action):
+    if action[2] >= 0.4:
+        discrete_action = 1
+    elif action[2] <= -0.4:
+        discrete_action = 2
+    elif action[0] >= 0.25:
+        discrete_action = 0
+    else:
+        discrete_action = 3
+    return discrete_action
 
 class NavRep3DTrainEnvDiscrete(NavRep3DTrainEnv):
     def __init__(self, **kwargs):

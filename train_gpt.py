@@ -98,7 +98,7 @@ class N3DWorldModelDataset(WorldModelDataset):
                 data["obs"] = scans_to_lidar_obs(
                     data["scans"], self.lidar_mode, self.rings_def, self.channel_first)
         else:
-            print("Regen {} failed".format(self.regen))
+            print("Regen for {} is not implemented".format(self.regen))
             return
         for k in self.data.keys():
             N = len(data[k])  # should be the same for each key

@@ -33,6 +33,7 @@ class DreamEnv(object):
                  worldmodel_type="Transformer",
                  gpu=False,
                  alongside_sim=False,
+                 discrete_worldmodel=False,
                  ):
         self.observation_space = gym.spaces.Tuple((
             gym.spaces.Box(low=0, high=255, shape=(_H, _W, _C), dtype=np.uint8),
@@ -41,6 +42,7 @@ class DreamEnv(object):
         # params
         self.DT = 0.2
         self.alongside_sim = alongside_sim
+        self.discrete_worldmodel = discrete_worldmodel
         # load world model
         if worldmodel_type == "Transformer":
             mconf = GPTConfig(BLOCK_SIZE, _H)
@@ -118,6 +120,14 @@ class DreamEnv(object):
         return (nobs * 255).astype(np.uint8)
 
     def step(self, action):
+        if self.discrete_worldmodel:
+            if action[2] >= 0.4:
+                action_quantized = np.array([0, 0, 0.5])
+            elif action[2] <= -0.4:
+                action_quantized = np.array([0, 0, -0.5])
+            else:
+                action_quantized = np.array([1.0, 0, 0])
+            action = action_quantized
         done = False
         self.gpt_sequence[-1]['action'] = action * 1.
         img_npred, goal_pred = self.worldmodel.get_next(self.gpt_sequence)

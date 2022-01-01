@@ -1,10 +1,29 @@
 import os
+import numpy as np
 from strictfire import StrictFire
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
 
 from navrep3d.navrep3danyenv import NavRep3DAnyEnv
 
-def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_subprocs=1):
+class QuantizedActionPolicyWrapper(object):
+    def __init__(self, policy):
+        self.policy = policy
+
+    def reset(self):
+        self.policy.reset()
+
+    def predict(self, obs, env):
+        action = self.policy.predict(obs, env)
+        if action[2] >= 0.4:
+            action_quantized = np.array([0, 0, 0.5])
+        elif action[2] <= -0.4:
+            action_quantized = np.array([0, 0, -0.5])
+        else:
+            action_quantized = np.array([1.0, 0, 0])
+        return action_quantized
+
+def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_subprocs=1,
+         discrete_actions=False):
     if env == "S":
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")
         if dry_run:
@@ -33,12 +52,18 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
     elif env == "rosbag": # only for testing, used in regen
         archive_dir = "/tmp/navrep3d/datasets/V/navrep3drosbag"
         build_name = "rosbag"
+        if discrete_actions:
+            raise ValueError("discrete actions not supported for rosbag")
     else:
         raise NotImplementedError
+    if discrete_actions:
+        archive_dir = archive_dir.replace("/V/navrep3d", "/V/discrete_navrep3d")
     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                          build_name=build_name, port=25005+subproc_id,
                          tolerate_corruption=False, difficulty_mode="random")
     policy = SemiRandomMomentumPolicy() if True else HumanControlPolicy()
+    if discrete_actions:
+        policy = QuantizedActionPolicyWrapper(policy)
     generate_vae_dataset(
         env, n_sequences=n_sequences,
         subset_index=subproc_id, n_subsets=n_subprocs,

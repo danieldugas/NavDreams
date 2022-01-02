@@ -137,7 +137,7 @@ class DreamEnv(object):
 
         # update sequence
         self.gpt_sequence.append(dict(obs=img_npred, state=goal_pred, action=None))
-        self.gpt_sequence = self.gpt_sequence[:BLOCK_SIZE]
+        self.gpt_sequence = self.gpt_sequence[-BLOCK_SIZE:]
 
         # store for rendering
         self.latest_image_nobs = img_npred

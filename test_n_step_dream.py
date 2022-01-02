@@ -10,7 +10,7 @@ from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
-from navrep3d.worldmodel import fill_dream_sequence
+from navrep3d.worldmodel import fill_dream_sequence, DummyWorldModel
 from navrep3d.auto_debug import enable_auto_debug
 from plot_gym_training_progress import make_legend_pickable
 
@@ -37,7 +37,6 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder,
                             sequence_length=32, context_length=16, samples=0):
     # parameters
     shuffle = True
-    assert sequence_length <= worldmodel.get_block_size()
     dream_length = sequence_length - context_length
     # load dataset
     seq_loader = WorldModelDataset(test_dataset_folder, sequence_length, lidar_mode="images",
@@ -65,6 +64,9 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder,
                 f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
                   16-step error {np.nanmean(obs_error, axis=0)[15]:.5f}"
             )
+    archive_path = "/tmp/{}_n_step_errors.npz".format(type(worldmodel).__name__)
+    np.savez_compressed(archive_path, obs_error=obs_error, vecobs_error=vecobs_error)
+    print(f"Saved n-step errors to {archive_path}")
     mean_obs_error = np.nanmean(obs_error, axis=0)
     mean_vecobs_error = np.nanmean(vecobs_error, axis=0)
     return mean_obs_error, mean_vecobs_error
@@ -87,6 +89,7 @@ def main(dataset="SCR",
          error=False,
          offset=0,
          samples=1000,
+         gifs=False,
          ):
     sequence_length = dream_length + context_length
 
@@ -105,7 +108,7 @@ def main(dataset="SCR",
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]
 
-    worldmodel_types = ["transformer", "RSSM_A1", "TSSM_V2", "TransformerL_V0"]
+    worldmodel_types = ["transformer", "RSSM_A1", "TSSM_V2", "TransformerL_V0", "DummyWorldModel"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "transformer":
@@ -143,6 +146,10 @@ def main(dataset="SCR",
             model = TransformerLWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
+        elif worldmodel_type == "DummyWorldModel":
+            worldmodel = DummyWorldModel(gpu=gpu)
+        else:
+            raise NotImplementedError
         worldmodels.append(worldmodel)
 
     if error:
@@ -172,15 +179,13 @@ def main(dataset="SCR",
                                    channel_first=False, as_torch_tensors=False, file_limit=None)
     print("{} sequences available".format(len(seq_loader)))
     for idx in example_sequences:
+        if idx >= len(seq_loader):
+            raise IndexError("{} is out of range".format(idx))
         (x, a, y, x_rs, y_rs, dones) = seq_loader[idx]
         example_sequences[idx] = (x, a, y, x_rs, y_rs, dones)
 
-    n_rows_per_example = (len(worldmodels) + 1)
-    fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream",
-                             figsize=(22, 14), dpi=100)
-    fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
-    axes = np.array(axes).reshape((-1, sequence_length))
-    axes2 = np.array(axes2).reshape((-1, 2))
+    # fill dream sequences from world model
+    example_filled_sequences = []
     for n, idx in enumerate(tqdm(example_sequences)):
         if example_sequences[idx] is None:
             continue
@@ -189,11 +194,30 @@ def main(dataset="SCR",
         dream_sequences = []
         for worldmodel in worldmodels:
             dream_sequences.append(fill_dream_sequence(worldmodel, real_sequence, context_length))
+        example_filled_sequences.append((real_sequence, dream_sequences))
 
-        # plotting
+    # gifs
+    if gifs:
+        for n, (real_sequence, dream_sequences) in enumerate(example_filled_sequences):
+            for m, dream_sequence in enumerate(dream_sequences):
+                from moviepy.editor import ImageSequenceClip
+                frames = [(d["obs"] * 255).astype(np.uint8) for d in dream_sequence]
+                clip = ImageSequenceClip(list(frames), fps=20)
+                clip.write_gif("/tmp/{}_dream_example{}_offset{}.gif".format(
+                    worldmodel_types[m], n, offset), fps=20)
+
+    # plotting
+    n_rows_per_example = (len(worldmodels) + 1)
+    fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream",
+                             figsize=(22, 14), dpi=100)
+    fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
+    axes = np.array(axes).reshape((-1, sequence_length))
+    axes2 = np.array(axes2).reshape((-1, 2))
+    for n, (real_sequence, dream_sequences) in enumerate(example_filled_sequences):
+        # images
         for i in range(sequence_length):
             axes[n_rows_per_example*n, i].imshow(real_sequence[i]['obs'])
-            if i > context_length:
+            if i >= context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
                     axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
         axes[n_rows_per_example*n, -1].set_ylabel("GT", rotation=0, labelpad=50)
@@ -204,8 +228,10 @@ def main(dataset="SCR",
             axes[n_rows_per_example*n+1+m, -1].yaxis.set_label_position("right")
         for ax in np.array(axes).flatten():
             hide_axes_but_keep_ylabel(ax)
+
+        # error plot
         linegroups = []
-        legends = worldmodel_types
+        legends = worldmodel_types[:]
         for dream_sequence in dream_sequences:
             obs_error, vecobs_error = single_sequence_n_step_error(
                 real_sequence, dream_sequence, dones, context_length)

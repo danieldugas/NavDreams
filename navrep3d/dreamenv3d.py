@@ -235,7 +235,8 @@ def main(wm_type="Transformer"):
         wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TransformerL_V0_SCR")
     else:
         raise NotImplementedError
-    env = DreamEnv(alongside_sim=True, wm_model_path=wm_model_path, worldmodel_type=wm_type)
+    env = DreamEnv(alongside_sim=True, wm_model_path=wm_model_path, worldmodel_type=wm_type,
+                   discrete_worldmodel=False)
     player = EnvPlayer(env)
     player.run()
 

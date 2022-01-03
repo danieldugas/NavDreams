@@ -1,12 +1,14 @@
 import os
 import numpy as np
+import gym
 from strictfire import StrictFire
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
 
 from navrep3d.navrep3danyenv import NavRep3DAnyEnv
-from navrep3d.navrep3dtrainenv import convert_continuous_to_discrete_action
+from navrep3d.navrep3dtrainenv import (convert_continuous_to_discrete_action,
+                                       convert_discrete_to_continuous_action)
 
-class QuantizedActionPolicyWrapper(object):
+class OneHotActionPolicyWrapper(object):
     def __init__(self, policy):
         self.policy = policy
 
@@ -19,6 +21,20 @@ class QuantizedActionPolicyWrapper(object):
         onehot_action = np.array([0, 0, 0, 0], dtype=np.uint8)
         onehot_action[discrete_action] = 1
         return onehot_action
+
+class OneHotActionEnvWrapper(gym.core.ActionWrapper):
+    """ for wrapping the env to allow it to take one hot actions """
+    def __init__(self, env):
+        super().__init__(env)
+        self.action_space = None # we don't want this to be used for training! only for dataset generation
+        self.zero_action = np.array([0, 0, 0, 1])
+
+    def action(self, action):
+        if action is None:
+            action = self.zero_action
+        actionidx = np.argmax(action)
+        cont_actions = convert_discrete_to_continuous_action(actionidx)
+        return cont_actions
 
 def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_subprocs=1,
          discrete_actions=False):
@@ -54,14 +70,14 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
             raise ValueError("discrete actions not supported for rosbag")
     else:
         raise NotImplementedError
-    if discrete_actions:
-        archive_dir = archive_dir.replace("/V/navrep3d", "/V/discrete_navrep3d")
     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                          build_name=build_name, port=25005+subproc_id,
                          tolerate_corruption=False, difficulty_mode="random")
     policy = SemiRandomMomentumPolicy() if True else HumanControlPolicy()
     if discrete_actions:
-        policy = QuantizedActionPolicyWrapper(policy)
+        archive_dir = archive_dir.replace("/V/navrep3d", "/V/discrete_navrep3d")
+        env = OneHotActionEnvWrapper(env)
+        policy = OneHotActionPolicyWrapper(policy)
     generate_vae_dataset(
         env, n_sequences=n_sequences,
         subset_index=subproc_id, n_subsets=n_subprocs,

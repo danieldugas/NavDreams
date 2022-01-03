@@ -34,7 +34,7 @@ def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_l
     return obs_error, vecobs_error
 
 def worldmodel_n_step_error(worldmodel, test_dataset_folder,
-                            sequence_length=32, context_length=16, samples=0):
+                            sequence_length=32, context_length=16, samples=0, gifs=False):
     # parameters
     shuffle = True
     dream_length = sequence_length - context_length
@@ -59,6 +59,8 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder,
         dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
         obs_error[i], vecobs_error[i] = single_sequence_n_step_error(
             real_sequence, dream_sequence, dones, context_length)
+        if gifs:
+            sequence_to_gif(dream_sequence, type(worldmodel).__name__, real_sequence, idx)
         if i % 10 == 0:
             pbar.set_description(
                 f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
@@ -81,6 +83,17 @@ def hide_axes_but_keep_ylabel(ax):
     if False:
         ax.set_axis_off()
 
+def sequence_to_gif(dream_sequence, worldmodel_name, real_sequence=None, sequence_idx=0):
+    from moviepy.editor import ImageSequenceClip
+    dreamframes = [(d["obs"] * 255).astype(np.uint8) for d in dream_sequence]
+    frames = dreamframes
+    if real_sequence is not None:
+        realframes = [(d["obs"] * 255).astype(np.uint8) for d in real_sequence]
+        frames = [np.concatenate([r, d], axis=0) for r, d in zip(realframes, dreamframes)]
+    clip = ImageSequenceClip(list(frames), fps=20)
+    clip.write_gif("/tmp/{}_dream_length{}_index{}.gif".format(
+        worldmodel_name, len(frames), sequence_idx), fps=20)
+
 def main(dataset="SCR",
          gpu=False,
          dream_length=16,
@@ -100,6 +113,7 @@ def main(dataset="SCR",
                        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
         examples = [34, 51, 23, 42, 79, 5, 120]
+        examples = [0, 1500, 3000, 4500, 6000, 1000, 4000] # for length 64
         examples = [0, 3000, 6000, 9000, 12000, 1000, 4000]
     elif dataset == "staticasl":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
@@ -158,7 +172,7 @@ def main(dataset="SCR",
         for worldmodel in worldmodels:
             obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
                 worldmodel, dataset_dir, sequence_length=sequence_length,
-                context_length=context_length, samples=samples)
+                context_length=context_length, samples=samples, gifs=gifs)
             n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
         fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
         linegroups = []
@@ -200,13 +214,7 @@ def main(dataset="SCR",
     if gifs:
         for n, (real_sequence, dream_sequences, dones) in enumerate(example_filled_sequences):
             for m, dream_sequence in enumerate(dream_sequences):
-                from moviepy.editor import ImageSequenceClip
-                realframes = [(d["obs"] * 255).astype(np.uint8) for d in real_sequence]
-                dreamframes = [(d["obs"] * 255).astype(np.uint8) for d in dream_sequence]
-                frames = [np.concatenate([r, d], axis=0) for r, d in zip(realframes, dreamframes)]
-                clip = ImageSequenceClip(list(frames), fps=20)
-                clip.write_gif("/tmp/{}_dream_example{}_offset{}.gif".format(
-                    worldmodel_types[m], n, offset), fps=20)
+                sequence_to_gif(dream_sequence, worldmodel_types[m], real_sequence, examples[n])
 
     # error plot
     fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")

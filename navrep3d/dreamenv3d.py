@@ -225,6 +225,7 @@ class DreamEnv(object):
 
 def main(wm_type="Transformer"):
     from navrep.tools.envplayer import EnvPlayer
+    discrete = False
     if wm_type == "Transformer":
         wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
     elif wm_type == "RSSM":
@@ -233,10 +234,13 @@ def main(wm_type="Transformer"):
         wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TSSM_V2_SCR")
     elif wm_type == "TransformerL":
         wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TransformerL_V0_SCR")
+    elif wm_type == "dTransformerL":
+        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TransformerL_V0_dSalt")
+        discrete = True
     else:
         raise NotImplementedError
     env = DreamEnv(alongside_sim=True, wm_model_path=wm_model_path, worldmodel_type=wm_type,
-                   discrete_worldmodel=False)
+                   discrete_worldmodel=discrete)
     player = EnvPlayer(env)
     player.run()
 

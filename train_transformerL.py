@@ -27,6 +27,7 @@ from train_gpt import N3DWorldModelDataset, gpt_worldmodel_error
 def main(max_steps=222222, dataset="SCR", dry_run=False, gpu=True):
     namestring = "TransformerL_V{}".format(version)
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+    discrete_actions = False
 
     if dataset == "SCR":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
@@ -50,6 +51,7 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, gpu=True):
             "~/navrep3d_W/logs/W/{}_dSalt_train_log_{}.csv".format(namestring, START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_dSalt".format(namestring))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_dSalt_step".format(namestring))
+        discrete_actions = True
     else:
         raise NotImplementedError(dataset)
 
@@ -73,6 +75,8 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, gpu=True):
     logger = logging.getLogger(__name__)
 
     mconf = TransformerLWMConf()
+    if discrete_actions:
+        mconf.n_action = 4 # actions passed directly as onehot
     train_dataset = N3DWorldModelDataset(
         dataset_dir, _S,
         pre_convert_obs=False,

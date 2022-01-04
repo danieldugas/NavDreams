@@ -8,9 +8,10 @@ from tqdm import tqdm
 
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
+from navrep3d.rssm_a0 import RSSMA0WMConf, RSSMA0WorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
-from navrep3d.worldmodel import fill_dream_sequence, DummyWorldModel
+from navrep3d.worldmodel import fill_dream_sequence, DummyWorldModel, GreyDummyWorldModel
 from navrep3d.auto_debug import enable_auto_debug
 from plot_gym_training_progress import make_legend_pickable
 
@@ -100,6 +101,7 @@ def main(dataset="SCR",
          context_length=16,
          n_examples=5,
          error=False,
+         dataset_info=False,
          offset=0,
          samples=1000,
          gifs=False,
@@ -122,7 +124,7 @@ def main(dataset="SCR",
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]
 
-    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "TSSM_V2", "transformer", "DummyWorldModel"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer", "DummyWorldModel"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "transformer":
@@ -142,6 +144,14 @@ def main(dataset="SCR",
             mconf = RSSMWMConf()
             mconf.image_channels = 3
             model = RSSMWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            worldmodel = model
+        elif worldmodel_type == "RSSM_A0":
+            wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
+            wm_model_path = os.path.expanduser(wm_model_path)
+            mconf = RSSMA0WMConf()
+            mconf.image_channels = 3
+            model = RSSMA0WorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
         elif worldmodel_type == "TSSM_V2":
@@ -191,6 +201,39 @@ def main(dataset="SCR",
     example_sequences = {examples[i]: None for i in range(n_examples)}
     seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
                                    channel_first=False, as_torch_tensors=False, file_limit=None)
+
+    # used to better understand the dataset: average length of a sequence (until done),
+    # average error of a grey image
+    if dataset_info:
+        # average done
+        true_lengths = []
+        for x, a, y, x_rs, y_rs, dones in tqdm(seq_loader):
+            if len(dones) == 0:
+                continue
+            true_length = np.argmax(dones > 0)
+            if true_length == 0:
+                true_length = np.nan
+            if dones[0]:
+                true_length = 0
+            true_lengths.append(true_length)
+        median_true_length = np.nanmedian(true_lengths)
+        print("Median true length of a sequence: {}".format(median_true_length))
+        # grey error
+        n_step_errors = []
+        for worldmodel in [GreyDummyWorldModel(gpu=False)]:
+            obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
+                worldmodel, dataset_dir, sequence_length=sequence_length,
+                context_length=context_length, samples=samples, gifs=gifs)
+            n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
+        fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
+        for obs_n_step_error, vecobs_n_step_error in n_step_errors:
+            line1, = ax1.plot(obs_n_step_error)
+            line2, = ax2.plot(vecobs_n_step_error)
+        plt.axvline(x=median_true_length, color="r")
+        plt.show()
+        raise ValueError("No error: raising to allow inspection")
+        return
+
     print("{} sequences available".format(len(seq_loader)))
     for idx in example_sequences:
         if idx >= len(seq_loader):

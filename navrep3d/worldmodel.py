@@ -144,6 +144,20 @@ class DummyWorldModel(WorldModel):
             raise NotImplementedError
         return img_pred, vecobs_pred, loss
 
+class GreyDummyWorldModel(WorldModel):
+    def get_block_size(self):
+        return 1024
+
+    def forward(self, img, vecobs, action, dones, targets=None, h=None):
+        img_pred = img * 0. + 0.5
+        vecobs_pred = vecobs * 0.
+        loss = torch.tensor(0.0)
+        if h is not None:
+            raise NotImplementedError
+        if targets is not None:
+            raise NotImplementedError
+        return img_pred, vecobs_pred, loss
+
 def fill_dream_sequence(worldmodel, real_sequence, context_length):
     """ Fills dream sequence based on context from real_sequence
         real_sequence is a list of dicts, one for each step in the sequence.

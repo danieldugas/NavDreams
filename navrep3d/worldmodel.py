@@ -126,6 +126,7 @@ class WorldModel(nn.Module):
         img_pred = img_pred_t.detach().cpu().numpy()
         img_pred = img_pred[0, -1]  # only batch, last item in sequence
         img_pred = np.moveaxis(img_pred, 0, -1)
+        img_pred = np.clip(img_pred, 0., 1.)
         vecobs_pred = vecobs_pred_t.detach().cpu().numpy()
         vecobs_pred = vecobs_pred[0, -1]  # only batch, last item in sequence
         return img_pred, vecobs_pred

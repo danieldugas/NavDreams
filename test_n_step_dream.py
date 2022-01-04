@@ -124,7 +124,8 @@ def main(dataset="SCR",
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]
 
-    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer", "DummyWorldModel"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer",
+                        "DummyWorldModel", "GreyDummyWorldModel"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "transformer":
@@ -172,6 +173,8 @@ def main(dataset="SCR",
             worldmodel = model
         elif worldmodel_type == "DummyWorldModel":
             worldmodel = DummyWorldModel(gpu=gpu)
+        elif worldmodel_type == "GreyDummyWorldModel":
+            worldmodel = GreyDummyWorldModel(gpu=gpu)
         else:
             raise NotImplementedError
         worldmodels.append(worldmodel)
@@ -212,12 +215,16 @@ def main(dataset="SCR",
                 continue
             true_length = np.argmax(dones > 0)
             if true_length == 0:
-                true_length = np.nan
+                true_length = len(dones)
             if dones[0]:
                 true_length = 0
             true_lengths.append(true_length)
         median_true_length = np.nanmedian(true_lengths)
+        proportion_undended = np.sum(true_lengths == np.max(true_lengths)) / len(true_lengths)
         print("Median true length of a sequence: {}".format(median_true_length))
+        print("percent unended: {:.1f}%".format(100. * proportion_undended))
+        _ = plt.figure("histogram")
+        plt.hist(true_lengths, bins=sequence_length)
         # grey error
         n_step_errors = []
         for worldmodel in [GreyDummyWorldModel(gpu=False)]:
@@ -226,9 +233,10 @@ def main(dataset="SCR",
                 context_length=context_length, samples=samples, gifs=gifs)
             n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
         fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
+        x = np.arange(context_length, sequence_length)
         for obs_n_step_error, vecobs_n_step_error in n_step_errors:
-            line1, = ax1.plot(obs_n_step_error)
-            line2, = ax2.plot(vecobs_n_step_error)
+            line1, = ax1.plot(x, obs_n_step_error)
+            line2, = ax2.plot(x, vecobs_n_step_error)
         plt.axvline(x=median_true_length, color="r")
         plt.show()
         raise ValueError("No error: raising to allow inspection")

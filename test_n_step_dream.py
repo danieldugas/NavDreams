@@ -107,10 +107,10 @@ def main(dataset="SCR",
     sequence_length = dream_length + context_length
 
     if dataset == "SCR":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
+        dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dalt"),
+                       os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navrep3d_test/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dasl"),
                        os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
         examples = [34, 51, 23, 42, 79, 5, 120]
         examples = [0, 1500, 3000, 4500, 6000, 1000, 4000] # for length 64
@@ -122,7 +122,7 @@ def main(dataset="SCR",
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]
 
-    worldmodel_types = ["transformer", "RSSM_A1", "TSSM_V2", "TransformerL_V0", "DummyWorldModel"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "TSSM_V2", "transformer", "DummyWorldModel"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "transformer":

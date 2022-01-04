@@ -911,7 +911,15 @@ def convert_discrete_to_continuous_action(action):
         raise ValueError
     return cont_actions
 
-def convert_continuous_to_discrete_action(action):
+def convert_continuous_to_discrete_action(action, require_exact=False):
+    if require_exact:
+        if (np.allclose(action, np.array([1, 0, 0]))
+                or np.allclose(action, np.array([0, 0, 0.5]))
+                or np.allclose(action, np.array([0, 0,-0.5]))
+                or np.allclose(action, np.array([0, 0, 0]))):
+            pass
+        else:
+            raise ValueError("Continuous action is not in the discrete action set")
     if action[2] >= 0.4:
         discrete_action = 1
     elif action[2] <= -0.4:

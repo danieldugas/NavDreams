@@ -6,7 +6,8 @@ from strictfire import StrictFire
 
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3d.navrep3dtrainenv import (NavRep3DTrainEnv, convert_continuous_to_discrete_action,
+                                       convert_discrete_to_continuous_action)
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
@@ -68,6 +69,13 @@ class DreamEnv(object):
             model = TransformerLWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             self.worldmodel = model
+        elif worldmodel_type == "dTransformerL":
+            mconf = TransformerLWMConf()
+            mconf.image_channels = 3
+            mconf.n_action = 4
+            model = TransformerLWorldModel(mconf, gpu=gpu)
+            load_checkpoint(model, wm_model_path, gpu=gpu)
+            self.worldmodel = model
         else:
             raise NotImplementedError
 
@@ -120,15 +128,19 @@ class DreamEnv(object):
         return (nobs * 255).astype(np.uint8)
 
     def step(self, action):
+        continuous_action = action
         if self.discrete_worldmodel:
-            # see make_vae_dataset
-            raise NotImplementedError
+            discrete_action = convert_continuous_to_discrete_action(action)
+            onehot_action = np.array([0, 0, 0, 0], dtype=np.uint8)
+            onehot_action[discrete_action] = 1
+            continuous_action = convert_discrete_to_continuous_action(discrete_action)
+            action = onehot_action
         done = False
         self.gpt_sequence[-1]['action'] = action * 1.
         img_npred, goal_pred = self.worldmodel.get_next(self.gpt_sequence)
 
         if self.alongside_sim and self.simenv is not None:
-            sim_obs, _, done, _ = self.simenv.step(action)
+            sim_obs, _, done, _ = self.simenv.step(continuous_action)
             if self.nondream_steps_to_go > 0:
                 self.nondream_steps_to_go -= 1
                 img, robotstate = sim_obs
@@ -141,7 +153,7 @@ class DreamEnv(object):
 
         # store for rendering
         self.latest_image_nobs = img_npred
-        self.last_action = action * 1.
+        self.last_action = continuous_action * 1.
 
         img_pred = self._unnormalize_obs(img_npred)
         obs = (img_pred, goal_pred)

@@ -124,8 +124,9 @@ def main(dataset="SCR",
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]
 
-    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer",
-                        "DummyWorldModel", "GreyDummyWorldModel"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
+    if error:
+        worldmodel_types = worldmodel_types + ["DummyWorldModel", "GreyDummyWorldModel"]
     worldmodels = []
     for worldmodel_type in worldmodel_types:
         if worldmodel_type == "transformer":

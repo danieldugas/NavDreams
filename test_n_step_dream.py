@@ -223,8 +223,9 @@ def main(dataset="SCR",
         proportion_undended = np.sum(true_lengths == np.max(true_lengths)) / len(true_lengths)
         print("Median true length of a sequence: {}".format(median_true_length))
         print("percent unended: {:.1f}%".format(100. * proportion_undended))
-        _ = plt.figure("histogram")
-        plt.hist(true_lengths, bins=sequence_length)
+        _, (ax1, ax2) = plt.subplots(2, 1, num="histogram")
+        ax1.hist(true_lengths, bins=sequence_length)
+        ax2.hist(true_lengths, bins=sequence_length, cumulative=-1)
         # grey error
         n_step_errors = []
         for worldmodel in [GreyDummyWorldModel(gpu=False)]:

@@ -97,7 +97,7 @@ def sequence_to_gif(dream_sequence, worldmodel_name, real_sequence=None, sequenc
 
 def main(dataset="SCR",
          gpu=False,
-         dream_length=16,
+         dream_length=48,
          context_length=16,
          n_examples=5,
          error=False,
@@ -107,6 +107,8 @@ def main(dataset="SCR",
          gifs=False,
          ):
     sequence_length = dream_length + context_length
+    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
+    discrete_actions = False
 
     if dataset == "SCR":
         dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dalt"),
@@ -120,11 +122,20 @@ def main(dataset="SCR",
     elif dataset == "staticasl":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
         examples = [34, 51, 23, 42, 79, 5, 120]
+    elif dataset == "dSalt":
+        dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/discrete_navrep3dalt")]
+        examples = [34, 51, 23, 42, 79, 5, 120]
+        discrete_actions = True
+        worldmodel_types = ["TransformerL_V0"]
+    elif dataset == "qSalt":
+        dataset = "Salt"
+        dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/quantized_navrep3dalt")]
+        examples = [34, 51, 23, 42, 79, 5, 120]
+        worldmodel_types = ["TransformerL_V0"]
     else:
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]
 
-    worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
     if error:
         worldmodel_types = worldmodel_types + ["DummyWorldModel", "GreyDummyWorldModel"]
     worldmodels = []
@@ -137,6 +148,8 @@ def main(dataset="SCR",
             _C = 3
             mconf = GPTConfig(BLOCK_SIZE, _H)
             mconf.image_channels = _C
+            if discrete_actions:
+                mconf.n_action = 4
             model = GPT(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model
@@ -169,6 +182,8 @@ def main(dataset="SCR",
             wm_model_path = os.path.expanduser(wm_model_path)
             mconf = TransformerLWMConf()
             mconf.image_channels = 3
+            if discrete_actions:
+                mconf.n_action = 4
             model = TransformerLWorldModel(mconf, gpu=gpu)
             load_checkpoint(model, wm_model_path, gpu=gpu)
             worldmodel = model

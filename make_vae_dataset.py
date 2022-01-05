@@ -36,8 +36,23 @@ class OneHotActionEnvWrapper(gym.core.ActionWrapper):
         cont_actions = convert_discrete_to_continuous_action(actionidx)
         return cont_actions
 
+class QuantizedActionPolicyWrapper(object):
+    """ returns a continuous action, but which is guaranteed to belong to the subset of discrete actions
+    """
+    def __init__(self, policy):
+        self.policy = policy
+
+    def reset(self):
+        self.policy.reset()
+
+    def predict(self, obs, env):
+        action = self.policy.predict(obs, env)
+        discrete_action = convert_continuous_to_discrete_action(action)
+        quantized_action = convert_discrete_to_continuous_action(discrete_action)
+        return quantized_action
+
 def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_subprocs=1,
-         discrete_actions=False):
+         discrete_actions=False, quantized_actions=False):
     if env == "S":
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")
         if dry_run:
@@ -66,8 +81,8 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
     elif env == "rosbag": # only for testing, used in regen
         archive_dir = "/tmp/navrep3d/datasets/V/navrep3drosbag"
         build_name = "rosbag"
-        if discrete_actions:
-            raise ValueError("discrete actions not supported for rosbag")
+        if discrete_actions or quantized_actions:
+            raise ValueError("discrete/quantized actions not supported for rosbag")
     else:
         raise NotImplementedError
     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
@@ -78,6 +93,9 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
         archive_dir = archive_dir.replace("/V/navrep3d", "/V/discrete_navrep3d")
         env = OneHotActionEnvWrapper(env)
         policy = OneHotActionPolicyWrapper(policy)
+    if quantized_actions:
+        archive_dir = archive_dir.replace("/V/navrep3d", "/V/quantized_navrep3d")
+        policy = QuantizedActionPolicyWrapper(policy)
     generate_vae_dataset(
         env, n_sequences=n_sequences,
         subset_index=subproc_id, n_subsets=n_subprocs,

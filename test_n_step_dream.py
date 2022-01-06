@@ -35,7 +35,7 @@ def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_l
     return obs_error, vecobs_error
 
 def worldmodel_n_step_error(worldmodel, test_dataset_folder,
-                            sequence_length=32, context_length=16, samples=0, gifs=False):
+                            sequence_length=32, context_length=16, samples=0):
     # parameters
     shuffle = True
     dream_length = sequence_length - context_length
@@ -60,8 +60,6 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder,
         dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
         obs_error[i], vecobs_error[i] = single_sequence_n_step_error(
             real_sequence, dream_sequence, dones, context_length)
-        if gifs:
-            sequence_to_gif(dream_sequence, type(worldmodel).__name__, real_sequence, idx)
         if i % 10 == 0:
             pbar.set_description(
                 f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
@@ -92,8 +90,18 @@ def sequence_to_gif(dream_sequence, worldmodel_name, real_sequence=None, sequenc
         realframes = [(d["obs"] * 255).astype(np.uint8) for d in real_sequence]
         frames = [np.concatenate([r, d], axis=0) for r, d in zip(realframes, dreamframes)]
     clip = ImageSequenceClip(list(frames), fps=20)
-    clip.write_gif("/tmp/{}_dream_length{}_index{}.gif".format(
-        worldmodel_name, len(frames), sequence_idx), fps=20)
+    clip.write_gif("/tmp/dream_of_length{}_index{}_{}.gif".format(
+        len(frames), sequence_idx, worldmodel_name), fps=20)
+
+def sequences_to_comparison_gif(dream_sequences, worldmodel_names, real_sequence, sequence_idx=0):
+    from moviepy.editor import ImageSequenceClip
+    all_dreamframes = [[(d["obs"] * 255).astype(np.uint8) for d in dream_sequence]
+                       for dream_sequence in dream_sequences]
+    realframes = [(d["obs"] * 255).astype(np.uint8) for d in real_sequence]
+    frames = [np.concatenate(imglist, axis=0) for imglist in zip(realframes, *all_dreamframes)]
+    clip = ImageSequenceClip(list(frames), fps=20)
+    clip.write_gif("/tmp/comparison_dream_of_length{}_index{}_{}.gif".format(
+        len(frames), sequence_idx, '_'.join([n[:6] for n in worldmodel_names])), fps=20)
 
 def main(dataset="SCR",
          gpu=False,
@@ -195,13 +203,43 @@ def main(dataset="SCR",
             raise NotImplementedError
         worldmodels.append(worldmodel)
 
+    if gifs:
+        # parameters
+        shuffle = True
+        # load dataset
+        seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
+                                       channel_first=False, as_torch_tensors=False, file_limit=None)
+        N = min(samples, len(seq_loader))
+        if samples == 0:
+            N = len(seq_loader)
+        obs_error = np.ones((N, dream_length)) * np.nan
+        vecobs_error = np.ones((N, dream_length)) * np.nan
+        indices = list(range(len(seq_loader)))
+        if shuffle:
+            random.Random(4).shuffle(indices)
+        pbar = tqdm(indices[:N])
+        for i, idx in enumerate(pbar):
+            if idx >= len(seq_loader): # this shouldn't be necessary, but it is (len is not honored by for)
+                continue
+            x, a, y, x_rs, y_rs, dones = seq_loader[idx]
+            real_sequence = [dict(obs=x[j], state=x_rs[j], action=a[j]) for j in range(sequence_length)]
+            dream_sequences = []
+            names = []
+            for worldmodel in worldmodels:
+                dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
+                dream_sequences.append(dream_sequence)
+                names.append(type(worldmodel).__name__)
+                sequence_to_gif(dream_sequence, type(worldmodel).__name__, real_sequence, idx)
+            sequences_to_comparison_gif(dream_sequences, names, real_sequence, idx)
+        return
+
     if error:
         print("Computing n-step error")
         n_step_errors = []
         for worldmodel in worldmodels:
             obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
                 worldmodel, dataset_dir, sequence_length=sequence_length,
-                context_length=context_length, samples=samples, gifs=gifs)
+                context_length=context_length, samples=samples)
             n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
         fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
         linegroups = []
@@ -247,7 +285,7 @@ def main(dataset="SCR",
         for worldmodel in [GreyDummyWorldModel(gpu=False)]:
             obs_n_step_error, vecobs_n_step_error = worldmodel_n_step_error(
                 worldmodel, dataset_dir, sequence_length=sequence_length,
-                context_length=context_length, samples=samples, gifs=gifs)
+                context_length=context_length, samples=samples)
             n_step_errors.append((obs_n_step_error, vecobs_n_step_error))
         fig, (ax1, ax2) = plt.subplots(1, 2, num="n-step error")
         x = np.arange(context_length, sequence_length)
@@ -277,12 +315,6 @@ def main(dataset="SCR",
         for worldmodel in worldmodels:
             dream_sequences.append(fill_dream_sequence(worldmodel, real_sequence, context_length))
         example_filled_sequences.append((real_sequence, dream_sequences, dones))
-
-    # gifs
-    if gifs:
-        for n, (real_sequence, dream_sequences, dones) in enumerate(example_filled_sequences):
-            for m, dream_sequence in enumerate(dream_sequences):
-                sequence_to_gif(dream_sequence, worldmodel_types[m], real_sequence, examples[n])
 
     # error plot
     fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")

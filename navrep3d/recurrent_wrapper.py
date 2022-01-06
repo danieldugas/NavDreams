@@ -1,4 +1,5 @@
 import numpy as np
+from gym import spaces
 from gym.core import ObservationWrapper
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from functools import partial
@@ -18,7 +19,9 @@ class RecurrentObsWrapper(ObservationWrapper):
         self.obs_sequence = []
         self.observation_space = env.observation_space
         if concatenate:
-            self.observation_space.shape[0] = env.observation_space.shape[0] * n
+            cat_dim = env.observation_space.shape[0] * n
+            self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
+                                                shape=(cat_dim,), dtype=np.float32)
         else:
             raise NotImplementedError
 

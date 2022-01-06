@@ -1,12 +1,31 @@
-import numpy as np
 from gym import spaces
 from gym.core import ObservationWrapper
+import numpy as np
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from functools import partial
+from stable_baselines3.common.vec_env import VecEnv
 
+
+from navrep3d.navrep3dtrainencodedenv import NavRep3DTrainEncoder
 from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
 from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
-from navrep3d.navrep3dtrainencodedenv import NavRep3DTrainEncoder
+
+class Sequencify(object):
+    """ given a single input, it returns a fixed-length sequence of the last n inputs """
+    def __init__(self, n=10):
+        self.n = n
+        self.sequence = []
+
+    def sequencify(self, obs):
+        if len(self.sequence) == 0:
+            self.sequence = [obs] * self.n
+        self.sequence.append(obs)
+        self.sequence.pop(0)
+        return self.sequence
+
+    def reset(self):
+        self.sequence = []
+
 
 class RecurrentObsWrapper(ObservationWrapper):
     """
@@ -16,31 +35,30 @@ class RecurrentObsWrapper(ObservationWrapper):
     def __init__(self, env, n=10, concatenate=True):
         super().__init__(env)
         self.n = n
-        self.obs_sequence = []
+        self.concatenate = concatenate
+        self.sequencifier = Sequencify(n=n)
         self.observation_space = env.observation_space
         if concatenate:
-            cat_dim = 64 * n # TODO FIX
+            cat_dim = env.observation_space.shape[0] * n # TODO FIX
             self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
                                                 shape=(cat_dim,), dtype=np.float32)
         else:
             raise NotImplementedError
 
     def observation(self, obs):
-        if len(self.obs_sequence) == 0:
-            self.obs_sequence = [obs] * self.n
-        self.obs_sequence.append(obs)
-        self.obs_sequence.pop(0)
-        newobs = np.concatenate(self.obs_sequence, axis=0)
-        return newobs
+        sequence = self.sequencifier.sequencify(obs)
+        if self.concatenate:
+            newobs = np.concatenate(sequence, axis=0)
+            return newobs
 
     def reset(self, *args, **kwargs):
-        self.obs_sequence = []
+        self.sequencifier.reset()
         return super(RecurrentObsWrapper, self).reset(*args, **kwargs)
 
 class SubprocVecNavRep3DEncodedSeqEnvDiscrete(SubprocVecEnv):
     """ Same as SubprocVecNavRep3DEncodedEnv but using discrete actions.
     Could have been a wrapper instead, but fear of spaghetti-code outweighed DRY """
-    def __init__(self, backend, encoding, variant, n_envs,
+    def __init__(self, backend, encoding, variant, n_envs, n=10,
                  verbose=0, collect_statistics=True, debug_export_every_n_episodes=0, build_name=None,
                  gpu=False, ):
         # create multiple encoder objects (to store distinct sequences) but with single encoding model
@@ -54,14 +72,15 @@ class SubprocVecNavRep3DEncodedSeqEnvDiscrete(SubprocVecEnv):
             )
             if i == 0:
                 shared_encoder = self.encoders[i]
+        self.sequencifiers = [Sequencify(n=n) for _ in range(n_envs)]
         # create multiprocessed simulators
         env_init_funcs = [
             partial(
-                lambda i: RecurrentObsWrapper(NavRep3DAnyEnvDiscrete(
+                lambda i: NavRep3DAnyEnvDiscrete(
                     verbose=verbose, collect_statistics=collect_statistics, build_name=build_names[i],
                     debug_export_every_n_episodes=debug_export_every_n_episodes if i == 0 else 0,
                     port=25002+i
-                )),
+                ),
                 i=k
             )
             for k in range(n_envs)
@@ -69,6 +88,7 @@ class SubprocVecNavRep3DEncodedSeqEnvDiscrete(SubprocVecEnv):
         super(SubprocVecNavRep3DEncodedSeqEnvDiscrete, self).__init__(env_init_funcs)
         self.simulator_obs_space = self.observation_space
         self.encoder_obs_space = self.encoders[0].observation_space
+        self.encoder_obs_space.shape = self.encoder_obs_space.shape[0] * n
         self.observation_space = self.encoder_obs_space
 
     def step_async(self, actions):
@@ -83,14 +103,41 @@ class SubprocVecNavRep3DEncodedSeqEnvDiscrete(SubprocVecEnv):
         self.observation_space = self.encoder_obs_space
         h = [encoder._encode_obs((imob, rsob), convert_discrete_to_continuous_action(a))
              for imob, rsob, a, encoder in zip(obs[0], obs[1], self.last_actions, self.encoders)]
+        h = [np.concatenate(sf.sequencify(f), axis=0) for sf, f in zip(self.sequencifiers, h)]
         return np.stack(h), rews, dones, infos
 
     def reset(self):
         for encoder in self.encoders:
             encoder.reset()
+        for sequencifier in self.sequencifiers:
+            sequencifier.reset()
         self.observation_space = self.simulator_obs_space
         obs = super(SubprocVecNavRep3DEncodedSeqEnvDiscrete, self).reset()
         self.observation_space = self.encoder_obs_space
         h = [encoder._encode_obs((imob, rsob), np.array([0,0,0]))
              for imob, rsob, encoder in zip(obs[0], obs[1], self.encoders)]
+        h = [np.concatenate(sf.sequencify(f), axis=0) for sf, f in zip(self.sequencifiers, h)]
         return np.stack(h)
+
+
+if __name__ == "__main__":
+    from matplotlib import pyplot as plt
+    verbose = True
+    collect_statistics = True
+    backend = "GPT"
+    encoding = "V_ONLY"
+    variant = "SCR"
+    N_ENVS = 4
+    build_names = "staticasl"
+    render_mode = "human"
+    step_by_step = False
+    env = SubprocVecNavRep3DEncodedSeqEnvDiscrete(backend, encoding, variant, N_ENVS,
+                                                  build_name=build_names,
+                                                  debug_export_every_n_episodes=0)
+    env.reset()
+    for i in range(10):
+        obs, _, _, _ = env.step(np.array([env.action_space.sample() for _ in range(N_ENVS)]))
+        plt.plot(obs[0] + i)
+    print(obs.shape)
+    env.close()
+    plt.show()

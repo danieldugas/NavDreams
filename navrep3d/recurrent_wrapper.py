@@ -88,7 +88,8 @@ class SubprocVecNavRep3DEncodedSeqEnvDiscrete(SubprocVecEnv):
         super(SubprocVecNavRep3DEncodedSeqEnvDiscrete, self).__init__(env_init_funcs)
         self.simulator_obs_space = self.observation_space
         self.encoder_obs_space = self.encoders[0].observation_space
-        self.encoder_obs_space.shape[0] = self.encoder_obs_space.shape[0] * n
+        assert len(self.encoder_obs_space.shape) == 1
+        self.encoder_obs_space.shape = (self.encoder_obs_space.shape[0] * n, )
         self.observation_space = self.encoder_obs_space
 
     def step_async(self, actions):

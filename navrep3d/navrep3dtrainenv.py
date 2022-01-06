@@ -199,8 +199,10 @@ class NavRep3DTrainEnv(gym.Env):
             pass # difficulty is incremented in step()
         elif self.difficulty_mode == "random":
             self.target_difficulty = np.random.uniform(self.min_dif, self.max_dif)
-        elif self.difficulty_mode == "fixed":
-            self.target_difficulty = self.max_dif
+        elif self.difficulty_mode == "easy":
+            self.target_difficulty = self.min_dif + (self.max_dif - self.min_dif) / 4.
+        elif self.difficulty_mode == "medium":
+            self.target_difficulty = (self.max_dif + self.min_dif) / 2.
         elif self.difficulty_mode == "hardest":
             self.target_difficulty = self.max_dif
         else:

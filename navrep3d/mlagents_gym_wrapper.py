@@ -177,7 +177,9 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             pass
         elif self.difficulty_mode == "random":
             self.set_difficulty(np.random.uniform())
-        elif self.difficulty_mode == "fixed":
+        elif self.difficulty_mode == "easy":
+            self.set_difficulty(0.2)
+        elif self.difficulty_mode == "medium":
             self.set_difficulty(0.5)
         elif self.difficulty_mode == "hardest":
             self.set_difficulty(1.0)

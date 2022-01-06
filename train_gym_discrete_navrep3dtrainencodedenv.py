@@ -34,10 +34,10 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
         ENV_NAME = "navrep3dSCencodedenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]
     elif build_name == "SCR":
-        ENV_NAME = "navrep3dSCRencodedenv_"
+        ENV_NAME = "navrep3dSCRfixedencodedenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl"]
     elif build_name == "staticasl":
-        ENV_NAME = "navrep3daslencodedenv_"
+        ENV_NAME = "navrep3daslfixedencodedenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH

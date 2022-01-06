@@ -34,10 +34,10 @@ def main(dry_run=False, n=None, build_name=None):
         ENV_NAME = "navrep3dSCenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]
     elif build_name == "SCR":
-        ENV_NAME = "navrep3dSCRencodedenv_"
+        ENV_NAME = "navrep3dSCRfixedenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl"]
     elif build_name == "staticasl":
-        ENV_NAME = "navrep3daslencodedenv_"
+        ENV_NAME = "navrep3daslfixedenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH

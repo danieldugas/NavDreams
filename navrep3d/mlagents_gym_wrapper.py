@@ -457,7 +457,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     kwargs.pop('tolerate_corruption', 0)
     if kwargs:
         raise ValueError("Unexpected kwargs: {}".format(kwargs))
-    if build_name != "staticasl":
+    if build_name not in ["staticasl", "cathedral", "gallery"]:
         raise ValueError
     if unity_player_dir is None:
         file_name = None
@@ -487,11 +487,11 @@ def NavRep3DStaticASLEnvDiscrete(**kwargs):
     env = DiscreteActionWrapper(env)
     return env
 
-def main(step_by_step=False, render_mode='human', difficulty_mode="progressive"):
+def main(step_by_step=False, render_mode='human', difficulty_mode="progressive", build_name="staticasl"):
     from navrep.tools.envplayer import EnvPlayer
     np.set_printoptions(precision=1, suppress=True)
     env = NavRep3DStaticASLEnv(
-        verbose=0, collect_statistics=True, build_name="staticasl",
+        verbose=0, collect_statistics=True, build_name=build_name,
         debug_export_every_n_episodes=0, port=25004, difficulty_mode=difficulty_mode)
     player = EnvPlayer(env, render_mode, step_by_step)
     player.run()

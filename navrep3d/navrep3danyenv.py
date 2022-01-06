@@ -11,7 +11,7 @@ def NavRep3DAnyEnv(**kwargs):
     allows creating either a navrep3dtrainenv (train, alt, city, office) or navprep3dstaticasl env
     depending on build name """
     build_name = kwargs.get('build_name', "./build.x86_64")
-    if build_name == "staticasl":
+    if build_name in ["staticasl", "cathedral", "gallery"]:
         return NavRep3DStaticASLEnv(**kwargs)
     elif build_name == "rosbag":
         directory = os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")
@@ -22,7 +22,7 @@ def NavRep3DAnyEnv(**kwargs):
 def NavRep3DAnyEnvDiscrete(**kwargs):
     """ same as NavRep3DAnyEnv but with DiscreteActionWrapper """
     build_name = kwargs.get('build_name', "./build.x86_64")
-    if build_name == "staticasl":
+    if build_name in ["staticasl", "cathedral", "gallery"]:
         return NavRep3DStaticASLEnvDiscrete(**kwargs)
     elif build_name == "rosbag":
         raise NotImplementedError("No known uses for achive env with discrete action")

@@ -109,7 +109,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
     stores variables used by navrep3d utilities (pyglet rendering, env player, training callbacks)
     This should be the lowest level env, accessed as 'unwrapped' by all wrappers above.
     """
-    def __init__(self, staticasl_env,
+    def __init__(self, staticasl_env, build_name,
                  verbose=0, collect_statistics=True, debug_export_every_n_episodes=0,
                  difficulty_mode="progressive"):
         super().__init__()
@@ -147,7 +147,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
                 "num_walls",
                 "wall_time",
             ])
-        self.scenario_name = "navrep3dasl"
+        self.scenario_name = "navrep3d" + build_name.replace("static", "")
         self.steps_since_reset = 0
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.total_episodes = 0
@@ -474,7 +474,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     channel.set_configuration_parameters(time_scale=time_scale,
                                          capture_frame_rate=int(time_scale/dt))
     env = MLAgentsGymEnvWrapper(unity_env, port_lock_handle)
-    env = StaticASLToNavRep3DEnvWrapper(env,
+    env = StaticASLToNavRep3DEnvWrapper(env, build_name,
                                         verbose=verbose, collect_statistics=collect_statistics,
                                         debug_export_every_n_episodes=debug_export_every_n_episodes,
                                         difficulty_mode=difficulty_mode)

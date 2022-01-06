@@ -38,6 +38,9 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl"]
     elif build_name == "staticasl":
         ENV_NAME = "navrep3daslfixedencodedenv_"
+    elif build_name == "unity3":
+        ENV_NAME = "navrep3dunity3encodedenv_"
+        build_names = ["staticasl", "staticasl", "cathedral", "gallery"]
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH

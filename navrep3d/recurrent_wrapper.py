@@ -19,7 +19,7 @@ class RecurrentObsWrapper(ObservationWrapper):
         self.obs_sequence = []
         self.observation_space = env.observation_space
         if concatenate:
-            cat_dim = env.observation_space.shape[0] * n
+            cat_dim = 64 * n # TODO FIX
             self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
                                                 shape=(cat_dim,), dtype=np.float32)
         else:

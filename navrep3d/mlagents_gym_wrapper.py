@@ -14,6 +14,8 @@ HOMEDIR = os.path.expanduser("~")
 DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
 # TODO: RELEASE - make a tool which downloads LFS files
 
+MLAGENTS_BUILD_NAMES = ["staticasl", "cathedral", "gallery", "kozehd"]
+
 class MLAgentsGymEnvWrapper(gym.Env):
     """
     A generic wrapper, takes a unity_env and turns it into a gym env
@@ -205,6 +207,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.last_action = action # hack which allows encodedenv wrapper to get last action
         self.current_scenario = obs['VectorSensor_size6'][5]
         if done:
+            info["episode_scenario"] = self.current_scenario
             goal_is_reached = reward > 50.0
             self.episode_statistics.loc[len(self.episode_statistics)] = [
                 self.total_steps,
@@ -457,7 +460,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     kwargs.pop('tolerate_corruption', 0)
     if kwargs:
         raise ValueError("Unexpected kwargs: {}".format(kwargs))
-    if build_name not in ["staticasl", "cathedral", "gallery"]:
+    if build_name not in MLAGENTS_BUILD_NAMES:
         raise ValueError
     if unity_player_dir is None:
         file_name = None

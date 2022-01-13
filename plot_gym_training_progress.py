@@ -262,6 +262,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 color = line.get_c()
                 # add episode reward scatter
                 scatter, = ax.plot(x, y, color=color, marker=',', linewidth=0, label=scenario)
+                scatter = None
                 top = ax.scatter(x[np.argmax(smooth_y)], np.max(smooth_y), marker='o', facecolor="none",
                                  edgecolor=color)
 

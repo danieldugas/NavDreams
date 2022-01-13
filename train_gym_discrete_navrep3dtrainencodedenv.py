@@ -41,6 +41,8 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
     elif build_name == "unity3":
         ENV_NAME = "navrep3dunity3encodedenv_"
         build_names = ["staticasl", "staticasl", "cathedral", "gallery"]
+    elif build_name == "kozehd":
+        ENV_NAME = "navrep3dkozehdencodedenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + ENCODER_ARCH

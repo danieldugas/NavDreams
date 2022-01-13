@@ -139,7 +139,7 @@ def main(dataset="SCR",
         dataset = "Salt"
         dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/quantized_navrep3dalt")]
         examples = [34, 51, 23, 42, 79, 5, 120]
-        worldmodel_types = ["TransformerL_V0"]
+        worldmodel_types = ["TransformerL_V0", "transformer"]
     else:
         raise NotImplementedError(dataset)
     examples = [idx + offset for idx in examples]

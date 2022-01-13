@@ -1,6 +1,7 @@
 import os
 
-from navrep3d.mlagents_gym_wrapper import NavRep3DStaticASLEnv, NavRep3DStaticASLEnvDiscrete
+from navrep3d.mlagents_gym_wrapper import (NavRep3DStaticASLEnv, NavRep3DStaticASLEnvDiscrete,
+                                           MLAGENTS_BUILD_NAMES)
 from navrep3d.archiveenv import ArchiveEnv
 from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
 from navrep3d.custom_policy import FlattenN3DObsWrapper
@@ -11,7 +12,7 @@ def NavRep3DAnyEnv(**kwargs):
     allows creating either a navrep3dtrainenv (train, alt, city, office) or navprep3dstaticasl env
     depending on build name """
     build_name = kwargs.get('build_name', "./build.x86_64")
-    if build_name in ["staticasl", "cathedral", "gallery"]:
+    if build_name in MLAGENTS_BUILD_NAMES:
         return NavRep3DStaticASLEnv(**kwargs)
     elif build_name == "rosbag":
         directory = os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")
@@ -22,7 +23,7 @@ def NavRep3DAnyEnv(**kwargs):
 def NavRep3DAnyEnvDiscrete(**kwargs):
     """ same as NavRep3DAnyEnv but with DiscreteActionWrapper """
     build_name = kwargs.get('build_name', "./build.x86_64")
-    if build_name in ["staticasl", "cathedral", "gallery"]:
+    if build_name in MLAGENTS_BUILD_NAMES:
         return NavRep3DStaticASLEnvDiscrete(**kwargs)
     elif build_name == "rosbag":
         raise NotImplementedError("No known uses for achive env with discrete action")

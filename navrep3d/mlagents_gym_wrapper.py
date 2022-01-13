@@ -175,16 +175,25 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             obs['CameraSensor'],
             obs['VectorSensor_size6'][:5]
         )
+        max_dif = 1.0
+        min_dif = 0.001 # 0 is interpreted as "no change"
         if self.difficulty_mode == "progressive":
             pass
         elif self.difficulty_mode == "random":
             self.set_difficulty(np.random.uniform())
+        elif self.difficulty_mode == "bimodal":
+            target_difficulty = min_dif
+            if self.scenario_name == "navrep3dkozehd":
+                max_dif = 0.4
+            if np.random.uniform() > 0.5:
+                target_difficulty = np.random.uniform(low=min_dif, high=max_dif)
+            self.set_difficulty(target_difficulty)
         elif self.difficulty_mode == "easy":
-            self.set_difficulty(0.2)
+            self.set_difficulty(0.2 * max_dif)
         elif self.difficulty_mode == "medium":
-            self.set_difficulty(0.5)
+            self.set_difficulty(0.5 * max_dif)
         elif self.difficulty_mode == "hardest":
-            self.set_difficulty(1.0)
+            self.set_difficulty(max_dif)
         else:
             raise NotImplementedError
         return obs_tuple

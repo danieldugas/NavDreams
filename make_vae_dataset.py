@@ -53,6 +53,7 @@ class QuantizedActionPolicyWrapper(object):
 
 def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_subprocs=1,
          discrete_actions=False, quantized_actions=False):
+    difficulty_mode = "random"
     if env == "S":
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")
         if dry_run:
@@ -78,6 +79,12 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
         if dry_run:
             archive_dir = "/tmp/navrep3d/datasets/V/navrep3dasl"
         build_name = "staticasl"
+    elif env == "K": # R
+        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd")
+        if dry_run:
+            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dkozehd"
+        build_name = "kozehd"
+        difficulty_mode = "bimodal"
     elif env == "rosbag": # only for testing, used in regen
         archive_dir = "/tmp/navrep3d/datasets/V/navrep3drosbag"
         build_name = "rosbag"
@@ -87,7 +94,7 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
         raise NotImplementedError
     env = NavRep3DAnyEnv(verbose=0, collect_statistics=False,
                          build_name=build_name, port=25005+subproc_id,
-                         tolerate_corruption=False, difficulty_mode="random")
+                         tolerate_corruption=False, difficulty_mode=difficulty_mode)
     policy = SemiRandomMomentumPolicy() if True else HumanControlPolicy()
     if discrete_actions:
         archive_dir = archive_dir.replace("/V/navrep3d", "/V/discrete_navrep3d")

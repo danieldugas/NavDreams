@@ -203,6 +203,8 @@ class NavRep3DTrainEnv(gym.Env):
             self.target_difficulty = self.min_dif
             if np.random.uniform() > 0.5:
                 self.target_difficulty = np.random.uniform(self.min_dif, self.max_dif)
+        elif self.difficulty_mode == "easiest":
+            self.target_difficulty = self.min_dif
         elif self.difficulty_mode == "easy":
             self.target_difficulty = self.min_dif + (self.max_dif - self.min_dif) / 4.
         elif self.difficulty_mode == "medium":

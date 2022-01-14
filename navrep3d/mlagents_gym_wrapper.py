@@ -188,6 +188,8 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             if np.random.uniform() > 0.5:
                 target_difficulty = np.random.uniform(low=min_dif, high=max_dif)
             self.set_difficulty(target_difficulty)
+        elif self.difficulty_mode == "easiest":
+            self.set_difficulty(min_dif)
         elif self.difficulty_mode == "easy":
             self.set_difficulty(0.2 * max_dif)
         elif self.difficulty_mode == "medium":

@@ -32,6 +32,7 @@ variant_colors = {
     "R": "blue",
     "Random": "brown",
     "E2E": "grey",
+    "DREAMER": "orange",
 }
 
 def smooth(x, weight):
@@ -58,6 +59,8 @@ def color_and_style(variant, envname):
     return color, style
 
 def get_variant(logpath):
+    if "DREAMER" in logpath:
+        return "DREAMER"
     if "E2E" in logpath:
         return "E2E"
     variant = None
@@ -144,6 +147,8 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
         all_scenarios = [scenario]
 
     if environment is not None:
+        if environment not in all_environments:
+            raise ValueError("{} not found in {}".format(environment, all_environments))
         all_environments = [environment]
 
     if y_axis == "worst_perf":
@@ -229,6 +234,14 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                         continue
                     x = md.epoch2num(x)
                     xlabel = "Wall Time"
+                elif x_axis == "train_time":
+                    try:
+                        x = scenario_S["wall_time"].values
+                        x = x - x[0]
+                    except KeyError:
+                        print("{} has no wall_time info".format(logpath))
+                        continue
+                    xlabel = "Train Time"
                 else:
                     raise NotImplementedError
                 # y axis
@@ -256,7 +269,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 else:
                     raise NotImplementedError
                 y = rewards
-                smooth_y = smooth(y, smoothness)
+                smooth_y = smooth(y, smoothness if not variant == "DREAMER" else 0.995)
                 # plot main reward line
                 line, = ax.plot(x, smooth_y, linewidth=1, linestyle=style, color=color)
                 color = line.get_c()
@@ -461,12 +474,13 @@ def str_enum(options: list):
     return Enum("", {n: n for n in options}, type=str)
 
 def main(logdir="~/navrep3d",
-         x_axis: str_enum(["wall_time", "total_steps"]) = "wall_time", # noqa
+         x_axis: str_enum(["wall_time", "train_time", "total_steps"]) = "wall_time", # noqa
          y_axis: str_enum(["reward", "difficulty", "progress", "worst_perf"]) = "difficulty", # noqa (flake8 bug?)
          refresh: bool = typer.Option(False, help="Updates the plot every minute."),
          finetune : bool = False,
          smoothness : float = None,
          paper : bool = False,
+         env : str = None,
          ):
     logdirs = [os.path.expanduser(logdir),]
     print(x_axis.value)
@@ -479,11 +493,11 @@ def main(logdir="~/navrep3d",
         while True:
             plt.ion()
             plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
-                                   finetune=finetune, smoothness=smoothness)
+                                   finetune=finetune, smoothness=smoothness, environment=env)
             plt.pause(60)
     else:
         plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
-                               finetune=finetune, smoothness=smoothness)
+                               finetune=finetune, smoothness=smoothness, environment=env)
         plt.show()
 
 

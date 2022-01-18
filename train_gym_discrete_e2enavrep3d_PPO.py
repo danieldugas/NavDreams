@@ -38,6 +38,8 @@ def main(dry_run=False, n=None, build_name=None):
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl"]
     elif build_name == "staticasl":
         ENV_NAME = "navrep3daslfixedenv_"
+    elif build_name == "kozehd":
+        ENV_NAME = "navrep3dkozehdencodedenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH

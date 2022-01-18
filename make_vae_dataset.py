@@ -75,9 +75,9 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
             archive_dir = "/tmp/navrep3d/datasets/V/navrep3doffice"
         build_name = "./office.x86_64"
     elif env == "R": # R
-        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")
+        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3daslv2")
         if dry_run:
-            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dasl"
+            archive_dir = "/tmp/navrep3d/datasets/V/navrep3daslv2"
         build_name = "staticasl"
     elif env == "K": # R
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd")

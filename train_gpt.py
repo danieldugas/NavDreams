@@ -166,6 +166,17 @@ def main(max_steps=222222, dataset="S", dry_run=False):
             "~/navrep3d_W/logs/W/transformer_K_train_log_{}.csv".format(START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_K")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_K_step")
+    elif dataset == "SCRK":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3daslv2"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd"),
+                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/transformer_SCRK_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCRK")
+        plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SCRK_step")
     else:
         raise NotImplementedError(dataset)
 

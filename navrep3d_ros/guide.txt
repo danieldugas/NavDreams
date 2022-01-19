@@ -12,7 +12,9 @@ mon launch asl_pepper_basic_functions pepper_bringup_T460s_ETHERNET.launch nao_i
 ssh nao@10.42.0.84
 # now pepper (ssh)
 # up arrow, watch -n 10 ./disable_autonomous_functions.sh
-# same but ALRobotPosture goToPosture("Stand", 0.5)
+# watch -n 5 qicli call ALRobotPosture.goToPosture "Stand" 0.5
+# qicli call ALMotion.setAngles "HeadPitch" 0.0 0.1
+watch -n 10 source ./go_to_rl_posture.sh
 
 # -- navrep3d and evaluator --
 source ~/pepper3venv/bin/activate

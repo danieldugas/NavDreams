@@ -92,6 +92,7 @@
 /gmap
 /gmap_updates
 /goal_reached
+/goal_failed
 /imu
 /initialpose
 /joint_angles
@@ -179,3 +180,5 @@
 /speech
 /tf
 /tf_static
+/is_stopped
+/is_resumed

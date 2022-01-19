@@ -39,15 +39,18 @@ bridge = CvBridge()
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/Stefan_Kiss_HG_Dataset/onboard/2019-04-05-13-12-11.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/corridor_koze_kids.bag" # noqa
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/ASL Crowdbot/Rosbags/ASL open lab day/2019-12-13-20-11-46.bag" # noqa
-bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/rosbags/meet_your_lab1.bag"
+# bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/rosbags/meet_your_lab1.bag"
 # bag_path = "~/Insync/daniel@dugas.ch/Google Drive - Shared drives/Pepper/rosbags/meet_your_lab2.bag"
+# bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-14-12-40.bag"
+# bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-18-39-38.bag"
+bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag"
 
 archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 
 DT = 0.2
-FIXED_FRAME = "odom" # StefanKiss, merged_demo, meet_your_lab
+# FIXED_FRAME = "odom" # StefanKiss, merged_demo, meet_your_lab
 # FIXED_FRAME = "map" # crowdbot CLA
-# FIXED_FRAME = "reference_map" # open-lab
+FIXED_FRAME = "reference_map" # open-lab # koze tests
 ROBOT_FRAME = "base_footprint"
 GOAL_REACHED_DIST = 0.5
 MANUALLY_ADDED_GOALS = []
@@ -64,7 +67,8 @@ cmd_vel_topic = '/cmd_vel'
 image_topic = '/camera/color/image_raw'
 cmd_vel_enabled_topic = '/oculus/cmd_vel_enabled'
 topics = [cmd_vel_enabled_topic, odom_topic, cmd_vel_topic, image_topic]
-goal_topic = "/move_base_simple/goal"
+# goal_topic = "/move_base_simple/goal"
+goal_topic = "/global_planner/goal" # koze tests
 
 print()
 print("Required topics:")

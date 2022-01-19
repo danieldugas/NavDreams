@@ -35,7 +35,8 @@ GPU = False
 NO_ROTATION = False
 
 # C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip") # noqa
-C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip") # noqa
+# C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdencodedenv_2022_01_17__12_55_53_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" # noqa
+C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip") # noqa
 
 def noop(*args, **kwargs):
     return TriggerResponse(True, "")

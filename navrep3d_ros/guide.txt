@@ -9,12 +9,10 @@ source ~/Code/pepper_ws/devel/setup.bash
 mon launch asl_pepper_basic_functions pepper_bringup_T460s_ETHERNET.launch nao_ip:=10.42.0.84 realsense:=true roscore_ip:=pepper-laptop
 
 # -- pepper disable autonomous --
-# on bigboy new terminal
-ssh pepper-laptop
-# now pepper-laptop (ssh)
 ssh nao@10.42.0.84
 # now pepper (ssh)
 # up arrow, watch -n 10 ./disable_autonomous_functions.sh
+# same but ALRobotPosture goToPosture("Stand", 0.5)
 
 # -- navrep3d and evaluator --
 source ~/pepper3venv/bin/activate

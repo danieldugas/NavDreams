@@ -1,5 +1,10 @@
+# -- roscore --
+source ~/Code/pepper_ws/devel/setup.bash
+roscore
+
 # -- Bringup --
 # new terminal
+source ~/peppervenv/bin/activate
 source ~/Code/pepper_ws/devel/setup.bash
 mon launch asl_pepper_basic_functions pepper_bringup_T460s_ETHERNET.launch nao_ip:=10.42.0.84 realsense:=true roscore_ip:=pepper-laptop
 

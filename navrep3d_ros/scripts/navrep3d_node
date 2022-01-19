@@ -55,6 +55,7 @@ class NavrepNode(object):
         self.cv_bridge = CvBridge()
         # init variables
         self.goal_msg = None
+        self.latest_img = None
         self.latest_odom = None
         self.prev_action = np.array([0., 0., 0.])
         self.STOP = not no_stop
@@ -71,19 +72,27 @@ class NavrepNode(object):
         rospy.Service('resume_autonomous_motion', Trigger,
                       self.resume_autonomous_motion_service_call)
         # Ros routines
-        rospy.Subscriber("/camera/color/image_raw", Image, self.callback, queue_size=1)
+        rospy.Subscriber("/camera/color/image_raw", Image, self.img_callback, queue_size=1)
         rospy.Subscriber("/global_planner/current_waypoint", Marker, self.waypoint_callback, queue_size=1)
         rospy.Subscriber("/pepper_robot/odom", Odometry, self.odom_callback, queue_size=1)
         rospy.Subscriber("/goal_reached", Header, self.goal_reached_callback, queue_size=1)
+        rospy.Timer(rospy.Duration(0.1), self.callback)
         rospy.spin()
 
-    def callback(self, msg):
+    def img_callback(self, msg):
+        with self.lock:
+            self.latest_img = msg
+
+    def callback(self, event=None):
         with self.lock:
             if self.latest_odom is None:
                 rospy.logwarn_throttle_identical(3.0, "Waiting for odometry")
                 return
             if self.goal_msg is None:
                 rospy.logwarn_throttle_identical(3.0, "Waiting for goal")
+                return
+            if self.latest_img is None:
+                rospy.logwarn_throttle_identical(3.0, "Waiting for image")
                 return
             # compute goal in robot frame
             tf_msg_in_robot = self.get_msg_to_robot_tf(self.goal_msg, time=rospy.Time.now())
@@ -97,7 +106,7 @@ class NavrepNode(object):
             _64 = 64
             _C = 3
             image = np.zeros((_64, _64, _C))
-            cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding="rgba8")
+            cv_image = self.cv_bridge.imgmsg_to_cv2(self.latest_img, desired_encoding="rgba8")
             image = cv2.resize(cv_image, (64, 64))[:, :, :3]
             robot_state = np.zeros((5,))
             # in robot frame:
@@ -123,7 +132,7 @@ class NavrepNode(object):
             self.prev_action = action
 
             # ros publish
-#             out_msg = deepcopy(msg)
+#             out_msg = deepcopy(self.latest_img)
 #             predicted_ranges = self.encoder._get_last_decoded_scan()
 #             out_msg.ranges = tuple(predicted_ranges)
 #             self.lidar_pub.publish(out_msg)
@@ -210,7 +219,10 @@ class NavrepNode(object):
             self.resumed_pub.publish(msg)
         return TriggerResponse(True, "")
 
+def main(no_stop=False):
+    NavrepNode(no_stop=no_stop)
+
 
 if __name__ == "__main__":
     np.set_printoptions(precision=2, suppress=True)
-    navrep_node = StrictFire(NavrepNode)
+    navrep_node = StrictFire(main)

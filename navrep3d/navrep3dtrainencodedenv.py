@@ -24,6 +24,10 @@ class NavRep3DTrainEncoder(EnvEncoder):
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCR")
         elif variant == "R":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_R")
+        elif variant == "K":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_K")
+        elif variant == "SCRK":
+            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCRK")
         elif variant == "Random":
             gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
         else:

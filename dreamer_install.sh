@@ -13,6 +13,7 @@ pip install matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet navrep 
 pip install keras==2.6.* # later version is not compatible with python 3.6
 pip install dreamerv2
 pip install tensorflow==2.6.0 tensorflow_probability ruamel.yaml 'gym[atari]' dm_control
+pip install torch==1.9 # needs to be >1.8.1 for dreamer torch.profiler
 pip install mlflow
 
 cd ~/Code/

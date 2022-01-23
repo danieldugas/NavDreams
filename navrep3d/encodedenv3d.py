@@ -36,9 +36,11 @@ class EnvEncoder(object):
         if backend == "GPT":
             from navrep.scripts.train_gpt import _Z, _H
         elif backend == "RSSM_A0":
-            _Z = 1024
+            _Z = 1536
+            _H = None
         elif backend == "TransformerL_V0":
             _Z = 1024
+            _H = None
         elif backend == "E2E":
             _Z = 64
             _H = None

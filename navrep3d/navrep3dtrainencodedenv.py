@@ -59,11 +59,11 @@ class EncoderObsWrapper(ObservationWrapper):
 class NavRep3DTrainEncodedEnv(Env):
     """ takes a (3) action as input
     outputs encoded obs (546) """
-    def __init__(self, backend, encoding,
+    def __init__(self, backend, encoding, variant="S",
                  verbose=0, collect_statistics=True, debug_export_every_n_episodes=0, port=25001,
                  gpu=False, shared_encoder=None, encoder=None):
         if encoder is None:
-            encoder = NavRep3DTrainEncoder(backend, encoding,
+            encoder = NavRep3DTrainEncoder(backend, encoding, variant,
                                            gpu=gpu, encoder_to_share_model_with=shared_encoder)
         self.encoder = encoder
         self.env = NavRep3DTrainEnv(verbose=verbose, collect_statistics=collect_statistics,
@@ -234,6 +234,8 @@ if __name__ == "__main__":
     from navrep.tools.envplayer import EnvPlayer
 
     np.set_printoptions(precision=2, suppress=True)
-    env = NavRep3DTrainEncodedEnv(verbose=1, backend="GPT", encoding="V_ONLY")
+#     env = NavRep3DTrainEncodedEnv(verbose=1, backend="RSSM_A0", encoding="V_ONLY", variant="SCR")
+#     env = NavRep3DTrainEncodedEnv(verbose=1, backend="TransformerL_V0", encoding="V_ONLY", variant="SCR")
+    env = NavRep3DTrainEncodedEnv(verbose=1, backend="GPT", encoding="V_ONLY", variant="SCR")
     player = EnvPlayer(env)
     player.run()

@@ -284,6 +284,9 @@ class RSSMA0WorldModel(WorldModel):
 
         # decoder expects features (T, B, I, Z) - T is sequence, I is samples (both irrelevant here)
         z_t = z_t.view((1, b, 1, Z))
+        raise NotImplementedError(
+            "decoder input is not same size as encoder output, so decoding is not implemented yet")
+        # this will fail if z_t is not size 3072
         img_rec_t = self.decoder.image.forward(z_t) # t, b, I, CH, W, H
         T, B, I, CH, W, H = img_rec_t.shape
         img_rec_t = img_rec_t.view((B, CH, W, H))

@@ -13,28 +13,18 @@ from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
 class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding, variant="S",
                  gpu=False, encoder_to_share_model_with=None):
-        assert backend == "GPT"
-        if variant == "S":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
-        elif variant == "Salt":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
-        elif variant == "SC":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
-        elif variant == "SCR":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCR")
-        elif variant == "R":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_R")
-        elif variant == "K":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_K")
-        elif variant == "SCRK":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCRK")
-        elif variant == "Random":
-            gpt_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
+        if backend == "GPT":
+            wm_model_path = "~/navrep3d_W/models/W/transformer_{}".format(variant)
+        elif backend == "RSSM_A0":
+            wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(variant)
+        elif backend == "TransformerL_V0":
+            wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(variant)
         else:
             raise NotImplementedError
+        wm_model_path = os.path.expanduser(wm_model_path)
         super(NavRep3DTrainEncoder, self).__init__(
             backend, encoding,
-            gpt_model_path=gpt_model_path,
+            wm_model_path=wm_model_path,
             gpu=gpu,
             encoder_to_share_model_with=None,
         )

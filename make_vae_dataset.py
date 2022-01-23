@@ -79,6 +79,16 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
         if dry_run:
             archive_dir = "/tmp/navrep3d/datasets/V/navrep3daslv2"
         build_name = "staticasl"
+    elif env == "OG":
+        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dgallery")
+        if dry_run:
+            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dgallery"
+        build_name = "gallery"
+    elif env == "OC":
+        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcathedral")
+        if dry_run:
+            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dcathedral"
+        build_name = "cathedral"
     elif env == "K": # R
         archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd")
         if dry_run:

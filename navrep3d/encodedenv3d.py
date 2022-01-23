@@ -3,23 +3,14 @@ import numpy as np
 import os
 from gym import spaces
 
-from navrep.tools.rings import generate_rings
-from navrep.envs.ianenv import IANEnv
-from navrep.models.rnn import (reset_graph, sample_hps_params, MDNRNN,
-                               rnn_init_state, rnn_next_state, MAX_GOAL_DIST)
-from navrep.models.vae2d import ConvVAE
-from navrep.models.vae1d import Conv1DVAE
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
-from navrep.models.gpt1d import GPT1D
-from navrep.models.vae1dlstm import VAE1DLSTM, VAE1DLSTMConfig
-from navrep.models.vaelstm import VAELSTM, VAELSTMConfig
-from navrep.tools.wdataset import scans_to_lidar_obs
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
+from navrep3d.rssm_a0 import RSSMA0WMConf, RSSMA0WorldModel
 
 PUNISH_SPIN = True
 
-""" VM backends: VAE_LSTM, W backends: GPT, GPT1D, VAE1DLSTM """
+""" W backends: GPT, RSSM_A0, TransformerL """
 """ ENCODINGS: V_ONLY, VM, M_ONLY """
 _G = 2  # goal dimensions
 _A = 3  # action dimensions
@@ -36,22 +27,18 @@ class EnvEncoder(object):
     look at EncodedEnv to see how it is typically used """
     def __init__(self,
                  backend, encoding,
-                 rnn_model_path=os.path.expanduser("~/navrep3d/models/M/rnn.json"),
-                 vae_model_path=os.path.expanduser("~/navrep3d/models/V/vae.json"),
-                 gpt_model_path=os.path.expanduser("~/navrep3d/models/W/gpt"),
+                 wm_model_path=os.path.expanduser("~/navrep3d/models/W/transformer"),
                  e2e_model_path=os.path.expanduser("~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip"), # noqa
-                 vaelstm_model_path=os.path.expanduser("~/navrep3d/models/W/vaelstm"),
                  gpu=False,
                  encoder_to_share_model_with=None,  # another EnvEncoder
                  ):
         LIDAR_NORM_FACTOR = None
         if backend == "GPT":
             from navrep.scripts.train_gpt import _Z, _H
-        elif backend == "VAELSTM":
-            from navrep.scripts.train_vaelstm import _Z, _H
-        elif backend == "VAE_LSTM":
-            from navrep.scripts.train_vae import _Z
-            from navrep.scripts.train_rnn import _H
+        elif backend == "RSSM_A0":
+            _Z = 1024
+        elif backend == "TransformerL_V0":
+            _Z = 1024
         elif backend == "E2E":
             _Z = 64
             _H = None
@@ -76,27 +63,31 @@ class EnvEncoder(object):
             self.rnn = encoder_to_share_model_with.rnn
         else:
             # load world model
-            if self.backend == "VAE_LSTM":
-                reset_graph()
-                self.vae = ConvVAE(z_size=_Z, batch_size=1, is_training=False)
-                self.vae.load_json(vae_model_path)
-                if self.encoding in ["VM", "M_ONLY"]:
-                    hps = sample_hps_params. _replace(seq_width=_Z+_G, action_width=_A, rnn_size=_H)
-                    self.rnn = MDNRNN(hps, gpu_mode=gpu)
-                    self.rnn.load_json(rnn_model_path)
-            elif self.backend == "GPT":
+            if self.backend == "GPT":
                 mconf = GPTConfig(BLOCK_SIZE, _H)
                 mconf.image_channels = _C
                 model = GPT(mconf, gpu=gpu)
-                load_checkpoint(model, gpt_model_path, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
                 self.vae = model
                 self.rnn = model
-            elif self.backend == "VAELSTM":
-                mconf = VAELSTMConfig(_Z, _H)
-                model = VAELSTM(mconf, gpu=gpu)
-                load_checkpoint(model, vaelstm_model_path, gpu=gpu)
+            elif self.backend == "TransformerL_V0":
+                mconf = TransformerLWMConf()
+                mconf.image_channels = 3
+                model = TransformerLWorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
                 self.vae = model
                 self.rnn = model
+                if self.encoding != "V_ONLY":
+                    raise NotImplementedError
+            elif self.backend == "RSSM_A0":
+                mconf = RSSMA0WMConf()
+                mconf.image_channels = 3
+                model = RSSMA0WorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                self.vae = model
+                self.rnn = model
+                if self.encoding != "V_ONLY":
+                    raise NotImplementedError
             elif self.backend == "E2E":
                 from stable_baselines3 import PPO
                 import torch
@@ -133,10 +124,7 @@ class EnvEncoder(object):
 
     def reset(self):
         if self.encoding in ["VM", "M_ONLY"]:
-            if self.backend in ["VAE_LSTM"]:
-                self.state = rnn_init_state(self.rnn)
-            elif self.backend in ["GPT", "VAELSTM"]:
-                self.gpt_sequence = []
+            self.wm_sequence = []
         self.latest_z = np.zeros(self._Z)
         self.latest_image_obs = np.zeros((_64, _64, _C), dtype=np.uint8)
 
@@ -182,15 +170,12 @@ class EnvEncoder(object):
             encoded_obs = np.concatenate([self.latest_z, obs[1]], axis=0)
         elif self.encoding in ["VM", "M_ONLY"]:
             # get h
-            if self.backend in ["VAE_LSTM", "VAE1D_LSTM"]:
-                goal_z = obs[1][:2] / MAX_GOAL_DIST
-                rnn_z = np.concatenate([latest_z, goal_z], axis=-1)
-                self.state = rnn_next_state(self.rnn, rnn_z, action, self.state)
-                h = self.state.h[0]
-            elif self.backend in ["GPT", "VAELSTM", "VAE1DLSTM", "GPT1D"]:
-                self.gpt_sequence.append(dict(obs=image_nobs, state=obs[1][:2], action=action))
-                self.gpt_sequence = self.gpt_sequence[:BLOCK_SIZE]
-                h = self.rnn.get_h(self.gpt_sequence)
+            if self.backend in ["GPT", "VAE1DLSTM", "GPT1D"]:
+                self.wm_sequence.append(dict(obs=image_nobs, state=obs[1][:2], action=action))
+                self.wm_sequence = self.wm_sequence[:BLOCK_SIZE]
+                h = self.rnn.get_h(self.wm_sequence)
+            else:
+                raise NotImplementedError
             # encoded obs
             if self.encoding == "VM":
                 encoded_obs = np.concatenate([self.latest_z, obs[1], h], axis=0)

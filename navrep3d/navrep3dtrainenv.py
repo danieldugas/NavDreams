@@ -529,6 +529,7 @@ class NavRep3DTrainEnv(gym.Env):
 
         # log data
         if done and not self.reset_in_progress:
+            info["episode_scenario"] = self.infer_current_scenario()
             if self.episode_reward >= 200 or self.episode_reward <= -200:
                 raise ValueError("odom: {}, last_odom:{}, progress: {}".format(
                     odom, self.last_odom, progress))

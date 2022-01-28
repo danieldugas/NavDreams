@@ -45,6 +45,12 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, gpu=True):
             "~/navrep3d_W/logs/W/{}_staticasl_train_log_{}.csv".format(namestring, START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_staticasl".format(namestring))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_staticasl_step".format(namestring))
+    elif dataset == "Salt":
+        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")]
+        log_path = os.path.expanduser(
+            "~/navrep3d_W/logs/W/{}_Salt_train_log_{}.csv".format(namestring, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_Salt".format(namestring))
+        plot_path = os.path.expanduser("~/tmp_navrep3d/{}_Salt_step".format(namestring))
     elif dataset == "dSalt":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/discrete_navrep3dalt")]
         log_path = os.path.expanduser(

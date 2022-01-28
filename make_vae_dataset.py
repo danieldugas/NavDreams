@@ -90,9 +90,9 @@ def main(n_sequences=100, env="S", render=False, dry_run=False, subproc_id=0, n_
             archive_dir = "/tmp/navrep3d/datasets/V/navrep3dcathedral"
         build_name = "cathedral"
     elif env == "K": # R
-        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd")
+        archive_dir = os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehdr")
         if dry_run:
-            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dkozehd"
+            archive_dir = "/tmp/navrep3d/datasets/V/navrep3dkozehdr"
         build_name = "kozehd"
         difficulty_mode = "bimodal"
     elif env == "rosbag": # only for testing, used in regen

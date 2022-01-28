@@ -181,7 +181,7 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
 
     linegroups = []
     legends = []
-    for logpath, parent in zip(logpaths, parents):
+    for logpath, parent in tqdm(zip(logpaths, parents), total=len(logpaths)):
         linegroup = [] # regroup all lines from this log
         for scenario in all_scenarios:
             for row_name in row_names:

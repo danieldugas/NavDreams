@@ -112,6 +112,7 @@ def parse_logfiles(navrep_dirs, logfolder=None):
     return all_logpaths, all_parents
 
 def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward",
+                           no_dots=False,
                            environment=None,
                            finetune=False, smoothness=None):
     if smoothness is None:
@@ -274,8 +275,9 @@ def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis=
                 line, = ax.plot(x, smooth_y, linewidth=1, linestyle=style, color=color)
                 color = line.get_c()
                 # add episode reward scatter
-                scatter, = ax.plot(x, y, color=color, marker=',', linewidth=0, label=scenario)
                 scatter = None
+                if not no_dots:
+                    scatter, = ax.plot(x, y, color=color, marker=',', linewidth=0, label=scenario)
                 top = ax.scatter(x[np.argmax(smooth_y)], np.max(smooth_y), marker='o', facecolor="none",
                                  edgecolor=color)
 
@@ -476,6 +478,7 @@ def str_enum(options: list):
 def main(logdir="~/navrep3d",
          x_axis: str_enum(["wall_time", "train_time", "total_steps"]) = "wall_time", # noqa
          y_axis: str_enum(["reward", "difficulty", "progress", "worst_perf"]) = "difficulty", # noqa (flake8 bug?)
+         no_dots: bool = False,
          refresh: bool = typer.Option(False, help="Updates the plot every minute."),
          finetune : bool = False,
          smoothness : float = None,
@@ -493,10 +496,12 @@ def main(logdir="~/navrep3d",
         while True:
             plt.ion()
             plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
+                                   no_dots=no_dots,
                                    finetune=finetune, smoothness=smoothness, environment=env)
             plt.pause(60)
     else:
         plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
+                               no_dots=no_dots,
                                finetune=finetune, smoothness=smoothness, environment=env)
         plt.show()
 

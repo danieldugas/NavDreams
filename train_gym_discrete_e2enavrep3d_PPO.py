@@ -39,7 +39,7 @@ def main(dry_run=False, n=None, build_name=None):
     elif build_name == "staticasl":
         ENV_NAME = "navrep3daslfixedenv_"
     elif build_name == "kozehd":
-        ENV_NAME = "navrep3dkozehdrencodedenv_"
+        ENV_NAME = "navrep3dkozehdrsencodedenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH

@@ -6,6 +6,7 @@ from tqdm import tqdm
 from pose2d import Pose2D, apply_tf
 from matplotlib import pyplot as plt
 from CMap2D import CMap2D
+from strictfire import StrictFire
 
 from pyniel.pyplot_tools.interactive import make_legend_pickable
 
@@ -37,7 +38,7 @@ def orange(u=np.random.rand()):
     return cmap(u)
 
 
-if __name__ == "__main__":
+def main(clean=False):
 #     bag_path = os.path.expanduser("~/irl_tests/manip_corner_julian_jenjen.bag")
     bag_path = os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")
 
@@ -62,12 +63,10 @@ if __name__ == "__main__":
     except ImportError:
         print("WARNING: Failed to import tf_bag. No goal information will be saved.")
         bag_transformer = None
-        current_goal = [np.nan, np.nan]
     if bag.get_message_count(topic_filters=goal_topics) == 0:
         print("WARNING: No goal messages ({}) in rosbag. No goal information will be saved.".format(
             goal_topics))
         bag_transformer = None
-        current_goal = [np.nan, np.nan]
 
     trajectories = []
     goals = []
@@ -89,14 +88,6 @@ if __name__ == "__main__":
     for topic, msg, t in tqdm(bag.read_messages(topics=topics),
                               total=bag.get_message_count(topic_filters=topics)):
 
-        if topic in cmdvel_topics:
-            cmd_vel = msg
-            # store cmd_vel
-
-        if topic in joy_topics:
-            joy = msg
-            # detect wether autonomous motion is active or not
-
         if topic in stopped_topics:
             is_stopped = True
             end_episode = True
@@ -107,10 +98,6 @@ if __name__ == "__main__":
 
         # process messages
         if topic in odom_topics:
-            # velocity
-            current_action = np.array([  # if msg is odometry
-                msg.twist.twist.linear.x, msg.twist.twist.linear.y, msg.twist.twist.angular.z])
-
             # position
             try:
                 p2_rob_in_fix = Pose2D(bag_transformer.lookupTransform(
@@ -168,8 +155,6 @@ if __name__ == "__main__":
             end_episode = False
 
         if topic in map_topics:
-            p2_map_in_fix = Pose2D(bag_transformer.lookupTransform(
-                FIXED_FRAME, msg.header.frame_id, msg.header.stamp))
             mapmsg = msg
 
     fig, ax = plt.subplots(1, 1)
@@ -189,7 +174,7 @@ if __name__ == "__main__":
     linegroups = []
     for n, (t, g, s, f, gc, st) in enumerate(zip(
             trajectories, goals, goals_reached, goals_failed, goals_close, are_stopped)):
-        line_color = blue(len(t)/1000.) if s != 0 else orange(len(t)/1000.)
+        line_color = blue(len(t)/1000.) if s != 0 or gc != 0 else orange(len(t)/1000.)
         line_style = None
         if st:
             line_color = "grey"
@@ -210,19 +195,25 @@ if __name__ == "__main__":
                 plt.savefig("/tmp/plot_irl_test_rosbags_{:05}.png".format(i_frame))
                 i_frame += 1
         else:
-            line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder, linestyle=line_style)
-            if g is not None:
+            if line_color != "grey":
+                line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder, linestyle=line_style)
                 if f != 0:
                     ax.scatter(t[f, 0], t[f, 1], color="red", marker="x")
+                if g is not None:
+                    cr = plt.Circle((g[0], g[1]), 0.3, color="red", zorder=2)
+                    ax.add_artist(cr)
+                linegroups.append([line, cr])
+                legends.append(str(n))
+            if not clean:
+                if line_color == "grey":
+                    line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder, linestyle=line_style)
+                else:
+                    if g is not None:
+                        l, = ax.plot([t[0, 0], g[0]], [t[0, 1], g[1]], color='k', zorder=zorder,
+                                     linestyle="--")
+                        linegroups[-1].append(l)
                 if gc != 0:
                     ax.scatter(t[gc, 0], t[gc, 1], color="green", marker=">")
-                ax.add_artist(plt.Circle((g[0], g[1]), 0.3, color="red", zorder=2))
-            if line_color != "grey":
-                linegroups.append([line])
-                legends.append(str(n))
-                if True:
-                    l, = ax.plot([t[0, 0], g[0]], [t[0, 1], g[1]], color='k', zorder=zorder, linestyle="--")
-                    linegroups[-1].append(l)
 
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
@@ -233,3 +224,7 @@ if __name__ == "__main__":
     ax.set_adjustable('box')
 
     plt.show()
+
+
+if __name__ == "__main__":
+    StrictFire(main)

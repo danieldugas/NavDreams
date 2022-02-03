@@ -97,6 +97,7 @@ class NavRep3DTrainEnv(gym.Env):
                  debug_export_every_n_episodes=0, port=25001,
                  unity_player_dir=DEFAULT_UNITY_EXE, build_name=None,
                  start_with_random_rot=True, tolerate_corruption=True,
+                 render_trajectories=False,
                  difficulty_mode="progressive"):
         # default args
         if build_name is None:
@@ -158,6 +159,9 @@ class NavRep3DTrainEnv(gym.Env):
         self.steps_since_reset = None
         self.episode_reward = None
         self.converter_cmap2d = None
+        self.render_trajectories = render_trajectories
+        if render_trajectories:
+            self.trajectories = []
 
         self._reboot_unity()
 
@@ -260,6 +264,7 @@ class NavRep3DTrainEnv(gym.Env):
             self.flat_contours = None
             self.lidar_scan = None
             self.lidar_angles = None
+            self.trajectories = []
 
             # double check that the new scenario is loaded correctly (doesn't return done or weirdness)
             self.last_image = None
@@ -300,6 +305,7 @@ class NavRep3DTrainEnv(gym.Env):
         self.flat_contours = None
         self.lidar_scan = None
         self.lidar_angles = None
+        self.trajectories = []
 
         return obs
 
@@ -444,6 +450,8 @@ class NavRep3DTrainEnv(gym.Env):
                 mindist = np.min(np.linalg.norm(crowd[:,1:3] - odom[:2][None, :], axis=-1))
                 if mindist < (AGENT_RADIUS + ROBOT_RADIUS):
                     colliding_crowd = True
+                if self.render_trajectories:
+                    self.trajectories.append([pos[:2] for pos in np.concatenate([[odom[:2]], crowd[:, 1:3]], axis=0)])
         # robotstate obs
         # shape (n_agents, 5 [grx, gry, vx, vy, vtheta]) - all in base frame
         baselink_in_world = odom[:3]
@@ -685,13 +693,28 @@ class NavRep3DTrainEnv(gym.Env):
                         for vert in wall:
                             gl.glVertex3f(vert[0], vert[1], 0)
                         gl.glEnd()
-                # Agent body
+                # circle function
                 def make_circle(c, r, res=10):
                     thetas = np.linspace(0, 2*np.pi, res+1)[:-1]
                     verts = np.zeros((res, 2))
                     verts[:,0] = c[0] + r * np.cos(thetas)
                     verts[:,1] = c[1] + r * np.sin(thetas)
                     return verts
+                # Trails
+                if self.render_trajectories:
+                    L = 200
+                    for t, traj in enumerate(self.trajectories[:-L:-1]):
+                        for n, (px, py) in enumerate(traj):
+                            color = agentcolor * 0.6 if n != 0 else np.array([1., 0.6, 0.6])
+                            r = 0.2 * (1 - (t / L))
+                            alpha = 1. * (1 - (t / L))
+                            poly = make_circle((px, py), r)
+                            gl.glBegin(gl.GL_POLYGON)
+                            gl.glColor4f(color[0], color[1], color[2], alpha)
+                            for vert in poly:
+                                gl.glVertex3f(vert[0], vert[1], 0)
+                            gl.glEnd()
+                # Agent body
                 def gl_render_agent(px, py, angle, r, color):
                     # Agent as Circle
                     poly = make_circle((px, py), r)

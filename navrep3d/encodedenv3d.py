@@ -70,6 +70,7 @@ class EnvEncoder(object):
                 mconf.image_channels = _C
                 model = GPT(mconf, gpu=gpu)
                 load_checkpoint(model, wm_model_path, gpu=gpu)
+                print("loaded WM at {}".format(wm_model_path))
                 self.vae = model
                 self.rnn = model
             elif self.backend == "TransformerL_V0":

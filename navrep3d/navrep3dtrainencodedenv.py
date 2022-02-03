@@ -38,7 +38,7 @@ class EncoderObsWrapper(ObservationWrapper):
                  gpu=False, shared_encoder=None, encoder=None):
         super().__init__(env)
         if encoder is None:
-            encoder = NavRep3DTrainEncoder(backend, encoding,
+            encoder = NavRep3DTrainEncoder(backend, encoding, variant=variant,
                                            gpu=gpu, encoder_to_share_model_with=shared_encoder)
         self.encoder = encoder
         self.observation_space = self.encoder.observation_space

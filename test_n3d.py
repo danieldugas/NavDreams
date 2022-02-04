@@ -21,6 +21,7 @@ def main(build_name="kozehd", render=True, difficulty_mode="easiest", model_path
 #     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dkozehdrencodedenv_2022_01_28__06_44_50_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_ckpt.zip" # noqa # kozehd - easiest: ?
 #     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dkozehdrencodedenv_2022_01_25__21_34_44_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_ckpt.zip" # noqa # kozehd - easiest: ?
 #     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dkozehdrencodedenv_2022_01_26__08_56_54_DISCRETE_PPO_GPT_V_ONLY_V64M64_K_ckpt.zip" # noqa # kozehd - easiest: ?
+    MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" # noqa # kozehdrs - easiest: >80%
     if model_path is not None:
         MODELPATH = model_path
     MODELPATH = os.path.expanduser(MODELPATH)

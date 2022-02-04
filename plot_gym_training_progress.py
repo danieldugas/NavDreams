@@ -33,6 +33,8 @@ variant_colors = {
     "Random": "brown",
     "E2E": "grey",
     "DREAMER": "orange",
+    "SCRK": "darkorange",
+    "K2": "purple",
 }
 
 def smooth(x, weight):

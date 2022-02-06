@@ -7,6 +7,7 @@ from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
 from navrep3d.rssm_a0 import RSSMA0WMConf, RSSMA0WorldModel
+from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 
 PUNISH_SPIN = True
 
@@ -39,6 +40,9 @@ class EnvEncoder(object):
             _Z = 1536
             _H = None
         elif backend == "TransformerL_V0":
+            _Z = 1024
+            _H = None
+        elif backend == "TSSM_V2":
             _Z = 1024
             _H = None
         elif backend == "E2E":
@@ -86,6 +90,15 @@ class EnvEncoder(object):
                 mconf = RSSMA0WMConf()
                 mconf.image_channels = 3
                 model = RSSMA0WorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                self.vae = model
+                self.rnn = model
+                if self.encoding != "V_ONLY":
+                    raise NotImplementedError
+            elif self.backend == "TSSM_V2":
+                mconf = TSSMWMConf()
+                mconf.image_channels = 3
+                model = TSSMWorldModel(mconf, gpu=gpu)
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 self.vae = model
                 self.rnn = model

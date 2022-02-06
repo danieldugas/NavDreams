@@ -19,6 +19,8 @@ class NavRep3DTrainEncoder(EnvEncoder):
             wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(variant)
         elif backend == "TransformerL_V0":
             wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(variant)
+        elif backend == "TSSM_V2":
+            wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(variant)
         else:
             raise NotImplementedError
         wm_model_path = os.path.expanduser(wm_model_path)

@@ -29,12 +29,18 @@ variant_colors = {
     "Salt": "mediumseagreen",
     "SC": "khaki",
     "SCR": "red",
-    "R": "blue",
+    "R": "mediumorchid",
     "Random": "brown",
     "E2E": "grey",
     "DREAMER": "orange",
     "SCRK": "darkorange",
-    "K2": "purple",
+    "K2": "blue",
+}
+clean_scenario_names = {
+    "navrep3dalt": "simple",
+    "navrep3dcity": "city",
+    "navrep3doffice": "office",
+    "navrep3dasl": "modern",
 }
 
 def smooth(x, weight):
@@ -386,7 +392,7 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
     ax.set_xlim([0, 5])
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
-    ax.set_title("{}".format(scenario))
+    ax.set_title("{}".format(clean_scenario_names[scenario]))
     line, = ax.plot(common_x, mean_, linewidth=1, linestyle=style, color=color)
     color = line.get_c()
     area = ax.fill_between(common_x, min_, max_, color=color, alpha=0.1)
@@ -394,14 +400,18 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
     linegroup.append(area)
     return linegroup, n_seeds
 
-def plot_training_results(logdirs, logfolder=None):
+def plot_training_results(logdirs, envname="navrep3daltenv", logfolder=None):
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 
-    scenario = "navrep3dalt"
-    envname = "navrep3daltenv"
+    if envname == "navrep3daltenv":
+        scenario = "navrep3dalt"
+    elif envname == "navrep3daslenv":
+        scenario = "navrep3dasl"
+    else:
+        raise NotImplementedError
     all_variants = ["R", "SCR", "SC", "Salt", "E2E"]
 
-    fig, ax = plt.subplots(1, 1, num="training results")
+    fig, ax = plt.subplots(1, 1, num=envname + "training results")
 
     linegroups = []
     legends = []
@@ -414,28 +424,33 @@ def plot_training_results(logdirs, logfolder=None):
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
 
-def plot_xtraining_results(logdirs, logfolder=None):
+def plot_xtraining_results(logdirs, envnames=["navrep3dSCenv", "navrep3dSCRenv"], logfolder=None):
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 
-    scenarios = ["navrep3dalt", "navrep3dcity", "navrep3doffice", "navrep3dasl"]
-    envnames = ["navrep3daltenv", "navrep3dSCenv", "navrep3dSCRenv", "navrep3daslenv"]
+    if "navrep3dSCRenv" in envnames:
+        scenarios = ["navrep3dalt", "navrep3dcity", "navrep3doffice", "navrep3dasl"]
+    elif "navrep3dSCenv" in envnames:
+        scenarios = ["navrep3dalt", "navrep3dcity", "navrep3doffice"]
     all_variants = ["R", "SCR", "SC", "Salt", "E2E"]
 
-    fig, axes = plt.subplots(len(envnames), len(scenarios), num="x training results")
+    fig, axes = plt.subplots(len(scenarios), len(envnames), num="_".join(envnames) + "x training results")
+    axes = axes.reshape((len(scenarios), len(envnames)))
 
     linegroups = []
     legends = []
     seeds_count = {}
     for variant in tqdm(all_variants):
         variant_linegroup = []
-        for envname, ax_row in zip(envnames, axes):
-            n_seeds = 0
-            for scenario, ax in zip(scenarios, ax_row):
+        for scenario, ax_row in zip(scenarios, axes):
+            for envname, ax in zip(envnames, ax_row):
+                n_seeds = 0
                 linegroup, n = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
+                ax.set_xlabel("")
                 if linegroup:
                     variant_linegroup.extend(linegroup)
                 n_seeds = max(n_seeds, n)
-            seeds_count[(variant, envname)] = n_seeds
+                seeds_count[(variant, envname)] = n_seeds
+        ax.set_xlabel("Million Training Steps")
         if variant_linegroup:
             linegroups.append(variant_linegroup)
             legends.append(variant)
@@ -491,7 +506,9 @@ def main(logdir="~/navrep3d",
     print(x_axis.value)
     if paper:
         plot_training_results(logdirs)
-        plot_xtraining_results(logdirs)
+        plot_xtraining_results(logdirs, envnames=["navrep3dSCenv"])
+        plot_xtraining_results(logdirs, envnames=["navrep3dSCRenv"])
+        plot_training_results(logdirs, envname="navrep3daslenv")
         plt.show()
         return
     if refresh:

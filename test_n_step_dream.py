@@ -107,7 +107,7 @@ def main(dataset="SCR",
          gpu=False,
          dream_length=48,
          context_length=16,
-         n_examples=5,
+         n_examples=2,
          error=False,
          dataset_info=False,
          offset=0,
@@ -116,6 +116,8 @@ def main(dataset="SCR",
          ):
     sequence_length = dream_length + context_length
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A1"]
+#     worldmodel_types = ["DummyWorldModel"]
     discrete_actions = False
 
     if dataset == "SCR":
@@ -127,6 +129,7 @@ def main(dataset="SCR",
         examples = [34, 51, 23, 42, 79, 5, 120]
         examples = [0, 1500, 3000, 4500, 6000, 1000, 4000] # for length 64
         examples = [0, 3000, 6000, 9000, 12000, 1000, 4000]
+        examples = [3004, 4002] # for ctx 16 drm 48
     elif dataset == "staticasl":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
         examples = [34, 51, 23, 42, 79, 5, 120]
@@ -146,62 +149,67 @@ def main(dataset="SCR",
 
     if error:
         worldmodel_types = worldmodel_types + ["DummyWorldModel", "GreyDummyWorldModel"]
-    worldmodels = []
-    for worldmodel_type in worldmodel_types:
-        if worldmodel_type == "transformer":
-            wm_model_path = "~/navrep3d_W/models/W/transformer_{}".format(dataset)
-            wm_model_path = os.path.expanduser(wm_model_path)
-            BLOCK_SIZE = 32
-            _H = 64
-            _C = 3
-            mconf = GPTConfig(BLOCK_SIZE, _H)
-            mconf.image_channels = _C
-            if discrete_actions:
-                mconf.n_action = 4
-            model = GPT(mconf, gpu=gpu)
-            load_checkpoint(model, wm_model_path, gpu=gpu)
-            worldmodel = model
-        elif worldmodel_type == "RSSM_A1":
-            wm_model_path = "~/navrep3d_W/models/W/RSSM_A1_{}".format(dataset)
-            wm_model_path = os.path.expanduser(wm_model_path)
-            mconf = RSSMWMConf()
-            mconf.image_channels = 3
-            model = RSSMWorldModel(mconf, gpu=gpu)
-            load_checkpoint(model, wm_model_path, gpu=gpu)
-            worldmodel = model
-        elif worldmodel_type == "RSSM_A0":
-            wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
-            wm_model_path = os.path.expanduser(wm_model_path)
-            mconf = RSSMA0WMConf()
-            mconf.image_channels = 3
-            model = RSSMA0WorldModel(mconf, gpu=gpu)
-            load_checkpoint(model, wm_model_path, gpu=gpu)
-            worldmodel = model
-        elif worldmodel_type == "TSSM_V2":
-            wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
-            wm_model_path = os.path.expanduser(wm_model_path)
-            mconf = TSSMWMConf()
-            mconf.image_channels = 3
-            model = TSSMWorldModel(mconf, gpu=gpu)
-            load_checkpoint(model, wm_model_path, gpu=gpu)
-            worldmodel = model
-        elif worldmodel_type == "TransformerL_V0":
-            wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(dataset)
-            wm_model_path = os.path.expanduser(wm_model_path)
-            mconf = TransformerLWMConf()
-            mconf.image_channels = 3
-            if discrete_actions:
-                mconf.n_action = 4
-            model = TransformerLWorldModel(mconf, gpu=gpu)
-            load_checkpoint(model, wm_model_path, gpu=gpu)
-            worldmodel = model
-        elif worldmodel_type == "DummyWorldModel":
-            worldmodel = DummyWorldModel(gpu=gpu)
-        elif worldmodel_type == "GreyDummyWorldModel":
-            worldmodel = GreyDummyWorldModel(gpu=gpu)
-        else:
-            raise NotImplementedError
-        worldmodels.append(worldmodel)
+
+    def load_worldmodels(worldmodel_types):
+        worldmodels = []
+        for worldmodel_type in worldmodel_types:
+            if worldmodel_type == "transformer":
+                wm_model_path = "~/navrep3d_W/models/W/transformer_{}".format(dataset)
+                wm_model_path = os.path.expanduser(wm_model_path)
+                BLOCK_SIZE = 32
+                _H = 64
+                _C = 3
+                mconf = GPTConfig(BLOCK_SIZE, _H)
+                mconf.image_channels = _C
+                if discrete_actions:
+                    mconf.n_action = 4
+                model = GPT(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                worldmodel = model
+            elif worldmodel_type == "RSSM_A1":
+                wm_model_path = "~/navrep3d_W/models/W/RSSM_A1_{}".format(dataset)
+                wm_model_path = os.path.expanduser(wm_model_path)
+                mconf = RSSMWMConf()
+                mconf.image_channels = 3
+                model = RSSMWorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                worldmodel = model
+            elif worldmodel_type == "RSSM_A0":
+                wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
+                wm_model_path = os.path.expanduser(wm_model_path)
+                mconf = RSSMA0WMConf()
+                mconf.image_channels = 3
+                model = RSSMA0WorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                worldmodel = model
+            elif worldmodel_type == "TSSM_V2":
+                wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
+                wm_model_path = os.path.expanduser(wm_model_path)
+                mconf = TSSMWMConf()
+                mconf.image_channels = 3
+                model = TSSMWorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                worldmodel = model
+            elif worldmodel_type == "TransformerL_V0":
+                wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(dataset)
+                wm_model_path = os.path.expanduser(wm_model_path)
+                mconf = TransformerLWMConf()
+                mconf.image_channels = 3
+                if discrete_actions:
+                    mconf.n_action = 4
+                model = TransformerLWorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                worldmodel = model
+            elif worldmodel_type == "DummyWorldModel":
+                worldmodel = DummyWorldModel(gpu=gpu)
+            elif worldmodel_type == "GreyDummyWorldModel":
+                worldmodel = GreyDummyWorldModel(gpu=gpu)
+            else:
+                raise NotImplementedError
+            worldmodels.append(worldmodel)
+        return worldmodels
+
+    worldmodels = load_worldmodels(worldmodel_types)
 
     if gifs:
         # parameters
@@ -255,7 +263,6 @@ def main(dataset="SCR",
 #         plt.show()
         return
 
-    example_sequences = {examples[i]: None for i in range(n_examples)}
     seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
                                    channel_first=False, as_torch_tensors=False, file_limit=None)
 
@@ -298,6 +305,7 @@ def main(dataset="SCR",
         return
 
     print("{} sequences available".format(len(seq_loader)))
+    example_sequences = {examples[i]: None for i in range(n_examples)}
     for idx in example_sequences:
         if idx >= len(seq_loader):
             raise IndexError("{} is out of range".format(idx))
@@ -351,10 +359,11 @@ def main(dataset="SCR",
             axes[n_rows_per_example*n+1+m, -1].yaxis.set_label_position("right")
         for ax in np.array(axes).flatten():
             hide_axes_but_keep_ylabel(ax)
+            plt.subplots_adjust(wspace=0)
     fig.savefig("/tmp/dream_comparison_{}.png".format(offset), dpi=100)
 
     print("Saved figures.")
-#     plt.show()
+    plt.show()
 
 
 if __name__ == "__main__":

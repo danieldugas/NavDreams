@@ -36,7 +36,27 @@ NO_ROTATION = False
 
 # C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip") # noqa
 # C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdencodedenv_2022_01_17__12_55_53_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip") # noqa
-C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip") # noqa
+# C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip") # noqa
+C_MODEL_PATH = os.path.expanduser("~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip") # noqa
+
+def get_variant(logpath):
+    string = logpath.split("V64M64_")[-1]
+    string = string.split(".")[0]
+    string = string.split("_")[0]
+    variants = [
+        "S",
+        "Salt",
+        "SC",
+        "SCR",
+        "R",
+        "SCRK",
+        "K2",
+        "SCRK2",
+    ]
+    if string in variants:
+        return string
+    else:
+        raise ValueError
 
 def noop(*args, **kwargs):
     return TriggerResponse(True, "")
@@ -49,7 +69,8 @@ class NavrepNode(object):
         self.kRobotFrame = "base_footprint"
         self.tf_timeout = rospy.Duration(1.0)
         # V + M  encoder
-        self.encoder = NavRep3DTrainEncoder(BACKEND, ENCODING, gpu=GPU)
+        variant = get_variant(os.path.basename(C_MODEL_PATH))
+        self.encoder = NavRep3DTrainEncoder(BACKEND, ENCODING, variant=variant, gpu=GPU)
         # C model
         self.model = PPO.load(C_MODEL_PATH)
         # tools

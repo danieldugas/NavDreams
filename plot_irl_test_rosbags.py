@@ -37,12 +37,7 @@ def orange(u=np.random.rand()):
     u = np.clip(u, 0., 1.)
     return cmap(u)
 
-
-def main(clean=False):
-#     bag_path = os.path.expanduser("~/irl_tests/manip_corner_julian_jenjen.bag")
-#     bag_path = os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")
-    bag_path = os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-16-09-51_30min_K2.bag")
-
+def bag_to_trajectories(bag_path):
     cmdvel_topics = ["/cmd_vel"]
     joy_topics = ["/joy"]
     odom_topics = ["/pepper_robot/odom"]
@@ -157,6 +152,43 @@ def main(clean=False):
 
         if topic in map_topics:
             mapmsg = msg
+    return (
+        trajectories,
+        goals,
+        goals_failed,
+        goals_reached,
+        goals_close,
+        are_stopped,
+        mapmsg,
+    )
+
+def main(clean=False):
+#     bag_paths = [os.path.expanduser("~/irl_tests/manip_corner_julian_jenjen.bag")]
+#     bag_paths = [os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")]
+    # day 2
+    bag_paths = [os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-16-09-51_30min_K2.bag"),
+                 os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-15-53-15.bag")]
+
+    trajectories = []
+    goals = []
+    goals_failed = []
+    goals_reached = []
+    goals_close = []
+    are_stopped = []
+    mapmsg = None
+
+    bag_names = ""
+
+    for bag_path in bag_paths:
+        tr, go, gf, gr, gc, st, mp = bag_to_trajectories(bag_path)
+        trajectories.extend(tr)
+        goals.extend(go)
+        goals_failed.extend(gf)
+        goals_reached.extend(gr)
+        goals_close.extend(gc)
+        are_stopped.extend(st)
+        mapmsg = mp if mp is not None else mapmsg
+        bag_names = bag_names + os.path.basename(bag_path) + " "
 
     fig, ax = plt.subplots(1, 1)
 
@@ -175,7 +207,7 @@ def main(clean=False):
     linegroups = []
     for n, (t, g, s, f, gc, st) in enumerate(zip(
             trajectories, goals, goals_reached, goals_failed, goals_close, are_stopped)):
-        line_color = blue(len(t)/1000.) if s != 0 or gc != 0 else orange(len(t)/1000.)
+        line_color = blue(len(t)/1000.) if s != 0 else orange(len(t)/1000.)
         line_style = None
         if st:
             line_color = "grey"
@@ -221,7 +253,7 @@ def main(clean=False):
     make_legend_pickable(L, linegroups)
 
     goals_failed = []
-    ax.set_title(bag_name)
+    ax.set_title(bag_names)
     ax.axis("equal")
     ax.set_adjustable('box')
 

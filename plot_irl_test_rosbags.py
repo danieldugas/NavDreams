@@ -40,7 +40,8 @@ def orange(u=np.random.rand()):
 
 def main(clean=False):
 #     bag_path = os.path.expanduser("~/irl_tests/manip_corner_julian_jenjen.bag")
-    bag_path = os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")
+#     bag_path = os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")
+    bag_path = os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-16-09-51_30min_K2.bag")
 
     cmdvel_topics = ["/cmd_vel"]
     joy_topics = ["/joy"]
@@ -196,11 +197,12 @@ def main(clean=False):
                 i_frame += 1
         else:
             if line_color != "grey":
-                line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder, linestyle=line_style)
+                line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder,
+                                linestyle=line_style, alpha=0.8)
                 if f != 0:
-                    ax.scatter(t[f, 0], t[f, 1], color="red", marker="x")
+                    ax.scatter(t[f, 0], t[f, 1], color="red", marker="x", zorder=3)
                 if g is not None:
-                    cr = plt.Circle((g[0], g[1]), 0.3, color="red", zorder=2)
+                    cr = plt.Circle((g[0], g[1]), 0.3, color="mediumorchid", zorder=2, fill=False)
                     ax.add_artist(cr)
                 linegroups.append([line, cr])
                 legends.append(str(n))

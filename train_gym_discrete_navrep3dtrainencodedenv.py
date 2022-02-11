@@ -41,6 +41,10 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
     elif build_name == "unity3":
         ENV_NAME = "navrep3dunity3encodedenv_"
         build_names = ["staticasl", "staticasl", "cathedral", "gallery"]
+    elif build_name == "cathedral":
+        ENV_NAME = "navrep3dcathedralencodedenv_"
+    elif build_name == "gallery":
+        ENV_NAME = "navrep3dgalleryencodedenv_"
     elif build_name == "kozehd":
         ENV_NAME = "navrep3dkozehdrsencodedenv_"
     else:

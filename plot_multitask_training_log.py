@@ -19,6 +19,18 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
         for log in logs:
             if not log.endswith(".csv"):
                 continue
+            # name
+            name = log
+            if paper:
+                if "baseline" in log:
+                    name = "Task-specific features"
+                elif "E2E" in log:
+                    name = "End-to-end features"
+                elif "N3D" in log:
+                    name = "NavRep3D features"
+                else:
+                    raise NotImplementedError
+            # title and axes
             if "segmenter" in log:
                 ax = ax1
                 ax.set_title("Segmentation Error")
@@ -29,6 +41,7 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
                 ax.set_ylabel("Depth Mean Square Proportional Error")
             else:
                 raise NotImplementedError
+            # read data
             path = os.path.join(logdir, log)
             data = pd.read_csv(path)
             x = data["step"].values
@@ -44,11 +57,11 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
                 if "baseline" in log:
                     style = "dashed"
                     color = 'k'
-            line, = ax.plot(x, y, linestyle=style, color=color, label=log)
+            line, = ax.plot(x, y, linestyle=style, color=color, label=name)
             ax.axhline(np.min(y), alpha=0.3, linewidth=1, color=line.get_color())
             ax.set_xlabel("training steps")
             lines.append(line)
-            legend.append(log)
+            legend.append(name)
         ax1.axhline(0, linewidth=1, color='k')
         ax2.axhline(0, linewidth=1, color='k')
         if paper:

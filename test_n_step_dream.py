@@ -176,7 +176,7 @@ def main(dataset="SCR",
                 model = RSSMWorldModel(mconf, gpu=gpu)
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
-            elif worldmodel_type == "RSSM_A0":
+            elif worldmodel_type == "RSSM_A0" or worldmodel_type == "RSSM_A0_explicit":
                 wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
                 mconf = RSSMA0WMConf()
@@ -184,15 +184,8 @@ def main(dataset="SCR",
                 model = RSSMA0WorldModel(mconf, gpu=gpu)
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
-            elif worldmodel_type == "RSSM_A0_explicit":
-                wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
-                wm_model_path = os.path.expanduser(wm_model_path)
-                mconf = RSSMA0WMConf()
-                mconf.image_channels = 3
-                model = RSSMA0WorldModel(mconf, gpu=gpu)
-                load_checkpoint(model, wm_model_path, gpu=gpu)
-                worldmodel = model
-                worldmodel.fill_dream_sequence = worldmodel.fill_dream_sequence_through_images
+                if worldmodel_type == "RSSM_A0_explicit":
+                    worldmodel.fill_dream_sequence = worldmodel.fill_dream_sequence_through_images
             elif worldmodel_type == "TSSM_V2":
                 wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)

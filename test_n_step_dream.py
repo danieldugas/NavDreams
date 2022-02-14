@@ -117,6 +117,7 @@ def main(dataset="SCR",
          ):
     sequence_length = dream_length + context_length
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
+#     worldmodel_types = ["RSSM_A0_explicit", "RSSM_A0"]
     worldmodel_types = ["TransformerL_V0", "RSSM_A0"]
 #     worldmodel_types = ["DummyWorldModel"]
     discrete_actions = False
@@ -183,6 +184,15 @@ def main(dataset="SCR",
                 model = RSSMA0WorldModel(mconf, gpu=gpu)
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
+            elif worldmodel_type == "RSSM_A0_explicit":
+                wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
+                wm_model_path = os.path.expanduser(wm_model_path)
+                mconf = RSSMA0WMConf()
+                mconf.image_channels = 3
+                model = RSSMA0WorldModel(mconf, gpu=gpu)
+                load_checkpoint(model, wm_model_path, gpu=gpu)
+                worldmodel = model
+                worldmodel.fill_dream_sequence = worldmodel.fill_dream_sequence_through_images
             elif worldmodel_type == "TSSM_V2":
                 wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
@@ -361,7 +371,7 @@ def main(dataset="SCR",
             axes[n_rows_per_example*n+1+m, -1].yaxis.set_label_position("right")
         for ax in np.array(axes).flatten():
             hide_axes_but_keep_ylabel(ax)
-            plt.subplots_adjust(wspace=0)
+            plt.subplots_adjust(wspace=0.1)
     fig.savefig("/tmp/dream_comparison_{}.png".format(offset), dpi=100)
 
     print("Saved figures.")

@@ -128,7 +128,7 @@ class RSSMA0WorldModel(WorldModel):
     """ A prediction model based on DreamerV2's RSSM architecture """
 
     def __init__(self, conf, gpu=True):
-        super().__init__(gpu)
+        super(RSSMA0WorldModel, self).__init__(gpu)
         self.block_size = conf.batch_length
         self.deter_dim = conf.deter_dim
         self.stoch_dim = conf.stoch_dim
@@ -337,10 +337,10 @@ class RSSMA0WorldModel(WorldModel):
                               do_open_loop=do_open_loop)
         return out_state # (h, z)
 
-    def get_next(*args, **kwargs):
+    def get_next(self, *args, **kwargs):
         print("Warning!: RSSM get_next should not be used in a sequential fashion."
               + "Use fill_dream_sequence instead.")
-        return super().get_next(*args, **kwargs)
+        return super(RSSMA0WorldModel, self).get_next(*args, **kwargs)
 
     def generate_dream_sequence(self, in_state, actions):
         _b = 1  # batch size
@@ -392,6 +392,9 @@ class RSSMA0WorldModel(WorldModel):
             dream_sequence.append(dict(obs=image, state=vecobs, action=action))
 
         return dream_sequence
+
+    def fill_dream_sequence_through_images(self, *args, **kwargs):
+        return super(RSSMA0WorldModel, self).fill_dream_sequence(*args, **kwargs)
 
     def fill_dream_sequence(self, real_sequence, context_length):
         """ overrides the fill_dream_sequence method of the base class,

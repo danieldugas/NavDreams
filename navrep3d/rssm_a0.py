@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import torch
 from pydreamer.models.dreamer import RSSMCore, MultiDecoder, MultiEncoder, init_weights_tf2, D, logavgexp
 from navrep3d.worldmodel import WorldModel
@@ -293,3 +294,114 @@ class RSSMA0WorldModel(WorldModel):
 
         img_rec = np.moveaxis(img_rec_t.detach().cpu().numpy(), 1, -1)
         return img_rec
+
+    def sequence_to_end_state(self, real_sequence):
+        _b = 1  # batch size
+        img = np.array([d["obs"] for d in real_sequence])  # t, W, H, CH
+        img = np.moveaxis(img, -1, 1)
+        img = img.reshape((_b, *img.shape))
+        img_t = torch.tensor(img, dtype=torch.float)
+        img_t = self._to_correct_device(img_t)
+        vecobs = np.array([d["state"] for d in real_sequence])  # t, 2
+        vecobs = vecobs.reshape((_b, *vecobs.shape))
+        vecobs_t = torch.tensor(vecobs, dtype=torch.float)
+        vecobs_t = self._to_correct_device(vecobs_t)
+        action = np.array([d["action"] for d in real_sequence])  # t, 3
+        action = action.reshape((_b, *action.shape))
+        action_t = torch.tensor(action, dtype=torch.float)
+        action_t = self._to_correct_device(action_t)
+        dones = np.zeros((_b, len(real_sequence)))
+        dones_t = torch.tensor(dones, dtype=torch.float)
+        dones_t = self._to_correct_device(dones_t)
+        b, t, CH, W, H = img_t.size()
+        _, _, A = action_t.size()
+        _, _, S = vecobs_t.size()
+        # ------------------------------------------
+        iwae_samples = 1 # always 1 for training
+        do_open_loop = False
+        obs = {}
+        obs["action"] = action_t.moveaxis(1, 0)
+        obs["terminal"] = dones_t.moveaxis(1, 0)
+        obs["reset"] = torch.roll(obs["terminal"], 1, 0) > 0
+        obs["image"] = img_t.moveaxis(1, 0)
+        obs["vecobs"] = vecobs_t.moveaxis(1, 0)
+        obs["reward"] = obs["terminal"] * 0.0
+        in_state = self.core.init_state(b * iwae_samples)
+        embed = self.encoder(obs)
+        _, _, _, _, _, out_state = \
+            self.core.forward(embed,
+                              obs['action'],
+                              obs['reset'],
+                              in_state,
+                              iwae_samples=iwae_samples,
+                              do_open_loop=do_open_loop)
+        return out_state # (h, z)
+
+    def get_next(*args, **kwargs):
+        print("Warning!: RSSM get_next should not be used in a sequential fashion."
+              + "Use fill_dream_sequence instead.")
+        return super().get_next(*args, **kwargs)
+
+    def generate_dream_sequence(self, in_state, actions):
+        _b = 1  # batch size
+        t, A = np.array(actions).shape
+        assert A == 3
+        action = actions
+        action = action.reshape((_b, *action.shape))
+        action_t = torch.tensor(action, dtype=torch.float)
+        action_t = self._to_correct_device(action_t)
+        dones = np.zeros((_b, t))
+        dones_t = torch.tensor(dones, dtype=torch.float)
+        dones_t = self._to_correct_device(dones_t)
+        _, _, A = action_t.size()
+        # ------------------------------------------
+        iwae_samples = 1 # always 1 for training
+        do_open_loop = True # always closed loop for training. open loop for eval
+        obs = {}
+        obs["action"] = action_t.moveaxis(1, 0)
+        obs["terminal"] = dones_t.moveaxis(1, 0)
+        obs["reset"] = torch.roll(obs["terminal"], 1, 0) > 0
+        obs["reward"] = obs["terminal"] * 0.0
+        # RSSM
+        prior, post, post_samples, features, states, out_state = \
+            self.core.forward(None,
+                              obs['action'],
+                              obs['reset'],
+                              in_state,
+                              iwae_samples=iwae_samples,
+                              do_open_loop=do_open_loop)
+        # Decoder
+#         assert conf.image_decoder == 'cnn'
+        image_decoded = self.decoder.image.forward(features)
+        image_decoded = image_decoded.mean(dim=2)
+        vecobs_decoded = self.decoder.vecobs.forward(features)
+        vecobs_decoded = vecobs_decoded.mean.mean(dim=2)
+
+        # torch to numpy
+        img_pred_t = image_decoded.moveaxis(1, 0)
+        vecobs_pred_t = vecobs_decoded.moveaxis(1, 0)
+        img_pred = img_pred_t.detach().cpu().numpy()
+        img_pred = img_pred[0, :]  # only batch
+        img_pred = np.moveaxis(img_pred, 1, -1)
+        img_pred = np.clip(img_pred, 0., 1.)
+        vecobs_pred = vecobs_pred_t.detach().cpu().numpy()
+        vecobs_pred = vecobs_pred[0, :]  # only batch
+
+        dream_sequence = []
+        for image, vecobs, action in zip(img_pred, vecobs_pred, list(actions[1:]) + [actions[-1]]):
+            dream_sequence.append(dict(obs=image, state=vecobs, action=action))
+
+        return dream_sequence
+
+    def fill_dream_sequence(self, real_sequence, context_length):
+        """ overrides the fill_dream_sequence method of the base class,
+        to predict from last state instead of from last image pred """
+        sequence_length = len(real_sequence)
+        context_sequence = copy.deepcopy(real_sequence[:context_length])
+        context_rnn_state = self.sequence_to_end_state(context_sequence)
+        real_actions = [d['action'] for d in real_sequence]
+        next_actions = real_actions[context_length-1:sequence_length-1]
+        dream_sequence = self.generate_dream_sequence(context_rnn_state, np.array(next_actions))
+        full_sequence = context_sequence + dream_sequence
+        assert len(full_sequence) == sequence_length
+        return full_sequence

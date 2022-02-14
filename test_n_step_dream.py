@@ -11,7 +11,7 @@ from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
 from navrep3d.rssm_a0 import RSSMA0WMConf, RSSMA0WorldModel
 from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
-from navrep3d.worldmodel import fill_dream_sequence, DummyWorldModel, GreyDummyWorldModel
+from navrep3d.worldmodel import DummyWorldModel, GreyDummyWorldModel
 from navrep3d.auto_debug import enable_auto_debug
 from plot_gym_training_progress import make_legend_pickable
 
@@ -57,7 +57,7 @@ def worldmodel_n_step_error(worldmodel, test_dataset_folder,
             continue
         x, a, y, x_rs, y_rs, dones = seq_loader[idx]
         real_sequence = [dict(obs=x[j], state=x_rs[j], action=a[j]) for j in range(sequence_length)]
-        dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
+        dream_sequence = worldmodel.fill_dream_sequence(real_sequence, context_length)
         obs_error[i], vecobs_error[i] = single_sequence_n_step_error(
             real_sequence, dream_sequence, dones, context_length)
         if i % 10 == 0:
@@ -111,12 +111,13 @@ def main(dataset="SCR",
          error=False,
          dataset_info=False,
          offset=0,
+         skip=1,
          samples=1000,
          gifs=False,
          ):
     sequence_length = dream_length + context_length
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
-    worldmodel_types = ["TransformerL_V0", "RSSM_A1"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A0"]
 #     worldmodel_types = ["DummyWorldModel"]
     discrete_actions = False
 
@@ -234,7 +235,7 @@ def main(dataset="SCR",
             dream_sequences = []
             names = []
             for worldmodel in worldmodels:
-                dream_sequence = fill_dream_sequence(worldmodel, real_sequence, context_length)
+                dream_sequence = worldmodel.fill_dream_sequence(real_sequence, context_length)
                 dream_sequences.append(dream_sequence)
                 names.append(type(worldmodel).__name__)
                 sequence_to_gif(dream_sequence, type(worldmodel).__name__, real_sequence, idx)
@@ -321,7 +322,7 @@ def main(dataset="SCR",
         real_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i]) for i in range(sequence_length)]
         dream_sequences = []
         for worldmodel in worldmodels:
-            dream_sequences.append(fill_dream_sequence(worldmodel, real_sequence, context_length))
+            dream_sequences.append(worldmodel.fill_dream_sequence(real_sequence, context_length))
         example_filled_sequences.append((real_sequence, dream_sequences, dones))
 
     # error plot
@@ -342,15 +343,16 @@ def main(dataset="SCR",
 
     # images plot
     n_rows_per_example = (len(worldmodels) + 1)
-    fig, axes = plt.subplots(n_rows_per_example * n_examples, sequence_length, num="dream",
+    n_cols = sequence_length // (1 + skip)
+    fig, axes = plt.subplots(n_rows_per_example * n_examples, n_cols, num="dream",
                              figsize=(22, 14), dpi=100)
-    axes = np.array(axes).reshape((-1, sequence_length))
+    axes = np.array(axes).reshape((-1, n_cols))
     for n, (real_sequence, dream_sequences, dones) in enumerate(example_filled_sequences):
         for i in range(sequence_length):
-            axes[n_rows_per_example*n, i].imshow(real_sequence[i]['obs'])
+            axes[n_rows_per_example*n, i // (1 + skip)].imshow(real_sequence[i]['obs'])
             if i >= context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
-                    axes[n_rows_per_example*n+1+m, i].imshow(dream_sequence[i]['obs'])
+                    axes[n_rows_per_example*n+1+m, i // (1 + skip)].imshow(dream_sequence[i]['obs'])
         axes[n_rows_per_example*n, -1].set_ylabel("GT", rotation=0, labelpad=50)
         axes[n_rows_per_example*n, -1].yaxis.set_label_position("right")
         for m in range(len(dream_sequences)):

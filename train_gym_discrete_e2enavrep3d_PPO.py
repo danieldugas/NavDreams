@@ -38,6 +38,10 @@ def main(dry_run=False, n=None, build_name=None):
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "staticasl"]
     elif build_name == "staticasl":
         ENV_NAME = "navrep3daslfixedenv_"
+    elif build_name == "cathedral":
+        ENV_NAME = "navrep3dcathedralenv_"
+    elif build_name == "gallery":
+        ENV_NAME = "navrep3dgalleryenv_"
     elif build_name == "kozehd":
         ENV_NAME = "navrep3dkozehdrsencodedenv_"
     else:

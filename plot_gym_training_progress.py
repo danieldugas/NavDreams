@@ -517,14 +517,14 @@ def main(logdir="~/navrep3d",
             plt.ion()
             plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
                                    no_dots=no_dots,
-                                   scenario=scenario,
-                                   finetune=finetune, smoothness=smoothness, environment=env)
+                                   finetune=finetune, smoothness=smoothness,
+                                   environment=env, scenario=scenario)
             plt.pause(60)
     else:
         plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
                                no_dots=no_dots,
-                               scenario=scenario,
-                               finetune=finetune, smoothness=smoothness, environment=env)
+                               finetune=finetune, smoothness=smoothness,
+                               environment=env, scenario=scenario)
         plt.show()
 
 

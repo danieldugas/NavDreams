@@ -101,7 +101,11 @@ def get_visible(lines):
     else:
         return lines.get_visible()
 
-def parse_logfiles(navrep_dirs, logfolder=None):
+def parse_logfiles(navrep_dirs, logfolder=None, exclude=None, include=None):
+    """
+    navrep_dirs : ["~/navrep3d", "~/navrep3d_W"]
+    logfolder : "logs/gym"
+    """
     logfolder = "logs/gym" if logfolder is None else logfolder
     best_navrep_names = [os.path.basename(path) for path in navrep_dirs]
 
@@ -113,6 +117,10 @@ def parse_logfiles(navrep_dirs, logfolder=None):
             logfiles = sorted([file for file in os.listdir(logdir) if ".csv" in file])
         except FileNotFoundError:
             logfiles = []
+        if exclude is not None:
+            logfiles = [file for file in logfiles if exclude not in file]
+        if include is not None:
+            logfiles = [file for file in logfiles if include in file]
         logpaths = [os.path.join(logdir, logfile) for logfile in logfiles]
         logparents = [name for _ in logfiles]
         all_logpaths.extend(logpaths)
@@ -121,12 +129,13 @@ def parse_logfiles(navrep_dirs, logfolder=None):
 
 def plot_training_progress(logdirs, scenario=None, x_axis="total_steps", y_axis="reward",
                            no_dots=False,
+                           exclude=None, include=None,
                            environment=None,
                            finetune=False, smoothness=None):
     if smoothness is None:
         smoothness = 0.999
     logfolder = "logs/finetune" if finetune else None
-    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
+    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder, exclude=exclude, include=include)
 
     # get set of all scenarios in all logpaths
     all_scenarios = []
@@ -502,6 +511,8 @@ def main(logdir="~/navrep3d",
          paper : bool = False,
          env : str = None,
          scenario : str = None,
+         exclude : str = None,
+         include : str = None,
          ):
     logdirs = [os.path.expanduser(logdir),]
     print(x_axis.value)
@@ -517,12 +528,14 @@ def main(logdir="~/navrep3d",
             plt.ion()
             plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
                                    no_dots=no_dots,
+                                   exclude=exclude, include=include,
                                    finetune=finetune, smoothness=smoothness,
                                    environment=env, scenario=scenario)
             plt.pause(60)
     else:
         plot_training_progress(logdirs, x_axis=x_axis.value, y_axis=y_axis.value,
                                no_dots=no_dots,
+                               exclude=exclude, include=include,
                                finetune=finetune, smoothness=smoothness,
                                environment=env, scenario=scenario)
         plt.show()

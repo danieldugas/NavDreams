@@ -13,6 +13,7 @@ from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
 from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
 from navrep3d.worldmodel import DummyWorldModel, GreyDummyWorldModel
 from navrep3d.auto_debug import enable_auto_debug
+from paper_sequences import load_paper_sequences
 from plot_gym_training_progress import make_legend_pickable
 
 def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_length):
@@ -114,6 +115,7 @@ def main(dataset="SCR",
          skip=1,
          samples=1000,
          gifs=False,
+         paper_sequences=False,
          ):
     sequence_length = dream_length + context_length
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
@@ -132,6 +134,15 @@ def main(dataset="SCR",
         examples = [0, 1500, 3000, 4500, 6000, 1000, 4000] # for length 64
         examples = [0, 3000, 6000, 9000, 12000, 1000, 4000]
         examples = [3004, 4002] # for ctx 16 drm 48
+        examples = [
+            3, 35,
+            61, # city 39
+            50, 53, 70, 87, 91, 92, # asl 40
+            51, # alt
+        ]
+        examples = np.random.permutation(examples)
+        examples = [3, 92]
+        print("examples:", examples)
     elif dataset == "staticasl":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
         examples = [34, 51, 23, 42, 79, 5, 120]
@@ -153,6 +164,7 @@ def main(dataset="SCR",
         worldmodel_types = worldmodel_types + ["DummyWorldModel", "GreyDummyWorldModel"]
 
     def load_worldmodels(worldmodel_types):
+        print("Loading worldmodels...")
         worldmodels = []
         for worldmodel_type in worldmodel_types:
             if worldmodel_type == "transformer":
@@ -211,6 +223,7 @@ def main(dataset="SCR",
             else:
                 raise NotImplementedError
             worldmodels.append(worldmodel)
+        print("Done.")
         return worldmodels
 
     worldmodels = load_worldmodels(worldmodel_types)
@@ -267,8 +280,22 @@ def main(dataset="SCR",
 #         plt.show()
         return
 
-    seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
-                                   channel_first=False, as_torch_tensors=False, file_limit=None)
+    if paper_sequences:
+        example_sequences = load_paper_sequences(examples, n_examples, dataset_dir, sequence_length)
+    else:
+        # load example sequences
+        seq_loader = WorldModelDataset(dataset_dir, sequence_length, lidar_mode="images",
+                                       channel_first=False, as_torch_tensors=False, file_limit=None)
+
+        print("{} sequences available".format(len(seq_loader)))
+        example_sequences = {examples[i]: None for i in range(n_examples)}
+        for idx in example_sequences:
+            if idx >= len(seq_loader):
+                raise IndexError("{} is out of range".format(idx))
+            (x, a, y, x_rs, y_rs, dones) = seq_loader[idx]
+            example_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i], done=dones[i])
+                                for i in range(sequence_length)]
+            example_sequences[idx] = example_sequence
 
     # used to better understand the dataset: average length of a sequence (until done),
     # average error of a grey image
@@ -308,25 +335,19 @@ def main(dataset="SCR",
         raise ValueError("No error: raising to allow inspection")
         return
 
-    print("{} sequences available".format(len(seq_loader)))
-    example_sequences = {examples[i]: None for i in range(n_examples)}
-    for idx in example_sequences:
-        if idx >= len(seq_loader):
-            raise IndexError("{} is out of range".format(idx))
-        (x, a, y, x_rs, y_rs, dones) = seq_loader[idx]
-        example_sequences[idx] = (x, a, y, x_rs, y_rs, dones)
-
     # fill dream sequences from world model
     example_filled_sequences = []
     for n, idx in enumerate(tqdm(example_sequences)):
         if example_sequences[idx] is None:
             continue
-        x, a, y, x_rs, y_rs, dones = example_sequences[idx]
-        real_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i]) for i in range(sequence_length)]
+        real_sequence = example_sequences[idx]
+        dones = [step["done"] for step in real_sequence]
         dream_sequences = []
         for worldmodel in worldmodels:
             dream_sequences.append(worldmodel.fill_dream_sequence(real_sequence, context_length))
         example_filled_sequences.append((real_sequence, dream_sequences, dones))
+
+    name = "-".join([str(n) for n in example_sequences])
 
     # error plot
     fig2, axes2 = plt.subplots(n_examples, 2, num="n-step err")
@@ -342,17 +363,19 @@ def main(dataset="SCR",
             linegroups.append([line1, line2])
         L = fig2.legend([lines[0] for lines in linegroups], legends)
         make_legend_pickable(L, linegroups)
-    fig2.savefig("/tmp/n_step_error_for_dream_comparison_{}.png".format(offset))
+    fig2.savefig("/tmp/n_step_error_for_dream_comparison_{}.png".format(name))
 
     # images plot
     n_rows_per_example = (len(worldmodels) + 1)
     n_cols = sequence_length // (1 + skip)
     fig, axes = plt.subplots(n_rows_per_example * n_examples, n_cols, num="dream",
-                             figsize=(22, 14), dpi=100)
+                             figsize=(22, 3 * n_examples), dpi=100)
     axes = np.array(axes).reshape((-1, n_cols))
     for n, (real_sequence, dream_sequences, dones) in enumerate(example_filled_sequences):
         for i in range(sequence_length):
             axes[n_rows_per_example*n, i // (1 + skip)].imshow(real_sequence[i]['obs'])
+            if n == 0:
+                axes[n_rows_per_example*n, i // (1 + skip)].set_title(i)
             if i >= context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
                     axes[n_rows_per_example*n+1+m, i // (1 + skip)].imshow(dream_sequence[i]['obs'])
@@ -365,7 +388,7 @@ def main(dataset="SCR",
         for ax in np.array(axes).flatten():
             hide_axes_but_keep_ylabel(ax)
             plt.subplots_adjust(wspace=0.1)
-    fig.savefig("/tmp/dream_comparison_{}.png".format(offset), dpi=100)
+    fig.savefig("/tmp/dream_comparison_{}.png".format(name), dpi=100)
 
     print("Saved figures.")
     plt.show()

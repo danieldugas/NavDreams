@@ -140,6 +140,46 @@ def main(
     fig, axes = plt.subplots(2, 1, num="xtest")
 
     # xtest in gallery
+    N = 10
+    bar_lookups = [
+        ("alternate", "N3D", any_, "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
+        ("staticasl", "N3D", any_, "medium", "navrep3daslfixedenv", N, "SCR", "GPT", any_),
+        ("kozehd", "N3D", any_, "easiest", "navrep3dkozehdrsenv", N, "K2", "GPT", any_),
+        ("kozehd", "N3D", any_, "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", any_),
+        ("alternate", "DREAMER", any_, "hardest", "navrep3daltenv", N, any_, "RSSM", any_),
+        ("staticasl", "DREAMER", any_, "medium", "navrep3daslfixedenv", N, any_, "RSSM", any_),
+        ("kozehd", "DREAMER", any_, "easiest", "navrep3dkozehdrsenv", N, any_, "RSSM", any_),
+        ("kozehd", "DREAMER", any_, "easy", "navrep3dkozehdrsenv", N, any_, "RSSM", any_),
+    ]
+    values = []
+    crashes = []
+    crashesother = []
+    timeouts = []
+    labels = []
+    for lookup in bar_lookups:
+        matches = find_matches_in_data(lookup, data, alert_if_not_found=True)
+        assert len(matches) == 1
+        arrays = matches[0]
+        # values
+        successes = arrays["successes"]
+        difficulties = arrays["difficulties"]
+        causes = arrays["causes"]
+        lengths = arrays["lengths"]
+        # if you recompute timeouts, need to overwrite other causes
+        crashes.append(np.mean(causes == "Collision"))
+        crashesother.append(np.mean(causes == "Collision from other agent"))
+        values.append(np.mean(successes))
+        # label
+        build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
+        labels.append(str((mtype, trainenv)))
+    ax = axes[0]
+    ax.bar(labels, values)
+    ax.bar(labels, crashes, bottom=values)
+    ax.bar(labels, crashesother, bottom=np.array(values)+np.array(crashes))
+
+    plt.show()
+
+    # xtest in gallery
     N = 100
     bar_lookups = [
         ("gallery", "N3D", any_, "easy", "navrep3daltenv", N, "SCR", "GPT", any_),

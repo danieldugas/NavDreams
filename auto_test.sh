@@ -66,98 +66,98 @@ source ~/cbc3env/bin/activate
 cd ~/Code/cbsim/navrep3d
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
-  --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+  --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daslfixedencodedenv_2021_12_29__17_17_16_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
-  --n-episodes 100 --build-name "staticasl" --difficulty-mode "medium" --render False
+  --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
-  --n-episodes 100 --build-name "kozehd" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
-  --n-episodes 100 --build-name "kozehd" --difficulty-mode "medium" --render False
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easy" --render False
 cd ~/Code/pydreamer
-python test.py --run-id "f3f47a18b9334a4baa97c728143a00c6" --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
-python test.py --run-id "a1ec5269279f46f79af2884526590592" --n-episodes 100 --build-name "staticasl" --difficulty-mode "medium" --render False
-python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes 100 --build-name "kozehd" --difficulty-mode "easiest" --render False
-python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes 100 --build-name "kozehd" --difficulty-mode "medium" --render False
+python test.py --run-id "f3f47a18b9334a4baa97c728143a00c6" --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+python test.py --run-id "a1ec5269279f46f79af2884526590592" --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False
+python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes $1 --build-name "kozehd" --difficulty-mode "easiest" --render False
+python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes $1 --build-name "kozehd" --difficulty-mode "easy" --render False
 cd ~/Code/cbsim/navrep3d
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltenv_2021_11_15__16_16_40_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+  --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daslfixedencodedenv_2022_01_01__13_09_23_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
-  --n-episodes 100 --build-name "staticasl" --difficulty-mode "medium" --render False
+  --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
-  --n-episodes 100 --build-name "kozehd" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
-  --n-episodes 100 --build-name "kozehd" --difficulty-mode "medium" --render False
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easy" --render False
 # 2)
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "gallery" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCencodedenv_2021_12_10__19_33_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "gallery" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "gallery" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltenv_2021_11_15__16_16_40_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "gallery" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCenv_2021_12_16__01_55_07_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "gallery" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_05__13_26_46_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "gallery" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
 # cathedral
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCencodedenv_2021_12_10__19_33_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltenv_2021_11_15__16_16_40_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCenv_2021_12_16__01_55_07_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_05__13_26_46_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easy" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
 # kozehd
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCencodedenv_2021_12_10__19_33_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltenv_2021_11_15__16_16_40_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCenv_2021_12_16__01_55_07_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easiest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_05__13_26_46_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "cathedral" --difficulty-mode "easiest" --render False
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easiest" --render False
 # 1)
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+  --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
-  --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+  --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
 
 # DREAMERV2
 #         run_id = "f3f47a18b9334a4baa97c728143a00c6" # "./alternate.x86_64"
@@ -167,8 +167,8 @@ python test_any.py --model-path \
 # ------------------------------------------------------------------------
 
 cd ~/Code/pydreamer
-python test.py --run-id "f3f47a18b9334a4baa97c728143a00c6" --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
-# python test.py --run-id "0657e4d7a0f14c6ea301017f6774402b" --n-episodes 100 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
-# python test.py --run-id "a1ec5269279f46f79af2884526590592" --n-episodes 100 --build-name "staticasl" --difficulty-mode "hardest" --render False
-# python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes 100 --build-name "kozehd" --difficulty-mode "hardest" --render False
+python test.py --run-id "f3f47a18b9334a4baa97c728143a00c6" --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+# python test.py --run-id "0657e4d7a0f14c6ea301017f6774402b" --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+# python test.py --run-id "a1ec5269279f46f79af2884526590592" --n-episodes $1 --build-name "staticasl" --difficulty-mode "hardest" --render False
+# python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes $1 --build-name "kozehd" --difficulty-mode "hardest" --render False
 

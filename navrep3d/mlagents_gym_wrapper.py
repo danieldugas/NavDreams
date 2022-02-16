@@ -3,6 +3,7 @@ import gym
 import time
 from pandas import DataFrame
 import numpy as np
+from crowd_sim.envs.utils.info import ReachGoal, Collision, CollisionOtherAgent
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.base_env import ActionTuple
@@ -231,6 +232,17 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
                 self.current_scenario, # hack: num_walls is used to plot difficulty but for this env is fixed
                 time.time(),
             ]
+            info["event"] = None
+            if np.allclose(reward, -0.01): # glitched (probably collision)
+                info["event"] = Collision()
+            if np.allclose(reward, -0.02): # toppled
+                info["event"] = Collision()
+            if np.allclose(reward, -0.03): # collision with object
+                info["event"] = Collision()
+            if np.allclose(reward, -0.04): # collision with person
+                info["event"] = CollisionOtherAgent()
+            if goal_is_reached:
+                info["event"] = ReachGoal()
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:
             print("{} {}".format(self.total_steps, self.total_episodes), end="\r", flush=True)

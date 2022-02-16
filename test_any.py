@@ -52,12 +52,16 @@ def main(build_name="kozehd", render=False, difficulty_mode="easiest", model_pat
 
     successes = []
     difficulties = []
+    lengths = []
+    causes = []
     pbar = tqdm(range(n_episodes))
     for i in pbar:
         obs = env.reset()
+        steps = 0
         while True:
             action, _states = model.predict(obs, deterministic=True)
             obs, reward, done, info = env.step(action)
+            steps += 1
             if render:
                 if build_name == "rosbag":
                     env.render(save_to_file=True, action_override=action)
@@ -74,6 +78,8 @@ def main(build_name="kozehd", render=False, difficulty_mode="easiest", model_pat
                     successes.append(0.)
                 difficulty = info["episode_scenario"]
                 difficulties.append(difficulty)
+                lengths.append(steps)
+                causes.append(str(info["event"]))
                 pbar.set_description("Success rate: {:.2f}, avg dif: {:.2f}".format(
                     sum(successes)/len(successes), np.mean(difficulties)))
                 break
@@ -82,7 +88,11 @@ def main(build_name="kozehd", render=False, difficulty_mode="easiest", model_pat
     SAVEPATH = MODELPATH.replace("models/gym", "test").replace(".zip", "") + "_{}_{}_{}.npz".format(
         bname, difficulty_mode, n_episodes)
     make_dir_if_not_exists(os.path.dirname(SAVEPATH))
-    np.savez(SAVEPATH, successes=np.array(successes), difficulties=np.array(difficulties))
+    np.savez(SAVEPATH,
+             successes=np.array(successes),
+             difficulties=np.array(difficulties),
+             lengths=np.array(lengths),
+             causes=np.array(causes))
     print("Saved to {}".format(SAVEPATH))
 
     env.close()

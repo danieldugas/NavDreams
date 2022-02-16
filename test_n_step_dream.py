@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from navrep.tools.wdataset import WorldModelDataset
 from strictfire import StrictFire
 from tqdm import tqdm
+import copy
 
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
@@ -15,6 +16,38 @@ from navrep3d.worldmodel import DummyWorldModel, GreyDummyWorldModel
 from navrep3d.auto_debug import enable_auto_debug
 from paper_sequences import load_paper_sequences
 from plot_gym_training_progress import make_legend_pickable
+
+class TransformerWorldModel(GPT):
+    def fill_dream_sequence(self, real_sequence, context_length):
+        """ Fills dream sequence based on context from real_sequence
+            real_sequence is a list of dicts, one for each step in the sequence.
+            each dict has
+            "obs": numpy image (W, H, CH) [0, 1]
+            "state": numpy (2,) [-inf, inf]
+            "action": numpy (3,) [-inf, inf]
+
+            context_length (int): number of steps of the real sequence to keep in the dream sequence
+
+            output:
+            dream_sequence: same length as the real_sequence, but observations and states are predicted
+                    open-loop by the worldmodel, while actions are taken from the real sequence
+            """
+        T = self.get_block_size()
+        sequence_length = len(real_sequence)
+        if sequence_length > T:
+            print("Warning: sequence_length > block_size ({} > {} in {})!".format(
+                sequence_length, T, type(self).__name__))
+        dream_sequence = copy.deepcopy(real_sequence[:context_length])
+        dream_sequence[-1]['action'] = None
+        real_actions = [d['action'] for d in real_sequence]
+        next_actions = real_actions[context_length-1:sequence_length-1]
+        for action in next_actions:
+            dream_sequence[-1]['action'] = action * 1.
+            img_npred, goal_pred = self.get_next(dream_sequence[-T:])
+            # update sequence
+            dream_sequence.append(dict(obs=img_npred, state=goal_pred, action=None))
+        dream_sequence[-1]['action'] = next_actions[-1] * 1.
+        return dream_sequence
 
 def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_length):
     sequence_length = len(real_sequence)
@@ -119,6 +152,7 @@ def main(dataset="SCR",
          ):
     sequence_length = dream_length + context_length
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
+    worldmodel_types = ["transformer", "RSSM_A0_explicit", "TransformerL_V0", "RSSM_A0", "TSSM_V2"]
 #     worldmodel_types = ["RSSM_A0_explicit", "RSSM_A0"]
     worldmodel_types = ["TransformerL_V0", "RSSM_A0"]
 #     worldmodel_types = ["DummyWorldModel"]
@@ -177,7 +211,7 @@ def main(dataset="SCR",
                 mconf.image_channels = _C
                 if discrete_actions:
                     mconf.n_action = 4
-                model = GPT(mconf, gpu=gpu)
+                model = TransformerWorldModel(mconf, gpu=gpu)
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
             elif worldmodel_type == "RSSM_A1":
@@ -194,10 +228,13 @@ def main(dataset="SCR",
                 mconf = RSSMA0WMConf()
                 mconf.image_channels = 3
                 model = RSSMA0WorldModel(mconf, gpu=gpu)
+                if worldmodel_type == "RSSM_A0_explicit":
+                    class RSSMA0WorldModelExplicit(RSSMA0WorldModel):
+                        noop = 0
+                    model = RSSMA0WorldModelExplicit(mconf, gpu=gpu)
+                    model.fill_dream_sequence = model.fill_dream_sequence_through_images
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
-                if worldmodel_type == "RSSM_A0_explicit":
-                    worldmodel.fill_dream_sequence = worldmodel.fill_dream_sequence_through_images
             elif worldmodel_type == "TSSM_V2":
                 wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)

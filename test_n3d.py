@@ -1,13 +1,15 @@
+import numpy as np
 import os
 from strictfire import StrictFire
 from stable_baselines3 import PPO
 from tqdm import tqdm
+from pyniel.python_tools.path_tools import make_dir_if_not_exists
 
 from navrep3d.navrep3dtrainencodedenv import EncoderObsWrapper
 from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
 from plot_gym_training_progress import get_variant
 
-def main(build_name="kozehd", render=True, difficulty_mode="easiest", model_path=None):
+def main(build_name="kozehd", render=True, difficulty_mode="easiest", model_path=None, n_episodes=1000):
     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3daslencodedenv_2021_12_11__00_23_55_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3daslencodedenv_2021_12_08__10_18_09_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
     MODELPATH = "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 10% # cathedral - easiest 93
@@ -39,13 +41,13 @@ def main(build_name="kozehd", render=True, difficulty_mode="easiest", model_path
     env = EncoderObsWrapper(env, backend=backend, encoding=encoding, variant=variant)
 
     successes = []
-    N = 1000
-    pbar = tqdm(range(N))
+    difficulties = []
+    pbar = tqdm(range(n_episodes))
     for i in pbar:
         obs = env.reset()
         while True:
             action, _states = model.predict(obs, deterministic=True)
-            obs, reward, done, _ = env.step(action)
+            obs, reward, done, info = env.step(action)
             if render:
                 if build_name == "rosbag":
                     env.render(save_to_file=True, action_override=action)
@@ -60,8 +62,18 @@ def main(build_name="kozehd", render=True, difficulty_mode="easiest", model_path
                     if render:
                         print("Failure.")
                     successes.append(0.)
-                pbar.set_description(f"Success rate: {sum(successes)/len(successes):.2f}")
+                difficulty = info["episode_scenario"]
+                difficulties.append(difficulty)
+                pbar.set_description("Success rate: {:.2f}, avg dif: {:.2f}".format(
+                    sum(successes)/len(successes), np.mean(difficulties)))
                 break
+
+    bname = build_name.replace(".x86_64", "").replace("./", "")
+    SAVEPATH = MODELPATH.replace("models/gym", "test").replace(".zip", "") + "_{}_{}_{}.npz".format(
+        bname, difficulty_mode, n_episodes)
+    make_dir_if_not_exists(os.path.dirname(SAVEPATH))
+    np.savez(SAVEPATH, successes=np.array(successes), difficulties=np.array(difficulties))
+    print("Saved to {}".format(SAVEPATH))
 
 
 if __name__ == "__main__":

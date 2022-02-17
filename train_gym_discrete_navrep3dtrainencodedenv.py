@@ -30,6 +30,10 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
         ENV_NAME = "navrep3dtrainencodedenv_"
     elif build_name == "./alternate.x86_64":
         ENV_NAME = "navrep3daltencodedenv_"
+    elif build_name == "./city.x86_64":
+        ENV_NAME = "navrep3dcityencodedenv_"
+    elif build_name == "./office.x86_64":
+        ENV_NAME = "navrep3dofficeencodedenv_"
     elif build_name == "SC":
         ENV_NAME = "navrep3dSCencodedenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]

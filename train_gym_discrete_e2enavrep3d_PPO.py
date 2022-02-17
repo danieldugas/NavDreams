@@ -30,6 +30,10 @@ def main(dry_run=False, n=None, build_name=None):
         ENV_NAME = "navrep3dtrainenv_"
     elif build_name == "./alternate.x86_64":
         ENV_NAME = "navrep3daltenv_"
+    elif build_name == "./city.x86_64":
+        ENV_NAME = "navrep3dcityenv_"
+    elif build_name == "./office.x86_64":
+        ENV_NAME = "navrep3dofficeenv_"
     elif build_name == "SC":
         ENV_NAME = "navrep3dSCenv_"
         build_names = ["./alternate.x86_64", "./city.x86_64", "./office.x86_64", "./office.x86_64"]
@@ -43,7 +47,7 @@ def main(dry_run=False, n=None, build_name=None):
     elif build_name == "gallery":
         ENV_NAME = "navrep3dgalleryenv_"
     elif build_name == "kozehd":
-        ENV_NAME = "navrep3dkozehdrsencodedenv_"
+        ENV_NAME = "navrep3dkozehdrsenv_"
     else:
         raise NotImplementedError
     LOGNAME = ENV_NAME + START_TIME + "_DISCRETE_PPO" + "_E2E" + CONTROLLER_ARCH

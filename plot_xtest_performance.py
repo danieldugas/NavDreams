@@ -179,6 +179,25 @@ def main(
         ax.bar(labels, crashes, bottom=values+timeouts, color="orange")
         ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="red")
 
+    # all plots
+    all_builds = list(set([(key[0], key[3]) for key in data]))
+    all_mtypes = list(set([key[1] for key in data]))
+    cols = len(all_mtypes)
+    rows = len(all_builds)
+    fig, axes = plt.subplots(rows, cols, num="all_tests")
+    axes = np.array(axes).reshape((rows, cols))
+    for row, (build, diff) in enumerate(all_builds):
+        for col, mtype in enumerate(all_mtypes):
+            ax = axes[row, col]
+            bar_lookups = [key for key in data
+                           if key[0] == build and key[3] == diff and key[1] == mtype]
+            to_bar_chart(bar_lookups, ax)
+            if col == 0:
+                ax.set_ylabel("{} {}".format(build, diff))
+            if row == 0:
+                ax.set_title(mtype)
+    plt.show()
+
     # single hand picked plot
     fig, axes = plt.subplots(1, 1, num="test")
     N = 100

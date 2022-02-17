@@ -134,12 +134,63 @@ def main(
         arrays = np.load(path)
         data[info] = arrays
 
-    # single plot with all gallery
     any_ = None
 
-    fig, axes = plt.subplots(2, 1, num="xtest")
+    def to_bar_chart(bar_lookups, ax):
+        values = []
+        asy_errors = []
+        crashes = []
+        crashesother = []
+        timeouts = []
+        labels = []
+        for lookup in bar_lookups:
+            matches = find_matches_in_data(lookup, data, alert_if_not_found=True)
+            assert len(matches) == 1
+            arrays = matches[0]
+            # values
+            successes = arrays["successes"]
+            difficulties = arrays["difficulties"]
+            causes = arrays["causes"]
+            lengths = arrays["lengths"]
+            # if you recompute timeouts, need to overwrite other causes
+            recalc_timeout = None
+            if recalc_timeout is not None:
+                causes[lengths > recalc_timeout] = "Timeout"
+                successes[lengths > recalc_timeout] = 0
+            timeouts.append(np.mean(causes == "Timeout"))
+            crashes.append(np.mean(causes == "Collision"))
+            crashesother.append(np.mean(causes == "Collision from other agent"))
+            values.append(np.mean(successes))
+            # spread is difference between mean of first half and second half
+            splits = np.array_split(successes, 2)
+            splits = [np.mean(s) for s in splits]
+            asy_error = [abs(min(splits)-np.mean(successes)), abs(max(splits)-np.mean(successes))]
+            asy_errors.append(asy_error)
+            # label
+            build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
+            labels.append(str((mtype, trainenv, difficulty)))
+        values = np.array(values)
+        asy_errors = np.array(asy_errors).reshape((len(values), 2)).T
+        timeouts = np.array(timeouts)
+        crashes = np.array(crashes)
+        crashesother = np.array(crashesother)
+        ax.bar(labels, values, yerr=asy_errors, color="green")
+        ax.bar(labels, timeouts, bottom=values, color="grey")
+        ax.bar(labels, crashes, bottom=values+timeouts, color="orange")
+        ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="red")
 
-    # xtest in gallery
+    # single hand picked plot
+    fig, axes = plt.subplots(1, 1, num="test")
+    N = 100
+    bar_lookups = [
+        ("alternate", "N3D", any_, "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
+    ]
+    ax = axes
+    to_bar_chart(bar_lookups, ax)
+    plt.show()
+
+    # single plot with dreamer vs n3d
+    fig, axes = plt.subplots(1, 1, num="tests")
     N = 10
     bar_lookups = [
         ("alternate", "N3D", any_, "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
@@ -151,35 +202,13 @@ def main(
         ("kozehd", "DREAMER", any_, "easiest", "navrep3dkozehdrsenv", N, any_, "RSSM", any_),
         ("kozehd", "DREAMER", any_, "easy", "navrep3dkozehdrsenv", N, any_, "RSSM", any_),
     ]
-    values = []
-    crashes = []
-    crashesother = []
-    timeouts = []
-    labels = []
-    for lookup in bar_lookups:
-        matches = find_matches_in_data(lookup, data, alert_if_not_found=True)
-        assert len(matches) == 1
-        arrays = matches[0]
-        # values
-        successes = arrays["successes"]
-        difficulties = arrays["difficulties"]
-        causes = arrays["causes"]
-        lengths = arrays["lengths"]
-        # if you recompute timeouts, need to overwrite other causes
-        crashes.append(np.mean(causes == "Collision"))
-        crashesother.append(np.mean(causes == "Collision from other agent"))
-        values.append(np.mean(successes))
-        # label
-        build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
-        labels.append(str((mtype, trainenv)))
-    ax = axes[0]
-    ax.bar(labels, values)
-    ax.bar(labels, crashes, bottom=values)
-    ax.bar(labels, crashesother, bottom=np.array(values)+np.array(crashes))
+    ax = axes
+    to_bar_chart(bar_lookups, ax)
 
     plt.show()
 
-    # xtest in gallery
+    # xtest in gallery, cathedral
+    fig, axes = plt.subplots(2, 1, num="xtests")
     N = 100
     bar_lookups = [
         ("gallery", "N3D", any_, "easy", "navrep3daltenv", N, "SCR", "GPT", any_),
@@ -189,25 +218,9 @@ def main(
         ("gallery", "E2E", any_, "easy", "navrep3dSCenv", N, any_, any_, any_),
         ("gallery", "E2E", any_, "easy", "navrep3dSCRenv", N, any_, any_, any_),
     ]
-    values = []
-    labels = []
-    for lookup in bar_lookups:
-        matches = find_matches_in_data(lookup, data, alert_if_not_found=True)
-        assert len(matches) == 1
-        arrays = matches[0]
-        # values
-        successes = arrays["successes"]
-        difficulties = arrays["difficulties"]
-        values.append(np.mean(successes))
-        # label
-        build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
-        labels.append(str((mtype, trainenv)))
     ax = axes[0]
-    ax.bar(labels, values)
-
+    to_bar_chart(bar_lookups)
     plt.show()
-
-    # xtest in cathedral
     N = 100
     bar_lookups = [
         ("cathedral", "N3D", any_, "easy", "navrep3daltenv", N, "SCR", "GPT", any_),
@@ -217,22 +230,8 @@ def main(
         ("cathedral", "E2E", any_, "easy", "navrep3dSCenv", N, any_, any_, any_),
         ("cathedral", "E2E", any_, "easy", "navrep3dSCRenv", N, any_, any_, any_),
     ]
-    values = []
-    labels = []
-    for lookup in bar_lookups:
-        matches = find_matches_in_data(lookup, data, alert_if_not_found=True)
-        assert len(matches) == 1
-        arrays = matches[0]
-        # values
-        successes = arrays["successes"]
-        difficulties = arrays["difficulties"]
-        values.append(np.mean(successes))
-        # label
-        build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
-        labels.append(str((mtype, trainenv)))
     ax = axes[1]
-    ax.bar(labels, values)
-
+    ax.to_bar_chart(bar_lookups, ax)
     plt.show()
 
 

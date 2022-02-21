@@ -180,8 +180,8 @@ def main(
         ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="red")
 
     # all plots
-    all_builds = list(set([(key[0], key[3]) for key in data]))
-    all_mtypes = list(set([key[1] for key in data]))
+    all_builds = sorted(list(set([(key[0], key[3]) for key in data])))
+    all_mtypes = sorted(list(set([key[1] for key in data])))
     cols = len(all_mtypes)
     rows = len(all_builds)
     fig, axes = plt.subplots(rows, cols, num="all_tests")

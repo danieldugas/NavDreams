@@ -1,3 +1,5 @@
+# set -x
+# set -e
 source ~/cbc3env/bin/activate
 
 # build_names
@@ -17,10 +19,11 @@ source ~/cbc3env/bin/activate
 
 # N3D
 # 1) does train_time perf translate to test_time?
-# 2) which models do best on gallery, cathedral, kozehdrs?
+# 2) which models xtest best on gallery, cathedral, kozehdrs?
 # 3) does a R model trained on SC do well in R?
 # 4) does scope analysis also hold up at test_time?
 # 5) dreamer vs n3d tests in S, R, and K
+# 6) best in each env
 
 # 1)
 # S_E2E S
@@ -184,6 +187,14 @@ python test_any.py --model-path \
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
   --n-episodes $1 --build-name "kozehd" --difficulty-mode "easy" --render False
+# 6)
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralenv_2022_02_16__15_21_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralencodedenv_2022_02_16__15_07_50_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
+
 
 # DREAMERV2
 #         run_id = "f3f47a18b9334a4baa97c728143a00c6" # "./alternate.x86_64"

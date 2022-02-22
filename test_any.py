@@ -10,6 +10,8 @@ from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete, NavRep3DAnyEnvDiscre
 from plot_gym_training_progress import get_variant
 
 def main(build_name="kozehd", render=False, difficulty_mode="easiest", model_path=None, n_episodes=1000):
+    if n_episodes is True:
+        raise ValueError("n_episodes not specified. Must be int")
     # e2e
     MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
     # n3d

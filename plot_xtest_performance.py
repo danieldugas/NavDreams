@@ -210,7 +210,7 @@ def main(
 
     # single plot with dreamer vs n3d
     fig, axes = plt.subplots(1, 1, num="tests")
-    N = 10
+    N = 100
     bar_lookups = [
         ("alternate", "N3D", any_, "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
         ("staticasl", "N3D", any_, "medium", "navrep3daslfixedenv", N, "SCR", "GPT", any_),

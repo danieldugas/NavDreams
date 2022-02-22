@@ -3,7 +3,7 @@ import os
 import numpy as np
 from strictfire import StrictFire
 
-from plot_gym_training_progress import make_legend_pickable
+# from plot_gym_training_progress import make_legend_pickable
 
 def dreamertrainenv_to_n3dtrainenv(trainenv):
     if trainenv == "NavRep3DStaticASLEnv":
@@ -149,7 +149,7 @@ def main(
             arrays = matches[0]
             # values
             successes = arrays["successes"]
-            difficulties = arrays["difficulties"]
+#             difficulties = arrays["difficulties"]
             causes = arrays["causes"]
             lengths = arrays["lengths"]
             # if you recompute timeouts, need to overwrite other causes
@@ -168,7 +168,7 @@ def main(
             asy_errors.append(asy_error)
             # label
             build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
-            labels.append(str((mtype, trainenv, difficulty)))
+            labels.append(str((mtype, trainenv, difficulty, n_episodes, uid[-3:])))
         values = np.array(values)
         asy_errors = np.array(asy_errors).reshape((len(values), 2)).T
         timeouts = np.array(timeouts)
@@ -191,6 +191,7 @@ def main(
             ax = axes[row, col]
             bar_lookups = [key for key in data
                            if key[0] == build and key[3] == diff and key[1] == mtype]
+#             bar_lookups = [key for key in bar_lookups if key[5] >= 50]
             to_bar_chart(bar_lookups, ax)
             if col == 0:
                 ax.set_ylabel("{} {}".format(build, diff))
@@ -256,4 +257,3 @@ def main(
 
 if __name__ == "__main__":
     StrictFire(main)
-

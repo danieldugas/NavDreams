@@ -33,14 +33,18 @@ variant_colors = {
     "Random": "brown",
     "E2E": "grey",
     "DREAMER": "orange",
-    "SCRK": "darkorange",
-    "K2": "blue",
+    "SCRK": "blue",
+    "K2": "red",
 }
 clean_scenario_names = {
     "navrep3dalt": "simple",
     "navrep3dcity": "city",
     "navrep3doffice": "office",
     "navrep3dasl": "modern",
+    "navrep3dcathedral": "cathedral",
+    "navrep3dgallery": "gallery",
+    "navrep3dkozehd": "sim2real",
+    "all_scenarios": "",
 }
 
 def smooth(x, weight):
@@ -345,11 +349,6 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
     smoothness = 0.999
     max_difficulty = 18.
     y_max = 1.0
-    if scenario == "navrep3doffice":
-        max_difficulty = 10.
-    if scenario == "navrep3dasl":
-        max_difficulty = 50.
-        y_max = 0.4
     # calculate smoothed lines for each plot
     smoothed_curves = []
     for logpath, parent in zip(logpaths, parents):
@@ -360,9 +359,26 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
             continue
         color, _ = color_and_style(variant, envname)
         S = pd.read_csv(logpath)
-        scenario_S = S[S["scenario"] == scenario]
+        if scenario == "all_scenarios":
+            logscenario = S["scenario"].unique()[0]
+            scenario_S = S
+        else:
+            logscenario = scenario
+            scenario_S = S[S["scenario"] == scenario]
         if len(scenario_S.values) == 0:
             continue
+        # adjust difficulty
+        if logscenario == "navrep3doffice":
+            max_difficulty = 10.
+        elif logscenario in ["navrep3dasl", "navrep3dgallery"]:
+            max_difficulty = 50.
+            y_max = 0.4
+        elif logscenario == "navrep3dcathedral":
+            max_difficulty = 50.
+            y_max = 0.6
+        elif logscenario == "navrep3dkozehd":
+            max_difficulty = 20.
+            y_max = 0.2
         # x axis
         if x_axis == "total_steps":
             x = scenario_S["total_steps"].values
@@ -401,7 +417,7 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
     ax.set_xlim([0, 5])
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
-    ax.set_title("{}".format(clean_scenario_names[scenario]))
+    ax.set_title("{}".format(clean_scenario_names[logscenario]))
     line, = ax.plot(common_x, mean_, linewidth=1, linestyle=style, color=color)
     color = line.get_c()
     area = ax.fill_between(common_x, min_, max_, color=color, alpha=0.1)
@@ -433,6 +449,117 @@ def plot_training_results(logdirs, envname="navrep3daltenv", logfolder=None):
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
 
+def plot_direct_training_results(logdirs,
+                                 envnames=["navrep3daltenv",
+                                           "navrep3dcityenv",
+                                           "navrep3dofficeenv",
+                                           "navrep3daslenv",
+                                           "navrep3dcathedralenv",
+                                           "navrep3dgalleryenv",
+                                           "navrep3dkozehdrsenv"],
+                                 logfolder=None):
+    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
+
+    scenarios = ["all_scenarios"]
+    all_variants = ["SCR", "E2E", "K2"]
+
+    fig, axes = plt.subplots(len(scenarios), len(envnames), num="_".join(envnames) + "x training results")
+    axes = np.array(axes).reshape((len(scenarios), len(envnames)))
+
+    linegroups = []
+    legends = []
+    seeds_count = {}
+    for variant in tqdm(all_variants):
+        variant_linegroup = []
+        for scenario, ax_row in zip(scenarios, axes):
+            for envname, ax in zip(envnames, ax_row):
+                n_seeds = 0
+                seeds_count[(variant, envname)] = n_seeds
+                if envname == "navrep3dkozehdrsenv" and variant == "SCR":
+                    continue
+                linegroup, n = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
+                if linegroup:
+                    variant_linegroup.extend(linegroup)
+                n_seeds = max(n_seeds, n)
+                seeds_count[(variant, envname)] = n_seeds
+                ax.set_ylabel("")
+                ax.set_xlabel("")
+        if variant_linegroup:
+            linegroups.append(variant_linegroup)
+            legends.append("End-to-End" if variant == "E2E" else "WorldModel")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Episode Difficulty\n(Rolling Average)")
+    for ax in axes[0, :]:
+        ax.set_xlabel("Million Training Steps")
+
+    L = fig.legend([lines[0] for lines in linegroups], legends)
+    make_legend_pickable(L, linegroups)
+
+    console = Console()
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("")
+    for variant in all_variants:
+        table.add_column(variant)
+    for envname in envnames:
+        table.add_row(envname, *[str(seeds_count[(variant, envname)]) for variant in all_variants])
+    console.print(table)
+
+def plot_simple_xtraining_results(
+    logdirs,
+    envnames=["navrep3daltenv", "navrep3dSCRenv", "navrep3dSCenv", "navrep3daslenv"],
+    logfolder=None
+):
+    logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
+
+    scenarios = ["all_scenarios"]
+    all_variants = ["R", "SCR", "SC", "Salt", "E2E"]
+
+    fig, axes = plt.subplots(len(scenarios), len(envnames), num="_".join(envnames) + "x training results")
+    axes = np.array(axes).reshape((len(scenarios), len(envnames)))
+
+    linegroups = []
+    legends = []
+    seeds_count = {}
+    for variant in tqdm(all_variants):
+        variant_linegroup = []
+        for _, ax_row in zip(scenarios, axes):
+            for envname, ax in zip(envnames, ax_row):
+                if envname == "navrep3daltenv":
+                    scenario = "navrep3dalt"
+                elif envname == "navrep3dSCenv":
+                    scenario = "navrep3doffice"
+                elif envname == "navrep3dSCRenv":
+                    scenario = "navrep3dcity"
+                elif envname == "navrep3daslenv":
+                    scenario = "navrep3dasl"
+                n_seeds = 0
+                linegroup, n = plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax)
+                ax.set_xlabel("")
+                if linegroup:
+                    variant_linegroup.extend(linegroup)
+                n_seeds = max(n_seeds, n)
+                seeds_count[(variant, envname)] = n_seeds
+                ax.set_xlabel("")
+                ax.set_ylabel("")
+        if variant_linegroup:
+            linegroups.append(variant_linegroup)
+            legends.append(variant)
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Episode Difficulty\n(Rolling Average)")
+    for ax in axes[0, :]:
+        ax.set_xlabel("Million Training Steps")
+
+    L = fig.legend([lines[0] for lines in linegroups], legends)
+    make_legend_pickable(L, linegroups)
+
+    console = Console()
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("")
+    for variant in all_variants:
+        table.add_column(variant)
+    for envname in envnames:
+        table.add_row(envname, *[str(seeds_count[(variant, envname)]) for variant in all_variants])
+    console.print(table)
 def plot_xtraining_results(logdirs, envnames=["navrep3dSCenv", "navrep3dSCRenv"], logfolder=None):
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 
@@ -517,6 +644,9 @@ def main(logdir="~/navrep3d",
     logdirs = [os.path.expanduser(logdir),]
     print(x_axis.value)
     if paper:
+        plot_direct_training_results(logdirs)
+        plot_simple_xtraining_results(logdirs)
+        plt.show()
         plot_training_results(logdirs)
         plot_xtraining_results(logdirs, envnames=["navrep3dSCenv"])
         plot_xtraining_results(logdirs, envnames=["navrep3dSCRenv"])

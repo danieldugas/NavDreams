@@ -27,7 +27,7 @@ def main(refresh : bool = True, logdir : str = None, paper : bool = False):
                 elif "E2E" in log:
                     name = "End-to-end features"
                 elif "N3D" in log:
-                    name = "NavRep3D features"
+                    name = "World-Model features"
                 else:
                     raise NotImplementedError
             # title and axes

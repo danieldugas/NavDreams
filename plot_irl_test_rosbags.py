@@ -272,11 +272,11 @@ def plot_processed(processed, clean=False):
     timeouts = timeouts / totals
     crashes = crashes / totals
     crashesother = crashesother / totals
-    ax2.bar(labels, values, width=0.8, yerr=asy_errors, color="mediumseagreen")
-    ax2.bar(labels, timeouts, width=0.8, bottom=values, color="lightgrey")
-    ax2.bar(labels, crashes, width=0.8, bottom=values+timeouts, color="orange")
-    ax2.bar(labels, crashesother, width=0.8, bottom=values+timeouts+crashes, color="red")
-    ax2.set_ylim([0, 1])
+    ax2.bar(labels, values, width=0.08, yerr=asy_errors, color="mediumseagreen")
+    ax2.bar(labels, timeouts, width=0.08, bottom=values, color="lightgrey")
+    ax2.bar(labels, crashes, width=0.08, bottom=values+timeouts, color="orange")
+    ax2.bar(labels, crashesother, width=0.08, bottom=values+timeouts+crashes, color="red")
+    ax2.set_ylim([0, 1.1])
     ax2.set_xlabel("")
     ax2.set_ylabel("success [green], "
                    "timeout [grey], "

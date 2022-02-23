@@ -370,12 +370,15 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
         # adjust difficulty
         if logscenario == "navrep3doffice":
             max_difficulty = 10.
-        elif logscenario in ["navrep3dasl", "navrep3dgallery"]:
+        elif logscenario == "navrep3dasl":
             max_difficulty = 50.
             y_max = 0.4
         elif logscenario == "navrep3dcathedral":
             max_difficulty = 50.
-            y_max = 0.6
+            y_max = 0.5
+        elif logscenario == "navrep3dgallery":
+            max_difficulty = 50.
+            y_max = 0.15
         elif logscenario == "navrep3dkozehd":
             max_difficulty = 20.
             y_max = 0.2

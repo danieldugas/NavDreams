@@ -67,10 +67,12 @@ def find_matches_in_data(lookup, data, alert_if_not_found=False, alert_if_severa
     # find data
     found = 0
     matches = []
+    keys = []
     for key in data:
         if compare_lookup_and_key(lookup, key):
             found += 1
             matches.append(data[key])
+            keys.append(key)
     if alert_if_not_found:
         if found == 0:
             print_diffs(lookup, data)
@@ -80,7 +82,7 @@ def find_matches_in_data(lookup, data, alert_if_not_found=False, alert_if_severa
         if found > 1:
             print_matches(lookup, data)
             raise ValueError("several matches found")
-    return matches
+    return matches, keys
 
 def diff_lookup_and_key(lookup, key):
     assert len(lookup) == len(key)
@@ -136,16 +138,17 @@ def main(
 
     any_ = None
 
-    def to_bar_chart(bar_lookups, ax):
+    def to_bar_chart(bar_lookups, ax, labels=None):
         values = []
         asy_errors = []
         crashes = []
         crashesother = []
         timeouts = []
-        labels = []
+        foundkeys = []
         for lookup in bar_lookups:
-            matches = find_matches_in_data(lookup, data, alert_if_not_found=True)
-            assert len(matches) == 1
+            matches, keys = find_matches_in_data(lookup, data, alert_if_not_found=True)
+            if len(matches) != 1:
+                raise ValueError("Matches != 1:\nfor\n{}\nfound\n{}".format(lookup, keys))
             arrays = matches[0]
             # values
             successes = arrays["successes"]
@@ -168,7 +171,10 @@ def main(
             asy_errors.append(asy_error)
             # label
             build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
-            labels.append(str((mtype, trainenv, difficulty, n_episodes, uid[-3:])))
+            foundkeys.append(keys[0])
+        if labels is None:
+            labels = [str(k) for k in foundkeys]
+
         values = np.array(values)
         asy_errors = np.array(asy_errors).reshape((len(values), 2)).T
         timeouts = np.array(timeouts)
@@ -177,7 +183,7 @@ def main(
         ax.bar(labels, values, yerr=asy_errors, color="mediumseagreen")
         ax.bar(labels, timeouts, bottom=values, color="lightgrey")
         ax.bar(labels, crashes, bottom=values+timeouts, color="orange")
-        ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="red")
+        ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="tomato")
 
     # all plots
     all_builds = sorted(list(set([(key[0], key[3]) for key in data])))
@@ -191,12 +197,33 @@ def main(
             ax = axes[row, col]
             bar_lookups = [key for key in data
                            if key[0] == build and key[3] == diff and key[1] == mtype]
-#             bar_lookups = [key for key in bar_lookups if key[5] >= 50]
+            bar_lookups = [key for key in bar_lookups if key[5] >= 50]
             to_bar_chart(bar_lookups, ax)
             if col == 0:
                 ax.set_ylabel("{} {}".format(build, diff))
             if row == 0:
                 ax.set_title(mtype)
+    plt.show()
+
+    # single plot with best in simple
+    fig, axes = plt.subplots(1, 1, num="simple")
+    N = 100
+    bar_lookups = [
+        ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
+        ("alternate", "E2E", any_, "hardest", "navrep3daltenv", N, any_, any_, "2021_11_01__08_52_03"),
+    ]
+#         ("alternate", "DREAMER", any_, "hardest", "navrep3daltenv", N, any_, any_, any_),
+#     labels = [lookup[1] for lookup in bar_lookups]
+    labels = [
+        "WorldModel",
+        "End-to-end",
+    ]
+#         "Dreamer",
+    ax = axes
+    to_bar_chart(bar_lookups, ax, labels=labels)
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(90)
+
     plt.show()
 
     # single hand picked plot

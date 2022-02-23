@@ -178,7 +178,7 @@ def plot_processed(processed, clean=False):
      goals_close, are_stopped, bag_names, contours, map2ddict) = processed
 #     fig, (ax, ax2) = plt.subplots(1, 2)
     figure_mosaic = """
-    AAAAB
+    AAAAAAB
     """
     fig, axes = plt.subplot_mosaic(figure_mosaic)
     ax = axes["A"]
@@ -195,7 +195,7 @@ def plot_processed(processed, clean=False):
     for n, (t, g, s, f, gc, st) in enumerate(zip(
             trajectories, goals, goals_reached, goals_failed, goals_close, are_stopped)):
 #         line_color = blue(len(t)/2000.) if s != 0 else "grey"
-        line_color = "green" if s != 0 else "grey"
+        line_color = "mediumseagreen" if s != 0 else "grey"
         crash = 0
         hcrash = 0
         line_style = None
@@ -254,7 +254,8 @@ def plot_processed(processed, clean=False):
     make_legend_pickable(L, linegroups)
 
     goals_failed = []
-    ax.set_title(bag_names)
+    if not clean:
+        ax.set_title(bag_names)
     ax.axis("equal")
     ax.set_adjustable('box')
     ax.set_xlabel("x [m]")
@@ -271,14 +272,17 @@ def plot_processed(processed, clean=False):
     timeouts = timeouts / totals
     crashes = crashes / totals
     crashesother = crashesother / totals
-    ax2.bar(labels, values, width=2.0, yerr=asy_errors, color="green")
-    ax2.bar(labels, timeouts, width=2.0, bottom=values, color="lightgrey")
-    ax2.bar(labels, crashes, width=2.0, bottom=values+timeouts, color="orange")
-    ax2.bar(labels, crashesother, width=2.0, bottom=values+timeouts+crashes, color="red")
+    ax2.bar(labels, values, width=0.8, yerr=asy_errors, color="mediumseagreen")
+    ax2.bar(labels, timeouts, width=0.8, bottom=values, color="lightgrey")
+    ax2.bar(labels, crashes, width=0.8, bottom=values+timeouts, color="orange")
+    ax2.bar(labels, crashesother, width=0.8, bottom=values+timeouts+crashes, color="red")
+    ax2.set_ylim([0, 1])
     ax2.set_xlabel("")
     ax2.set_ylabel("success [green], "
                    "timeout [grey], "
                    "hit object [orange] ")
+    ax2.yaxis.tick_right()
+    ax2.yaxis.set_label_position("right")
 
     plt.show()
 

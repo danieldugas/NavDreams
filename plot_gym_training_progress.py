@@ -397,6 +397,9 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
         smooth_y = smooth(y, smoothness)
         smoothed_curves.append((x, smooth_y))
 
+    # remove incomplete
+    smoothed_curves = [(x, y) for x, y in smoothed_curves if max(x) > 4.5]
+
     # minmax curve
     n_seeds = len(smoothed_curves)
     if n_seeds == 0:
@@ -560,6 +563,7 @@ def plot_simple_xtraining_results(
     for envname in envnames:
         table.add_row(envname, *[str(seeds_count[(variant, envname)]) for variant in all_variants])
     console.print(table)
+
 def plot_xtraining_results(logdirs, envnames=["navrep3dSCenv", "navrep3dSCRenv"], logfolder=None):
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 

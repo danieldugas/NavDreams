@@ -175,7 +175,7 @@ def main(
         crashes = np.array(crashes)
         crashesother = np.array(crashesother)
         ax.bar(labels, values, yerr=asy_errors, color="green")
-        ax.bar(labels, timeouts, bottom=values, color="grey")
+        ax.bar(labels, timeouts, bottom=values, color="lightgrey")
         ax.bar(labels, crashes, bottom=values+timeouts, color="orange")
         ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="red")
 

@@ -1,8 +1,8 @@
 from __future__ import print_function
 import numpy as np
 import os
-import rosbag
 from tqdm import tqdm
+import pickle
 from pose2d import Pose2D, apply_tf
 from matplotlib import pyplot as plt
 from CMap2D import CMap2D
@@ -52,6 +52,7 @@ def bag_to_trajectories(bag_path):
 
     bag_name = os.path.basename(bag_path)
     print("Loading {}...".format(bag_name))
+    import rosbag
     bag = rosbag.Bag(bag_path)
     try:
         import tf_bag
@@ -152,6 +153,15 @@ def bag_to_trajectories(bag_path):
 
         if topic in map_topics:
             mapmsg = msg
+
+    contours = None
+    if mapmsg is not None:
+        map2d = CMap2D()
+        map2d.from_msg(mapmsg)
+        assert mapmsg.header.frame_id == FIXED_FRAME
+        contours = map2d.as_closed_obst_vertices()
+        map2ddict = map2d.serialize()
+
     return (
         trajectories,
         goals,
@@ -159,61 +169,48 @@ def bag_to_trajectories(bag_path):
         goals_reached,
         goals_close,
         are_stopped,
-        mapmsg,
+        contours,
+        map2ddict,
     )
 
-def main(clean=False):
-#     bag_paths = [os.path.expanduser("~/irl_tests/manip_corner_julian_jenjen.bag")]
-#     bag_paths = [os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")]
-    # day 2
-    bag_paths = [os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-16-09-51_30min_K2.bag"),
-                 os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-15-53-15.bag")]
+def plot_processed(processed, clean=False):
+    (trajectories, goals, goals_reached, goals_failed,
+     goals_close, are_stopped, bag_names, contours, map2ddict) = processed
+#     fig, (ax, ax2) = plt.subplots(1, 2)
+    figure_mosaic = """
+    AAAAB
+    """
+    fig, axes = plt.subplot_mosaic(figure_mosaic)
+    ax = axes["A"]
+    ax2 = axes["B"]
 
-    trajectories = []
-    goals = []
-    goals_failed = []
-    goals_reached = []
-    goals_close = []
-    are_stopped = []
-    mapmsg = None
-
-    bag_names = ""
-
-    for bag_path in bag_paths:
-        tr, go, gf, gr, gc, st, mp = bag_to_trajectories(bag_path)
-        trajectories.extend(tr)
-        goals.extend(go)
-        goals_failed.extend(gf)
-        goals_reached.extend(gr)
-        goals_close.extend(gc)
-        are_stopped.extend(st)
-        mapmsg = mp if mp is not None else mapmsg
-        bag_names = bag_names + os.path.basename(bag_path) + " "
-
-    fig, ax = plt.subplots(1, 1)
-
-    if mapmsg is not None:
-        map2d = CMap2D()
-        map2d.from_msg(mapmsg)
-        assert mapmsg.header.frame_id == FIXED_FRAME
-        contours = map2d.as_closed_obst_vertices()
-        for c in contours:
-            cplus = np.concatenate((c, c[:1, :]), axis=0)
-            ax.plot(cplus[:,0], cplus[:,1], color='k')
-        plt.axis('equal')
+    for c in contours:
+        cplus = np.concatenate((c, c[:1, :]), axis=0)
+        ax.plot(cplus[:,0], cplus[:,1], color='k')
+    plt.axis('equal')
 
     i_frame = 0
     legends = []
     linegroups = []
     for n, (t, g, s, f, gc, st) in enumerate(zip(
             trajectories, goals, goals_reached, goals_failed, goals_close, are_stopped)):
-        line_color = blue(len(t)/1000.) if s != 0 else orange(len(t)/1000.)
+#         line_color = blue(len(t)/2000.) if s != 0 else "grey"
+        line_color = "green" if s != 0 else "grey"
+        crash = 0
+        hcrash = 0
         line_style = None
         if st:
-            line_color = "grey"
+            line_color = "black"
         if g is None:
             line_style = "--"
-            line_color = "grey"
+            line_color = "black"
+        if clean: # manually add points where pepper touched an object
+            if n == 119:
+                line_color = orange(1)
+                crash = -1
+            if n == 87:
+                line_color = orange(1)
+                crash = -100
         zorder = 2 if s else 1
         if ANIMATE:
             yanim = np.ones_like(t[:,1]) * np.nan
@@ -228,18 +225,22 @@ def main(clean=False):
                 plt.savefig("/tmp/plot_irl_test_rosbags_{:05}.png".format(i_frame))
                 i_frame += 1
         else:
-            if line_color != "grey":
+            if line_color != "black":
                 line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder,
                                 linestyle=line_style, alpha=0.8)
-                if f != 0:
-                    ax.scatter(t[f, 0], t[f, 1], color="red", marker="x", zorder=3)
+#                 if f != 0:
+#                     ax.scatter(t[f, 0], t[f, 1], color="grey", marker="x", zorder=3)
+                if crash != 0:
+                    ax.scatter(t[crash, 0], t[crash, 1], color="orange", marker="x", zorder=3)
+                if hcrash != 0:
+                    ax.scatter(t[hcrash, 0], t[hcrash, 1], color="orange", marker="x", zorder=3)
                 if g is not None:
                     cr = plt.Circle((g[0], g[1]), 0.3, color="mediumorchid", zorder=2, fill=False)
                     ax.add_artist(cr)
                 linegroups.append([line, cr])
                 legends.append(str(n))
             if not clean:
-                if line_color == "grey":
+                if line_color == "black":
                     line, = ax.plot(t[:,0], t[:,1], color=line_color, zorder=zorder, linestyle=line_style)
                 else:
                     if g is not None:
@@ -256,8 +257,75 @@ def main(clean=False):
     ax.set_title(bag_names)
     ax.axis("equal")
     ax.set_adjustable('box')
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+
+    asy_errors = [0]
+    labels = [""]
+    values = np.array([36])
+    timeouts = np.array([16])
+    crashes = np.array([2])
+    crashesother = np.array([0])
+    totals = values + timeouts + crashes + crashesother
+    values = values / totals
+    timeouts = timeouts / totals
+    crashes = crashes / totals
+    crashesother = crashesother / totals
+    ax2.bar(labels, values, width=2.0, yerr=asy_errors, color="green")
+    ax2.bar(labels, timeouts, width=2.0, bottom=values, color="lightgrey")
+    ax2.bar(labels, crashes, width=2.0, bottom=values+timeouts, color="orange")
+    ax2.bar(labels, crashesother, width=2.0, bottom=values+timeouts+crashes, color="red")
+    ax2.set_xlabel("")
+    ax2.set_ylabel("success [green], "
+                   "timeout [grey], "
+                   "hit object [orange] ")
 
     plt.show()
+
+def main(clean=False, bypass=False):
+#     bag_paths = [os.path.expanduser("~/irl_tests/manip_corner_julian_jenjen.bag")]
+#     bag_paths = [os.path.expanduser("/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag")]
+    # day 2
+    if not bypass:
+        bag_paths = [os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-16-09-51_30min_K2.bag"),
+                     os.path.expanduser("/media/daniel/Samsung T5/2022-02-09-15-53-15.bag")]
+
+        trajectories = []
+        goals = []
+        goals_failed = []
+        goals_reached = []
+        goals_close = []
+        are_stopped = []
+        map2ddict = None
+        contours = None
+
+        for bag_path in bag_paths:
+            tr, go, gf, gr, gc, st, ct, mp = bag_to_trajectories(bag_path)
+            trajectories.extend(tr)
+            goals.extend(go)
+            goals_failed.extend(gf)
+            goals_reached.extend(gr)
+            goals_close.extend(gc)
+            are_stopped.extend(st)
+            map2ddict = mp if mp is not None else map2ddict
+            contours = ct if ct is not None else contours
+        bag_names = "_".join([os.path.basename(path) for path in bag_paths])
+
+        processed = (trajectories, goals, goals_reached, goals_failed,
+                     goals_close, are_stopped, bag_names, contours, map2ddict)
+        pcklpath = "/tmp/{}_processed.pkl".format(bag_names)
+        with open(os.path.expanduser(pcklpath), "wb") as f:
+            pickle.dump(processed, f)
+        print("Saved processed data to {}".format(pcklpath))
+
+    with open(
+        os.path.expanduser(
+            "~/navrep3d/irl/2022-02-09-16-09-51_30min_K2.bag_2022-02-09-15-53-15.bag_processed.pkl"
+        ),
+        "rb",
+    ) as f:
+        processed = pickle.load(f, encoding="bytes")
+    plot_processed(processed, clean=clean)
 
 
 if __name__ == "__main__":

@@ -497,6 +497,9 @@ def plot_direct_training_results(logdirs,
         ax.set_ylabel("Episode Difficulty\n(Rolling Average)")
     for ax in axes[0, 3:4]:
         ax.set_xlabel("Million Training Steps")
+    for ax in axes[0, :]:
+        for tick in ax.get_yticklabels():
+            tick.set_rotation(90)
 
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)
@@ -652,6 +655,7 @@ def main(logdir="~/navrep3d",
     print(x_axis.value)
     if paper:
         plot_direct_training_results(logdirs)
+        plt.show()
         plot_simple_xtraining_results(logdirs)
         plt.show()
         plot_training_results(logdirs)

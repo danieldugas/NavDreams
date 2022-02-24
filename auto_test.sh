@@ -315,6 +315,7 @@ python test_any.py --model-path \
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
   --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False # oh no this is before fix!
+# other seeds
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_10__19_34_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
   --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False

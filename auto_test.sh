@@ -377,14 +377,14 @@
 
 
 # Redo kozehd with 3 people
-python test_any.py --model-path \
-  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
-  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+# python test_any.py --model-path \
+#   "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
+#   --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
 cd ~/Code/pydreamer
 python test.py --run-id "3aaa8d09bce64dd888240a04b714aec7" --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
 cd ~/Code/cbsim/navrep3d
 python test_any.py --model-path \
-  "~/navrep3d/models/gym/navrep3dkozehdrsenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
+  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" \
   --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
 # S, SC, SCR controllers
 python test_any.py --model-path \

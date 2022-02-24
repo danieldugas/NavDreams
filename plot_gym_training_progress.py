@@ -495,7 +495,7 @@ def plot_direct_training_results(logdirs,
             legends.append("End-to-End" if variant == "E2E" else "WorldModel")
     for ax in axes[:, 0]:
         ax.set_ylabel("Episode Difficulty\n(Rolling Average)")
-    for ax in axes[0, :]:
+    for ax in axes[0, 3:4]:
         ax.set_xlabel("Million Training Steps")
 
     L = fig.legend([lines[0] for lines in linegroups], legends)

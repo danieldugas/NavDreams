@@ -3,7 +3,7 @@ import gym
 import time
 from pandas import DataFrame
 import numpy as np
-from crowd_sim.envs.utils.info import ReachGoal, Collision, CollisionOtherAgent
+from crowd_sim.envs.utils.info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.base_env import ActionTuple
@@ -218,6 +218,9 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.last_action = action
         self.last_action = action # hack which allows encodedenv wrapper to get last action
         self.current_scenario = obs['VectorSensor_size6'][5]
+        timeout = self.steps_since_reset > int(180. / 0.2) # TODO: do inside unity instead!
+        if timeout:
+            done = True
         if done:
             info["episode_scenario"] = self.current_scenario
             goal_is_reached = reward > 50.0
@@ -243,6 +246,8 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
                 info["event"] = CollisionOtherAgent()
             if goal_is_reached:
                 info["event"] = ReachGoal()
+            if timeout:
+                info["event"] = Timeout()
         # export episode frames for debugging
         if self.debug_export_every_n_episodes > 0:
             print("{} {}".format(self.total_steps, self.total_episodes), end="\r", flush=True)

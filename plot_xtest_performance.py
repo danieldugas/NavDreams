@@ -305,25 +305,35 @@ def main(
     N = 100
     pairs = [
         [
-            ("cathedral", "N3D", any_, "easy", "navrep3dcathedralenv", N, "SCR", "GPT", any_),
             ("cathedral", "N3D", any_, "easy", "navrep3daltenv", N, "SCR", "GPT", any_),
             ("cathedral", "N3D", any_, "easy", "navrep3dSCenv", N, "SCR", "GPT", any_),
             ("cathedral", "N3D", any_, "easy", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("cathedral", "N3D", any_, "easy", "navrep3dcathedralenv", N, "SCR", "GPT", any_),
         ], [
-            ("gallery", "N3D", any_, "easy", "navrep3dgalleryenv", N, "SCR", "GPT", any_),
             ("gallery", "N3D", any_, "easy", "navrep3daltenv", N, "SCR", "GPT", any_),
             ("gallery", "N3D", any_, "easy", "navrep3dSCenv", N, "SCR", "GPT", any_),
             ("gallery", "N3D", any_, "easy", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("gallery", "N3D", any_, "easy", "navrep3dgalleryenv", N, "SCR", "GPT", any_),
         ], [
-            ("kozehd", "N3D", any_, "easiest", "navrep3dkozehdrsenv", N, "K2", "GPT", any_),
             ("kozehd", "N3D", any_, "easiest", "navrep3daltenv", N, "SCR", "GPT", any_),
             ("kozehd", "N3D", any_, "easiest", "navrep3dSCenv", N, "SCR", "GPT", any_),
             ("kozehd", "N3D", any_, "easiest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("kozehd", "N3D", any_, "easiest", "navrep3dkozehdrsenv", N, "K2", "GPT", any_),
         ]
     ]
-    rows = len(pairs)
-    cols = 1
-    fig, axes = plt.subplots(rows, cols, num=("ood_cgk" if ROT else "best_test"))
+    figure_mosaic = """
+    AAAB
+    CCCD
+    EEEF
+    """
+    fig, axes = plt.subplot_mosaic(figure_mosaic, num=("ood_cgk"))
+    axes = [axes[letter] for letter in 
+            sorted(list(set(figure_mosaic.replace("\n","").replace(" ", ""))))]
+    rows = 3
+    cols = 2
+#     rows = len(pairs)
+#     cols = 2
+#     fig, axes = plt.subplots(rows, cols, num=("ood_cgk"))
     axes = np.array(axes).reshape((rows, cols))
 #     labels = [lookup[1] for lookup in bar_lookups]
     labels = None
@@ -333,20 +343,30 @@ def main(
     for row in range(rows):
         col = 0
         ax = axes[row, col]
-        bar_lookups = pairs[row]
+        bar_lookups = pairs[row][:3]
         to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
         ax.set_xticklabels(["", ""])
         name = scenario_paper_names[bar_lookups[0][0]]
         name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name
         name = name + "\n(sparse)" if bar_lookups[0][0] == "cathedral" and bar_lookups[0][3] == "easy" else name
         ax.set_ylabel(name)
+        ax.set_ylim([0, 1.05])
         if ROT:
             for tick in ax.get_yticklabels():
                 tick.set_rotation(90)
-    ax.set_xticklabels(["Seen", "Unseen (S)", "Unseen (SC)", "Unseen (SCR)"])
-    for tick in ax.get_xticklabels():
+        col = 1
+        ax = axes[row, col]
+        bar_lookups = pairs[row][-1:]
+        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+        ax.set_xticklabels(["", ""])
+        ax.set_yticks([], [])
+        ax.set_ylim([0, 1.05])
+    axes[-1, 0].set_xticklabels(["S", "SC", "SCR"])
+    axes[-1, 1].set_xticklabels(["Domain Specific (for Reference)"])
+    for tick in axes[-1, 0].get_xticklabels():
         tick.set_rotation(90)
-    plt.show()
+    for tick in axes[-1, 1].get_xticklabels():
+        tick.set_rotation(90)
 
     # cost of generalization
     # single plot with generalists in simple, city, office, alt
@@ -354,22 +374,22 @@ def main(
     N = 100
     pairs = [
         [
-            ("alternate", "N3D", any_, "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
+            ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", "2021_12_06__21_45_47"), # noqa
             ("alternate", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ], [
-            ("city", "N3D", any_, "hardest", "navrep3dcityenv", N, "SCR", "GPT", any_),
+            ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", "2022_02_18__18_26_31"), # noqa
             ("city", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ], [
-            ("office", "N3D", any_, "random", "navrep3dofficeenv", N, "SCR", "GPT", any_),
+            ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", "2022_02_19__16_33_28"), # noqa
             ("office", "N3D", any_, "random", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ], [ # this one is wrong! training in old but testing in fixed env
-            ("staticasl", "N3D", any_, "hardest", "navrep3dstaticaslenv", N, "SCR", "GPT", any_),
-            ("staticasl", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", "2021_12_29__17_17_16"), # noqa
+            ("staticasl", "N3D", any_, "medium", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ]
     ]
     rows = len(pairs)
     cols = 1
-    fig, axes = plt.subplots(rows, cols, num=("ood_cgk" if ROT else "best_test"))
+    fig, axes = plt.subplots(rows, cols, num=("generalist_cost"))
     axes = np.array(axes).reshape((rows, cols))
 #     labels = [lookup[1] for lookup in bar_lookups]
     labels = None
@@ -386,10 +406,11 @@ def main(
         name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name
         name = name + "\n(sparse)" if bar_lookups[0][0] == "cathedral" and bar_lookups[0][3] == "easy" else name
         ax.set_ylabel(name)
+        ax.set_ylim([0, 1.05])
         if ROT:
             for tick in ax.get_yticklabels():
                 tick.set_rotation(90)
-    ax.set_xticklabels(["Specific", "Generalist (SCR)"])
+    ax.set_xticklabels(["Domain Specific", "SCR"])
     for tick in ax.get_xticklabels():
         tick.set_rotation(90)
     plt.show()

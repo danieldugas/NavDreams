@@ -276,7 +276,32 @@ python test_any.py --model-path \
 ###   "~/navrep3d/models/gym/navrep3daslfixedencodedenv_2022_01_01__13_09_23_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
 ###   --n-episodes $1 --build-name "./staticasl.x86_64" --difficulty-mode "medium" --render False
 
+# Generalists
+# U3-trained C in cathedral (?), gallery easy, and kozehd (easiest?)
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easiest" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "./alternate.x86_64" --difficulty-mode "hardest" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "./city.x86_64" --difficulty-mode "hardest" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "./office.x86_64" --difficulty-mode "random" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dunity3encodedenv_2022_01_06__22_23_13_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False
 
+
+# Generalists
 # SCR-trained C in simple, city, office, and staticasl
 python test_any.py --model-path \
   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \

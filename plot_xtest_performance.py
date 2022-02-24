@@ -5,6 +5,16 @@ from strictfire import StrictFire
 
 # from plot_gym_training_progress import make_legend_pickable
 
+scenario_paper_names = {
+    "alternate": "simple",
+    "city": "city",
+    "office": "office",
+    "staticasl": "modern",
+    "cathedral": "cathedral",
+    "gallery": "gallery",
+    "kozehd": "sim2real",
+}
+
 def dreamertrainenv_to_n3dtrainenv(trainenv):
     if trainenv == "NavRep3DStaticASLEnv":
         envname = "navrep3daslfixedenv"
@@ -119,6 +129,7 @@ def print_matches(lookup, data):
             print(key)
 
 def main(
+    paper=False,
     logdir="~/navrep3d/test/",
 ):
     # find logfiles
@@ -138,7 +149,7 @@ def main(
 
     any_ = None
 
-    def to_bar_chart(bar_lookups, ax, labels=None):
+    def to_bar_chart(bar_lookups, ax, labels=None, hide_error=False):
         values = []
         asy_errors = []
         crashes = []
@@ -180,29 +191,88 @@ def main(
         timeouts = np.array(timeouts)
         crashes = np.array(crashes)
         crashesother = np.array(crashesother)
+        if hide_error:
+            asy_errors = None
         ax.bar(labels, values, yerr=asy_errors, color="mediumseagreen")
         ax.bar(labels, timeouts, bottom=values, color="lightgrey")
         ax.bar(labels, crashes, bottom=values+timeouts, color="orange")
         ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="tomato")
 
-    # all plots
-    all_builds = sorted(list(set([(key[0], key[3]) for key in data])))
-    all_mtypes = sorted(list(set([key[1] for key in data])))
-    cols = len(all_mtypes)
-    rows = len(all_builds)
-    fig, axes = plt.subplots(rows, cols, num="all_tests")
+    if not paper:
+        # all plots
+        all_builds = sorted(list(set([(key[0], key[3]) for key in data])))
+        all_mtypes = sorted(list(set([key[1] for key in data])))
+        cols = len(all_mtypes)
+        rows = len(all_builds)
+        fig, axes = plt.subplots(rows, cols, num="all_tests")
+        axes = np.array(axes).reshape((rows, cols))
+        for row, (build, diff) in enumerate(all_builds):
+            for col, mtype in enumerate(all_mtypes):
+                ax = axes[row, col]
+                bar_lookups = [key for key in data
+                               if key[0] == build and key[3] == diff and key[1] == mtype]
+                bar_lookups = [key for key in bar_lookups if key[5] >= 50]
+                to_bar_chart(bar_lookups, ax)
+                if col == 0:
+                    ax.set_ylabel("{} {}".format(build, diff))
+                if row == 0:
+                    ax.set_title(mtype)
+        plt.show()
+
+    # single plot with best in each
+    ROT = True
+    N = 100
+    pairs = [
+        [
+            ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", "2021_12_06__21_45_47"), # noqa
+            ("alternate", "E2E", any_, "hardest", "navrep3daltenv", N, any_, any_, "2021_11_01__08_52_03"), # noqa
+        ], [
+            ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", "2022_02_18__18_26_31"), # noqa
+            ("city", "E2E", any_, "hardest", "navrep3dcityenv", N, any_, any_, "2022_02_19__16_34_05"), # noqa
+        ], [
+            ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", "2022_02_19__16_33_28"), # noqa
+            ("office", "E2E", any_, "random", "navrep3dofficeenv", N, any_, any_, "2022_02_17__21_27_47"), # noqa
+        ], [
+            ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", "2021_12_29__17_17_16"), # noqa
+            ("staticasl", "E2E", any_, "medium", "navrep3daslfixedenv", N, any_, any_, "2022_01_01__13_09_23"), # noqa
+        ], [
+            ("cathedral", "N3D", "bestckpt", "medium", "navrep3dcathedralenv", N, "SCR", "GPT", "2022_02_14__10_22_45"), # noqa
+            ("cathedral", "E2E", any_, "medium", "navrep3dcathedralenv", N, any_, any_, "2022_02_11__18_09_16"), # noqa
+        ], [
+            ("gallery", "N3D", "bestckpt", "easy", "navrep3dgalleryenv", N, "SCR", "GPT", "2022_02_11__21_52_34"), # noqa
+            ("gallery", "E2E", any_, "easy", "navrep3dgalleryenv", N, any_, any_, "2022_02_16__15_08_38"), # noqa
+        ], [
+            ("kozehd", "N3D", "bestckpt", "easiest", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
+            ("kozehd", "E2E", any_, "easiest", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
+        ], [
+            ("kozehd", "N3D", "bestckpt", "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
+            ("kozehd", "E2E", any_, "easy", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
+        ]
+    ]
+    rows = len(pairs)
+    cols = 1
+    fig, axes = plt.subplots(rows, cols, num=("best_test_rot" if ROT else "best_test"))
     axes = np.array(axes).reshape((rows, cols))
-    for row, (build, diff) in enumerate(all_builds):
-        for col, mtype in enumerate(all_mtypes):
-            ax = axes[row, col]
-            bar_lookups = [key for key in data
-                           if key[0] == build and key[3] == diff and key[1] == mtype]
-            bar_lookups = [key for key in bar_lookups if key[5] >= 50]
-            to_bar_chart(bar_lookups, ax)
-            if col == 0:
-                ax.set_ylabel("{} {}".format(build, diff))
-            if row == 0:
-                ax.set_title(mtype)
+#     labels = [lookup[1] for lookup in bar_lookups]
+    labels = None
+#         "Dreamer",
+    if ROT:
+        pairs = pairs[::-1]
+    for row in range(rows):
+        col = 0
+        ax = axes[row, col]
+        bar_lookups = pairs[row]
+        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+        ax.set_xticklabels(["", ""])
+        name = scenario_paper_names[bar_lookups[0][0]]
+        name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name
+        ax.set_ylabel(name)
+        if ROT:
+            for tick in ax.get_yticklabels():
+                tick.set_rotation(90)
+    ax.set_xticklabels(["World-model", "End-to-end"])
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(90)
     plt.show()
 
     # single plot with best in simple
@@ -223,7 +293,6 @@ def main(
     to_bar_chart(bar_lookups, ax, labels=labels)
     for tick in ax.get_xticklabels():
         tick.set_rotation(90)
-
     plt.show()
 
     # single hand picked plot

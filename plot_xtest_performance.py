@@ -149,38 +149,65 @@ def main(
 
     any_ = None
 
-    def to_bar_chart(bar_lookups, ax, labels=None, hide_error=False):
-        values = []
+    def to_bar_chart(bar_lookups, ax, labels=None, hide_error=False, merge_seeds=False):
+        if len(bar_lookups) == 0:
+            return
+        reachedgoals = []
         asy_errors = []
         crashes = []
         crashesother = []
         timeouts = []
         foundkeys = []
+        spoilts = []
         for lookup in bar_lookups:
             matches, keys = find_matches_in_data(lookup, data, alert_if_not_found=True)
-            if len(matches) != 1:
+            if len(matches) != 1 and not merge_seeds:
                 raise ValueError("Matches != 1:\nfor\n{}\nfound\n{}".format(lookup, keys))
-            arrays = matches[0]
-            key = keys[0]
-            # values
-            successes = arrays["successes"]
-#             difficulties = arrays["difficulties"]
-            causes = arrays["causes"]
-            lengths = arrays["lengths"]
-            # if you recompute timeouts, need to overwrite other causes
-            recalc_timeout = None
-            recalc_timeout = int(180. / 0.2)
-            if recalc_timeout is not None:
-                causes[lengths > recalc_timeout] = "Timeout"
-                successes[lengths > recalc_timeout] = 0
-            timeouts.append(np.mean(causes == "Timeout"))
-            crashes.append(np.mean(causes == "Collision"))
-            crashesother.append(np.mean(causes == "Collision from other agent"))
-            values.append(np.mean(successes))
-            # spread is difference between mean of first half and second half
-            splits = np.array_split(successes, 2)
-            splits = [np.mean(s) for s in splits]
-            asy_error = [abs(min(splits)-np.mean(successes)), abs(max(splits)-np.mean(successes))]
+            seeds_successes = []
+            seeds_timeouts = []
+            seeds_crashes = []
+            seeds_crashesother = []
+            seeds_spread = []
+            for arrays, key in zip(matches, keys):
+                # successes
+                successes = arrays["successes"]
+    #             difficulties = arrays["difficulties"]
+                causes = arrays["causes"]
+                lengths = arrays["lengths"]
+                # if you recompute timeouts, need to overwrite other causes
+                recalc_timeout = None
+                recalc_timeout = int(180. / 0.2)
+                if recalc_timeout is not None:
+                    causes[lengths > recalc_timeout] = "Timeout"
+                    successes[lengths > recalc_timeout] = 0
+                splits = np.array_split(successes, 2)
+                splits = [np.mean(s) for s in splits]
+                spread = max(splits) - min(splits)
+                seeds_successes.append(np.mean(successes))
+                seeds_timeouts.append(np.mean(causes == "Timeout"))
+                seeds_crashes.append(np.mean(causes == "Collision"))
+                seeds_crashesother.append(np.mean(causes == "Collision from other agent"))
+                seeds_spread.append(spread)
+
+            # merge seeds into one bar
+            tol = 0.15
+            seeds_spread = np.array(seeds_spread)
+            spoilt = np.all(seeds_spread > tol)
+            if spoilt:  # still show something
+                spoilt = np.mean(seeds_spread) / 2
+            else:
+                seeds_successes = np.array(seeds_successes)[seeds_spread <= tol]
+                seeds_timeouts = np.array(seeds_timeouts)[seeds_spread <= tol]
+                seeds_crashes = np.array(seeds_crashes)[seeds_spread <= tol]
+                seeds_crashesother = np.array(seeds_crashesother)[seeds_spread <= tol]
+            # add single bar to bars
+            spoilts.append(spoilt)
+            timeouts.append(np.mean(seeds_timeouts))
+            crashes.append(np.mean(seeds_crashes))
+            crashesother.append(np.mean(seeds_crashesother))
+            reachedgoals.append(np.mean(seeds_successes))
+            asy_error = [abs(min(seeds_successes)-np.mean(seeds_successes)),
+                         abs(max(seeds_successes)-np.mean(seeds_successes))]
             asy_errors.append(asy_error)
             # label
             build, mtype, ckpt, difficulty, trainenv, n_episodes, wmscope, wmtype, uid = lookup
@@ -188,17 +215,21 @@ def main(
         if labels is None:
             labels = [str(k) for k in foundkeys]
 
-        values = np.array(values)
-        asy_errors = np.array(asy_errors).reshape((len(values), 2)).T
+        spoilts = np.array(spoilts)
+        reachedgoals = np.array(reachedgoals)
+        asy_errors = np.array(asy_errors).reshape((len(reachedgoals), 2)).T
         timeouts = np.array(timeouts)
         crashes = np.array(crashes)
         crashesother = np.array(crashesother)
+        labels = np.array(labels)
         if hide_error:
             asy_errors = None
-        ax.bar(labels, values, yerr=asy_errors, color="mediumseagreen")
-        ax.bar(labels, timeouts, bottom=values, color="lightgrey")
-        ax.bar(labels, crashes, bottom=values+timeouts, color="orange")
-        ax.bar(labels, crashesother, bottom=values+timeouts+crashes, color="tomato")
+        ax.bar(labels, reachedgoals, yerr=asy_errors, color="mediumseagreen")
+        ax.bar(labels, timeouts, bottom=reachedgoals, color="lightgrey")
+        ax.bar(labels, crashes, bottom=reachedgoals+timeouts, color="orange")
+        ax.bar(labels, crashesother, bottom=reachedgoals+timeouts+crashes, color="tomato")
+        if not hide_error:
+            ax.bar(labels[spoilts > 0], (reachedgoals - spoilts)[spoilts > 0], color="blue")
 
     if not paper:
         # all plots
@@ -236,29 +267,29 @@ def main(
     N = 100
     pairs = [
         [
-            ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", "2021_12_06__21_45_47"), # noqa
-            ("alternate", "E2E", any_, "hardest", "navrep3daltenv", N, any_, any_, "2021_11_01__08_52_03"), # noqa
+            ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", any_), # noqa
+            ("alternate", "E2E", any_, "hardest", "navrep3daltenv", N, any_, any_, any_), # noqa
         ], [
-            ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", "2022_02_18__18_26_31"), # noqa
-            ("city", "E2E", any_, "hardest", "navrep3dcityenv", N, any_, any_, "2022_02_19__16_34_05"), # noqa
+            ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", any_), # noqa
+            ("city", "E2E", any_, "hardest", "navrep3dcityenv", N, any_, any_, any_), # noqa
         ], [
-            ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", "2022_02_19__16_33_28"), # noqa
-            ("office", "E2E", any_, "random", "navrep3dofficeenv", N, any_, any_, "2022_02_17__21_27_47"), # noqa
+            ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", any_), # noqa
+            ("office", "E2E", any_, "random", "navrep3dofficeenv", N, any_, any_, any_), # noqa
         ], [
-            ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", "2021_12_29__17_17_16"), # noqa
-            ("staticasl", "E2E", any_, "medium", "navrep3daslfixedenv", N, any_, any_, "2022_01_01__13_09_23"), # noqa
+            ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", any_), # noqa
+            ("staticasl", "E2E", any_, "medium", "navrep3daslfixedenv", N, any_, any_, any_), # noqa
         ], [
-            ("cathedral", "N3D", "bestckpt", "medium", "navrep3dcathedralenv", N, "SCR", "GPT", "2022_02_14__10_22_45"), # noqa
-            ("cathedral", "E2E", any_, "medium", "navrep3dcathedralenv", N, any_, any_, "2022_02_11__18_09_16"), # noqa
+            ("cathedral", "N3D", "bestckpt", "medium", "navrep3dcathedralenv", N, "SCR", "GPT", any_), # noqa
+            ("cathedral", "E2E", any_, "medium", "navrep3dcathedralenv", N, any_, any_, any_), # noqa
         ], [
-            ("gallery", "N3D", "bestckpt", "easy", "navrep3dgalleryenv", N, "SCR", "GPT", "2022_02_11__21_52_34"), # noqa
-            ("gallery", "E2E", any_, "easy", "navrep3dgalleryenv", N, any_, any_, "2022_02_16__15_08_38"), # noqa
+            ("gallery", "N3D", "bestckpt", "easy", "navrep3dgalleryenv", N, "SCR", "GPT", any_), # noqa
+            ("gallery", "E2E", any_, "easy", "navrep3dgalleryenv", N, any_, any_, any_), # noqa
         ], [
-            ("kozehd", "N3D", "bestckpt", "easier", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
-            ("kozehd", "E2E", any_, "easier", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
+            ("kozehd", "N3D", "bestckpt", "easier", "navrep3dkozehdrsenv", N, "K2", "GPT", any_), # noqa
+            ("kozehd", "E2E", any_, "easier", "navrep3dkozehdrsenv", N, any_, any_, any_), # noqa
 #         ], [
-#             ("kozehd", "N3D", "bestckpt", "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
-#             ("kozehd", "E2E", any_, "easy", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
+#             ("kozehd", "N3D", "bestckpt", "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", any_), # noqa
+#             ("kozehd", "E2E", any_, "easy", "navrep3dkozehdrsenv", N, any_, any_, any_), # noqa
         ]
     ]
     rows = len(pairs)
@@ -274,7 +305,7 @@ def main(
         col = 0
         ax = axes[row, col]
         bar_lookups = pairs[row]
-        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper, merge_seeds=True)
         ax.set_xticklabels(["", ""])
         name = scenario_paper_names[bar_lookups[0][0]]
         name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name
@@ -292,8 +323,8 @@ def main(
     N = 100
     bar_lookups = [
         ("alternate", "DREAMER", "ckpt", "hardest", "navrep3daltenv", N, any_, "RSSM", any_),
-        ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", "2021_12_06__21_45_47"),
-        ("alternate", "E2E", any_, "hardest", "navrep3daltenv", N, any_, any_, "2021_11_01__08_52_03"),
+        ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", any_),
+        ("alternate", "E2E", any_, "hardest", "navrep3daltenv", N, any_, any_, any_),
     ]
 #         ("alternate", "DREAMER", any_, "hardest", "navrep3daltenv", N, any_, any_, any_),
 #     labels = [lookup[1] for lookup in bar_lookups]
@@ -304,7 +335,7 @@ def main(
     ]
 #         "Dreamer",
     ax = axes
-    to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+    to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper, merge_seeds=True)
     for tick in ax.get_xticklabels():
         tick.set_rotation(90)
     plt.show()
@@ -354,7 +385,7 @@ def main(
         col = 0
         ax = axes[row, col]
         bar_lookups = pairs[row][:3]
-        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper, merge_seeds=True)
         ax.set_xticklabels(["", ""])
         name = scenario_paper_names[bar_lookups[0][0]]
         name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name
@@ -367,7 +398,7 @@ def main(
         col = 1
         ax = axes[row, col]
         bar_lookups = pairs[row][-1:]
-        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper, merge_seeds=True)
         ax.set_xticklabels(["", ""])
         ax.set_yticks([], [])
         ax.set_ylim([0, 1.05])
@@ -384,17 +415,17 @@ def main(
     N = 100
     pairs = [
         [
-            ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", "2021_12_06__21_45_47"), # noqa
-            ("alternate", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
+            ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", any_), # noqa
+            ("alternate", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ], [
-            ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", "2022_02_18__18_26_31"), # noqa
-            ("city", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
+            ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", any_), # noqa
+            ("city", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ], [
-            ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", "2022_02_19__16_33_28"), # noqa
-            ("office", "N3D", any_, "random", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
+            ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", any_), # noqa
+            ("office", "N3D", any_, "random", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ], [ # this one is wrong! training in old but testing in fixed env
-            ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", "2021_12_29__17_17_16"), # noqa
-            ("staticasl", "N3D", any_, "medium", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
+            ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", any_), # noqa
+            ("staticasl", "N3D", any_, "medium", "navrep3dSCRenv", N, "SCR", "GPT", any_),
         ]
     ]
     rows = len(pairs)
@@ -410,7 +441,7 @@ def main(
         col = 0
         ax = axes[row, col]
         bar_lookups = pairs[row]
-        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper)
+        to_bar_chart(bar_lookups, ax, labels=labels, hide_error=paper, merge_seeds=True)
         ax.set_xticklabels(["", ""])
         name = scenario_paper_names[bar_lookups[0][0]]
         name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name

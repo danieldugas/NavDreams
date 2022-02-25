@@ -301,15 +301,15 @@
 ###   --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False
 
 # Generalists Win
-python test_any.py --model-path \
-  "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_06__21_58_01_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
-python test_any.py --model-path \
-  "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_06__21_58_01_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
-python test_any.py --model-path \
-  "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_06__21_58_01_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
-  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+### python test_any.py --model-path \
+###   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_06__21_58_01_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
+###   --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+### python test_any.py --model-path \
+###   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_06__21_58_01_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
+###   --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+### python test_any.py --model-path \
+###   "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_06__21_58_01_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" \
+###   --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
 
 # Generalists Cost
 # SCR-trained C in simple, city, office, and staticasl
@@ -352,38 +352,64 @@ python test_any.py --model-path \
 ###   --n-episodes $1 --build-name "staticasl" --difficulty-mode "medium" --render False # oh no this is before fix!
 
 
+# 6) part II, rest of the seeds
 # not all models are trained fully!
-# python test_any.py --model-path \
-#   "~/navrep3d/models/gym/
-# navrep3dcathedralencodedenv_2022_02_14__10_22_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip
-# navrep3dcathedralencodedenv_2022_02_14__10_23_10_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip
-# navrep3dcathedralencodedenv_2022_02_16__15_07_50_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip
-# navrep3dcathedralenv_2022_02_11__18_09_16_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# navrep3dcathedralenv_2022_02_16__15_21_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# navrep3dcathedralenv_2022_02_17__15_24_20_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# " \
-#   --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
-#
-# python test_any.py --model-path \
-#   "~/navrep3d/models/gym/
-# navrep3dgalleryencodedenv_2022_02_11__21_52_34_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip
-# navrep3dgalleryencodedenv_2022_02_11__21_55_17_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip
-# navrep3dgalleryencodedenv_2022_02_16__15_23_37_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip
-# navrep3dgalleryenv_2022_02_16__15_08_38_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# navrep3dgalleryenv_2022_02_16__15_19_22_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# navrep3dgalleryenv_2022_02_17__15_23_22_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# " \
-#   --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
-#
-# python test_any.py --model-path \
-#   "~/navrep3d/models/gym/
-# navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip
-# navrep3dkozehdrsencodedenv_2022_02_06__22_45_40_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip
-# navrep3dkozehdrsencodedenv_2022_02_22__10_42_42_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip
-# navrep3dkozehdrsencodedenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# navrep3dkozehdrsencodedenv_2022_02_09__18_19_21_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip
-# " \
-#   --n-episodes $1 --build-name "kozehd" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralencodedenv_2022_02_14__10_22_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralencodedenv_2022_02_14__10_23_10_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralencodedenv_2022_02_16__15_07_50_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralenv_2022_02_11__18_09_16_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralenv_2022_02_16__15_21_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dcathedralenv_2022_02_17__15_24_20_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "cathedral" --difficulty-mode "medium" --render False
+
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dgalleryencodedenv_2022_02_11__21_52_34_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dgalleryencodedenv_2022_02_11__21_55_17_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dgalleryencodedenv_2022_02_16__15_23_37_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dgalleryenv_2022_02_16__15_08_38_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dgalleryenv_2022_02_16__15_19_22_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dgalleryenv_2022_02_17__15_23_22_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "gallery" --difficulty-mode "easy" --render False
+
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_06__22_45_40_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_22__10_42_42_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_06__22_58_00_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_09__18_19_21_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
+python test_any.py --model-path \
+  "~/navrep3d/models/gym/navrep3dkozehdrsenv_2022_02_23__10_41_13_DISCRETE_PPO_E2E_VCARCH_C64_bestckpt.zip" \
+  --n-episodes $1 --build-name "kozehd" --difficulty-mode "easier" --render False
 
 
 # Redo kozehd with 3 people

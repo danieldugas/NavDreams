@@ -43,7 +43,7 @@ clean_scenario_names = {
     "navrep3dasl": "modern",
     "navrep3dcathedral": "cathedral",
     "navrep3dgallery": "gallery",
-    "navrep3dkozehd": "sim2real",
+    "navrep3dkozehd": "replica",
     "all_scenarios": "",
 }
 

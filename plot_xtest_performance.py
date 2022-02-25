@@ -12,7 +12,7 @@ scenario_paper_names = {
     "staticasl": "modern",
     "cathedral": "cathedral",
     "gallery": "gallery",
-    "kozehd": "sim2real",
+    "kozehd": "replica",
 }
 
 def dreamertrainenv_to_n3dtrainenv(trainenv):
@@ -221,6 +221,16 @@ def main(
                     ax.set_title(mtype)
         plt.show()
 
+    # legend
+    if False:
+        plt.figure()
+        plt.bar([0], [1], label="success", color="mediumseagreen")
+        plt.bar([0], [1], label="timeout", color="lightgrey")
+        plt.bar([0], [1], label="object collision", color="orange")
+        plt.bar([0], [1], label="person collision", color="tomato")
+        plt.legend(ncol=4)
+        plt.show()
+
     # single plot with best in each
     ROT = True
     N = 100
@@ -244,11 +254,11 @@ def main(
             ("gallery", "N3D", "bestckpt", "easy", "navrep3dgalleryenv", N, "SCR", "GPT", "2022_02_11__21_52_34"), # noqa
             ("gallery", "E2E", any_, "easy", "navrep3dgalleryenv", N, any_, any_, "2022_02_16__15_08_38"), # noqa
         ], [
-            ("kozehd", "N3D", "bestckpt", "easiest", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
-            ("kozehd", "E2E", any_, "easiest", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
-        ], [
-            ("kozehd", "N3D", "bestckpt", "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
-            ("kozehd", "E2E", any_, "easy", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
+            ("kozehd", "N3D", "bestckpt", "easier", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
+            ("kozehd", "E2E", any_, "easier", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
+#         ], [
+#             ("kozehd", "N3D", "bestckpt", "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", "2022_02_02__17_18_59"), # noqa
+#             ("kozehd", "E2E", any_, "easy", "navrep3dkozehdrsenv", N, any_, any_, "2022_02_06__22_58_00"), # noqa
         ]
     ]
     rows = len(pairs)
@@ -315,10 +325,10 @@ def main(
             ("gallery", "N3D", any_, "easy", "navrep3dSCRenv", N, "SCR", "GPT", any_),
             ("gallery", "N3D", any_, "easy", "navrep3dgalleryenv", N, "SCR", "GPT", any_),
         ], [
-            ("kozehd", "N3D", any_, "easiest", "navrep3daltenv", N, "SCR", "GPT", any_),
-            ("kozehd", "N3D", any_, "easiest", "navrep3dSCenv", N, "SCR", "GPT", any_),
-            ("kozehd", "N3D", any_, "easiest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
-            ("kozehd", "N3D", any_, "easiest", "navrep3dkozehdrsenv", N, "K2", "GPT", any_),
+            ("kozehd", "N3D", any_, "easier", "navrep3daltenv", N, "SCR", "GPT", any_),
+            ("kozehd", "N3D", any_, "easier", "navrep3dSCenv", N, "SCR", "GPT", any_),
+            ("kozehd", "N3D", any_, "easier", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("kozehd", "N3D", any_, "easier", "navrep3dkozehdrsenv", N, "K2", "GPT", any_),
         ]
     ]
     figure_mosaic = """
@@ -375,16 +385,16 @@ def main(
     pairs = [
         [
             ("alternate", "N3D", "bestckpt", "hardest", "navrep3daltenv", N, "SCR", "GPT", "2021_12_06__21_45_47"), # noqa
-            ("alternate", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("alternate", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
         ], [
             ("city", "N3D", "bestckpt", "hardest", "navrep3dcityenv", N, "SCR", "GPT", "2022_02_18__18_26_31"), # noqa
-            ("city", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("city", "N3D", any_, "hardest", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
         ], [
             ("office", "N3D", "bestckpt", "random", "navrep3dofficeenv", N, "SCR", "GPT", "2022_02_19__16_33_28"), # noqa
-            ("office", "N3D", any_, "random", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("office", "N3D", any_, "random", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
         ], [ # this one is wrong! training in old but testing in fixed env
             ("staticasl", "N3D", "bestckpt", "medium", "navrep3daslfixedenv", N, "SCR", "GPT", "2021_12_29__17_17_16"), # noqa
-            ("staticasl", "N3D", any_, "medium", "navrep3dSCRenv", N, "SCR", "GPT", any_),
+            ("staticasl", "N3D", any_, "medium", "navrep3dSCRenv", N, "SCR", "GPT", "2021_12_12__16_46_51"),
         ]
     ]
     rows = len(pairs)

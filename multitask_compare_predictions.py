@@ -123,6 +123,9 @@ def main(gpu : bool = False):
             ax6.set_ylabel("specific")
             ax7.set_ylabel("E2E")
             ax8.set_ylabel("N3D")
+        for ax in axrow:
+            ax.set_xticks([])
+            ax.set_yticks([])
     plt.show()
 
 

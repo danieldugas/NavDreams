@@ -228,6 +228,7 @@ def main(
         ax.bar(labels, timeouts, bottom=reachedgoals, color="lightgrey")
         ax.bar(labels, crashes, bottom=reachedgoals+timeouts, color="orange")
         ax.bar(labels, crashesother, bottom=reachedgoals+timeouts+crashes, color="tomato")
+        plt.setp(ax.get_xticklabels(), Fontsize=12)
         if not hide_error:
             ax.bar(labels[spoilts > 0], (reachedgoals - spoilts)[spoilts > 0], color="blue")
 
@@ -284,9 +285,9 @@ def main(
         ], [
             ("gallery", "N3D", "bestckpt", "easy", "navrep3dgalleryenv", N, "SCR", "GPT", any_), # noqa
             ("gallery", "E2E", any_, "easy", "navrep3dgalleryenv", N, any_, any_, any_), # noqa
-        ], [
-            ("kozehd", "N3D", "bestckpt", "easier", "navrep3dkozehdrsenv", N, "K2", "GPT", any_), # noqa
-            ("kozehd", "E2E", any_, "easier", "navrep3dkozehdrsenv", N, any_, any_, any_), # noqa
+#         ], [
+#             ("kozehd", "N3D", "bestckpt", "easier", "navrep3dkozehdrsenv", N, "K2", "GPT", any_), # noqa
+#             ("kozehd", "E2E", any_, "easier", "navrep3dkozehdrsenv", N, any_, any_, any_), # noqa
 #         ], [
 #             ("kozehd", "N3D", "bestckpt", "easy", "navrep3dkozehdrsenv", N, "K2", "GPT", any_), # noqa
 #             ("kozehd", "E2E", any_, "easy", "navrep3dkozehdrsenv", N, any_, any_, any_), # noqa
@@ -309,7 +310,7 @@ def main(
         ax.set_xticklabels(["", ""])
         name = scenario_paper_names[bar_lookups[0][0]]
         name = name + "\n(empty)" if bar_lookups[0][3] == "easiest" else name
-        ax.set_ylabel(name)
+        ax.set_ylabel(name, fontsize=12)
         if ROT:
             for tick in ax.get_yticklabels():
                 tick.set_rotation(90)

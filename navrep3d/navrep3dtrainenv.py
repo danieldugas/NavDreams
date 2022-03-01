@@ -765,15 +765,101 @@ class NavRep3DTrainEnv(gym.Env):
             # image
             imageData.blit(0,0)
             image_in_vp.disable()
+            # action
+            if mode == "image_only":
+                frnt, left, rght = (False, False, False)
+                if self.last_action is not None:
+                    if self.last_action[0] > 0.05:
+                        frnt = True
+                    if self.last_action[2] > 0.05:
+                        left = True
+                    if self.last_action[2] < -0.05:
+                        rght = True
+                offsize = 10
+                offcolor = (0.6, 0.6, 0.8, 0.5)
+                oncolor = (0.8, 0.2, 1., 1)
+                bbcolor = (1., 1., 1., 1)
+                # front
+                center = (VP_W // 2, 20)
+                color = offcolor
+                size = offsize
+                if frnt:
+                    color = bbcolor
+                    size = offsize * 1.2
+                    gl.glBegin(gl.GL_TRIANGLES)
+                    gl.glColor4f(color[0], color[1], color[2], color[3])
+                    gl.glVertex3f(center[0], center[1]+size, 0)
+                    gl.glVertex3f(center[0]-size, center[1]-size, 0)
+                    gl.glVertex3f(center[0]+size, center[1]-size, 0)
+                    gl.glEnd()
+                    if False:
+                        poly = make_circle((center[0], center[1]-0.3 * size), size+2)
+                        gl.glBegin(gl.GL_POLYGON)
+                        gl.glColor4f(color[0], color[1], color[2], color[3])
+                        for vert in poly:
+                            gl.glVertex3f(vert[0], vert[1], 0)
+                        gl.glEnd()
+                    size = offsize
+                    color = oncolor
+                gl.glBegin(gl.GL_TRIANGLES)
+                gl.glColor4f(color[0], color[1], color[2], color[3])
+                gl.glVertex3f(center[0], center[1]+size, 0)
+                gl.glVertex3f(center[0]-size, center[1]-size, 0)
+                gl.glVertex3f(center[0]+size, center[1]-size, 0)
+                gl.glEnd()
+                # left
+                center = (VP_W // 2 - 40, 20)
+                color = offcolor
+                size = offsize
+                if left:
+                    color = bbcolor
+                    size = offsize * 1.2
+                    gl.glBegin(gl.GL_TRIANGLES)
+                    gl.glColor4f(color[0], color[1], color[2], color[3])
+                    gl.glVertex3f(center[0]-size, center[1], 0)
+                    gl.glVertex3f(center[0]+size, center[1]-size, 0)
+                    gl.glVertex3f(center[0]+size, center[1]+size, 0)
+                    gl.glEnd()
+                    color = oncolor
+                    size = offsize
+                gl.glBegin(gl.GL_TRIANGLES)
+                gl.glColor4f(color[0], color[1], color[2], color[3])
+                gl.glVertex3f(center[0]-size, center[1], 0)
+                gl.glVertex3f(center[0]+size, center[1]-size, 0)
+                gl.glVertex3f(center[0]+size, center[1]+size, 0)
+                gl.glEnd()
+                # right
+                center = (VP_W // 2 + 40, 20)
+                color = offcolor
+                size = offsize
+                if rght:
+                    color = bbcolor
+                    size = offsize * 1.2
+                    gl.glBegin(gl.GL_TRIANGLES)
+                    gl.glColor4f(color[0], color[1], color[2], color[3])
+                    gl.glVertex3f(center[0]+size, center[1], 0)
+                    gl.glVertex3f(center[0]-size, center[1]+size, 0)
+                    gl.glVertex3f(center[0]-size, center[1]-size, 0)
+                    gl.glEnd()
+                    color = oncolor
+                    size = offsize
+                gl.glBegin(gl.GL_TRIANGLES)
+                gl.glColor4f(color[0], color[1], color[2], color[3])
+                gl.glVertex3f(center[0]+size, center[1], 0)
+                gl.glVertex3f(center[0]-size, center[1]+size, 0)
+                gl.glVertex3f(center[0]-size, center[1]-size, 0)
+                gl.glEnd()
+                self.score_label.text = ""
+            else:
+                self.score_label.text = "{} S {} R {:.1f} A {:.1f} {:.1f} {:.1f}".format(
+                    '*' if self.reset_in_progress else '',
+                    self.infer_current_scenario(),
+                    self.episode_reward,
+                    self.last_action[0],
+                    self.last_action[1],
+                    self.last_action[2],
+                )
             # Text
-            self.score_label.text = "{} S {} R {:.1f} A {:.1f} {:.1f} {:.1f}".format(
-                '*' if self.reset_in_progress else '',
-                self.infer_current_scenario(),
-                self.episode_reward,
-                self.last_action[0],
-                self.last_action[1],
-                self.last_action[2],
-            )
             self.score_label.draw()
             win.flip()
             if save_to_file:

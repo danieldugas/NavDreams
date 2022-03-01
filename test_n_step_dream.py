@@ -145,7 +145,7 @@ def main(dataset="SCR",
          error=False,
          dataset_info=False,
          offset=0,
-         skip=1,
+         skip=2,
          samples=1000,
          gifs=False,
          paper_sequences=False,
@@ -154,7 +154,7 @@ def main(dataset="SCR",
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
     worldmodel_types = ["transformer", "RSSM_A0_explicit", "TransformerL_V0", "RSSM_A0", "TSSM_V2"]
 #     worldmodel_types = ["RSSM_A0_explicit", "RSSM_A0"]
-    worldmodel_types = ["TransformerL_V0", "RSSM_A0"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A0", "transformer"]
 #     worldmodel_types = ["DummyWorldModel"]
     discrete_actions = False
 
@@ -405,6 +405,8 @@ def main(dataset="SCR",
     # images plot
     n_rows_per_example = (len(worldmodels) + 1)
     n_cols = sequence_length // (1 + skip)
+    if skip == 3: # dirty but no time
+        n_cols += 1
     fig, axes = plt.subplots(n_rows_per_example * n_examples, n_cols, num="dream",
                              figsize=(22, 3 * n_examples), dpi=100)
     axes = np.array(axes).reshape((-1, n_cols))
@@ -412,7 +414,7 @@ def main(dataset="SCR",
         for i in range(sequence_length):
             axes[n_rows_per_example*n, i // (1 + skip)].imshow(real_sequence[i]['obs'])
             if n == 0:
-                axes[n_rows_per_example*n, i // (1 + skip)].set_title(i)
+                axes[n_rows_per_example*n, i // (1 + skip)].set_title(i, fontsize=15)
             if i >= context_length:
                 for m, dream_sequence in enumerate(dream_sequences):
                     axes[n_rows_per_example*n+1+m, i // (1 + skip)].imshow(dream_sequence[i]['obs'])

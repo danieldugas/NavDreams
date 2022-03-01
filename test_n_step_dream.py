@@ -137,6 +137,15 @@ def sequences_to_comparison_gif(dream_sequences, worldmodel_names, real_sequence
     clip.write_gif("/tmp/comparison_dream_of_length{}_index{}_{}.gif".format(
         len(frames), sequence_idx, '_'.join([n[:6] for n in worldmodel_names])), fps=20)
 
+def black_sequence_after_done(dream_sequence):
+    done = False
+    for dic in dream_sequence:
+        img = dic["obs"]
+        if np.mean(img) < 0.1:
+            done = True
+        if done:
+            dic["obs"] = np.zeros_like(img)
+
 def main(dataset="SCR",
          gpu=False,
          dream_length=48,
@@ -154,7 +163,8 @@ def main(dataset="SCR",
     worldmodel_types = ["TransformerL_V0", "RSSM_A1", "RSSM_A0", "TSSM_V2", "transformer"]
     worldmodel_types = ["transformer", "RSSM_A0_explicit", "TransformerL_V0", "RSSM_A0", "TSSM_V2"]
 #     worldmodel_types = ["RSSM_A0_explicit", "RSSM_A0"]
-    worldmodel_types = ["TransformerL_V0", "RSSM_A0", "transformer"]
+    worldmodel_types = ["TransformerL_V0", "RSSM_A0", "transformer"] # comparison image
+#     worldmodel_types = ["TransformerL_V0", "transformer", "TSSM_V2", "RSSM_A0"] # gifs
 #     worldmodel_types = ["DummyWorldModel"]
     discrete_actions = False
 
@@ -284,11 +294,15 @@ def main(dataset="SCR",
             if idx >= len(seq_loader): # this shouldn't be necessary, but it is (len is not honored by for)
                 continue
             x, a, y, x_rs, y_rs, dones = seq_loader[idx]
+            if np.any(dones[:-1]):
+                continue
             real_sequence = [dict(obs=x[j], state=x_rs[j], action=a[j]) for j in range(sequence_length)]
             dream_sequences = []
             names = []
             for worldmodel in worldmodels:
+                black_sequence_after_done(real_sequence)
                 dream_sequence = worldmodel.fill_dream_sequence(real_sequence, context_length)
+                black_sequence_after_done(dream_sequence)
                 dream_sequences.append(dream_sequence)
                 names.append(type(worldmodel).__name__)
                 sequence_to_gif(dream_sequence, type(worldmodel).__name__, real_sequence, idx)

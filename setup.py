@@ -7,7 +7,7 @@ setup(
     version='0.0.4',
     packages=["navdreams",
               ],
-    python_requires='>=3.6, <3.7',
+    python_requires='>=3.6',
     install_requires=[
         'numpy', 'matplotlib',
         'pyrvo2-danieldugas',

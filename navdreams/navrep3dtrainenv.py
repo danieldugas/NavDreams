@@ -7,7 +7,6 @@ import time
 import numpy as np
 from timeit import default_timer as timer
 from navrep.tools.envplayer import EnvPlayer
-from crowd_sim.envs.utils.info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 from pose2d import apply_tf_to_vel, inverse_pose2d, apply_tf_to_pose, apply_tf
 from pandas import DataFrame
 import gym
@@ -20,6 +19,7 @@ from strictfire import StrictFire
 
 from navdreams import helpers as helpers
 from navdreams import socket_handler as socket_handler
+from navdreams.crowd_sim_info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 
 _H = 64 # 36 # 120
 _W = 64 # 36 # 160

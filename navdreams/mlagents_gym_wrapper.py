@@ -3,12 +3,12 @@ import gym
 import time
 from pandas import DataFrame
 import numpy as np
-from crowd_sim.envs.utils.info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 from mlagents_envs.environment import UnityEnvironment
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
+from navdreams.crowd_sim_info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 from navdreams.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use, download_binaries_if_not_found
 
 HOMEDIR = os.path.expanduser("~")

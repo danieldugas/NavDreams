@@ -10,6 +10,10 @@ RUN sudo apt-get install -y build-essential python3-dev cmake gcc g++ # needed t
 RUN sudo apt-get install -y git git-lfs # needed to download sim binaries
 RUN sudo apt-get install -y python3-pip virtualenv
 
+# GUI libraries needed by opencv
+# RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+# RUN sudo apt-get install -y python3-opencv
+
 ENV VIRTUAL_ENV=~/navdreamsenv
 RUN virtualenv $VIRTUAL_ENV --python=python3.6
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -17,11 +21,11 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # pip
 RUN pip3 install --upgrade pip # fixes ubuntu 20 pip pep517 error
 
-# RUN sudo apt-get install -y python3-opencv
+
 RUN pip3 install numpy cython
 RUN pip3 install \
   torch==1.9.0 \
-  mlagents \
+  mlagents==0.27.0 \
   matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet navrep typer strictfire \
   jedi==0.17 gym==0.18.0 \
   navdreams

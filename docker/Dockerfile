@@ -25,7 +25,6 @@ RUN pip3 install --upgrade pip # fixes ubuntu 20 pip pep517 error
 
 RUN pip3 install numpy cython
 RUN pip3 install \
-  torch==1.9.0 \
   mlagents==0.27.0 \
   matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet navrep typer strictfire \
   jedi==0.17 gym==0.18.0 \

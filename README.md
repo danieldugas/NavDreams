@@ -25,9 +25,16 @@ Our simulator currently contains 7 scenarios. Some of these are based on 2D envi
 
 ## Models and Tools
 
-Model implementations, trained checkpoints, training tools, and plotting tools are made available here.
+Model implementations, trained checkpoints, training tools, and plotting tools are made available in this repo.
 
 ![models](media/models.gif)
+
+# How-to
+
+- Manual Install
+- Running the simulator
+- Training the world-model
+- Training the controller
 
 ## Manual Install
 
@@ -35,11 +42,26 @@ Model implementations, trained checkpoints, training tools, and plotting tools a
 pip install navdreams
 ```
 
-### Running the simulated environments
+## Running the simulated environments
 
 ```
 python -m navdreams.mlagents_gym_wrapper
 ```
+
+## Training the World-Model
+
+```
+python make_vae_dataset.py --env SCR
+python train_gpt.py --dataset SCR
+```
+
+## Training the Controller
+
+```
+python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --build-name ./city.x86_64
+```
+
+---
 
 ## Server Install
 

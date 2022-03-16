@@ -378,7 +378,7 @@ def plot_multiseed_performance(logpaths, parents, variant, scenario, envname, ax
             y_max = 0.5
         elif logscenario == "navrep3dgallery":
             max_difficulty = 50.
-            y_max = 0.15
+            y_max = 0.16
         elif logscenario == "navrep3dkozehd":
             max_difficulty = 20.
             y_max = 0.2
@@ -462,7 +462,8 @@ def plot_direct_training_results(logdirs,
                                            "navrep3daslenv",
                                            "navrep3dcathedralenv",
                                            "navrep3dgalleryenv",
-                                           "navrep3dkozehdrsenv"],
+#                                            "navrep3dkozehdrsenv",
+                                           ],
                                  logfolder=None):
     logpaths, parents = parse_logfiles(logdirs, logfolder=logfolder)
 
@@ -500,6 +501,7 @@ def plot_direct_training_results(logdirs,
     for ax in axes[0, :]:
         for tick in ax.get_yticklabels():
             tick.set_rotation(90)
+        ax.yaxis.set_major_locator(plt.MaxNLocator(2))
 
     L = fig.legend([lines[0] for lines in linegroups], legends)
     make_legend_pickable(L, linegroups)

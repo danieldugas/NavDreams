@@ -42,7 +42,6 @@ HOMEDIR = os.path.expanduser("~")
 UNITY_EXE_REPOSITORY = "https://github.com/ethz-asl/navrep3d_lfs"
 UNITY_EXE_DIR = os.path.join(HOMEDIR, "navdreams_binaries")
 DEFAULT_UNITY_EXE = os.path.join(UNITY_EXE_DIR, "executables")
-# TODO: RELEASE - make a tool which downloads LFS files
 
 scenario_names = {
     "./build.x86_64": "navrep3dtrain",

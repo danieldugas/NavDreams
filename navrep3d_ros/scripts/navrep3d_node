@@ -124,7 +124,6 @@ class NavrepNode(object):
             pose2d_msg_in_robot = Pose2D(tf_msg_in_robot)
             goal_in_msg = np.array([self.goal_msg.pose.position.x, self.goal_msg.pose.position.y])
             goal_in_robot = apply_tf(goal_in_msg, pose2d_msg_in_robot)
-            # TODO: is the scan start angle the same as in RL env?
             _64 = 64
             _C = 3
             image = np.zeros((_64, _64, _C))

@@ -10,9 +10,10 @@ RUN sudo apt-get install -y build-essential python3-dev cmake gcc g++ # needed t
 RUN sudo apt-get install -y git git-lfs # needed to download sim binaries
 RUN sudo apt-get install -y python3-pip virtualenv
 
-# GUI libraries needed by opencv
-# RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-# RUN sudo apt-get install -y python3-opencv
+# GUI libraries needed by opencv, but a dependency asks for the timezone
+ENV CONTAINER_TIMEZONE=America/New_York
+RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y python3-opencv
 
 ENV VIRTUAL_ENV=~/navdreamsenv
 RUN virtualenv $VIRTUAL_ENV --python=python3.6

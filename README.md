@@ -1,12 +1,19 @@
-# NavDreams
+Status: Unstable! Release in progress.
 
-![dream](media/dreaming.gif)
-![title](media/title.gif)
+# NavDreams
 
 Camera-based robot navigation simulator, world-models, and policies for the paper
 **NavDreams: Towards Camera-Only RL Navigation Among Humans**
 
+![dream](media/dreaming.gif)
+![title](media/title.gif)
+
+In NavDreams, we use the world-model/dreamer concept to learn a model which predicts the future,
+then use this world model to do camera-based robot navigation.
+
 ![title](media/real_tests.gif)
+
+More information available in [our paper](TODO)
 
 ## Simulator
 

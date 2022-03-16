@@ -17,7 +17,7 @@ More information available in [our paper](TODO)
 
 ## Simulator
 
-Our simulator currently contains 7 scenarios.
+Our simulator currently contains 7 scenarios. Some of these are based on 2D environments from [previous work](https://www.github.com/danieldugas/navrep).
 
 ![scenarios](media/scenarios.png)
 

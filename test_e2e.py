@@ -2,7 +2,7 @@ from tqdm import tqdm
 from strictfire import StrictFire
 from stable_baselines3 import PPO
 
-from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscreteFlattened
+from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscreteFlattened
 
 def main(build_name="./alternate.x86_64", render=True, difficulty_mode="hardest"):
     MODELPATH = "/home/daniel/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa

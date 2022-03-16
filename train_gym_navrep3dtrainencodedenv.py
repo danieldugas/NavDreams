@@ -4,10 +4,10 @@ import os
 from stable_baselines3 import PPO
 from navrep.tools.commonargs import parse_common_args
 
-from navrep3d.navrep3dtrainencodedenv import (NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder,
+from navdreams.navrep3dtrainencodedenv import (NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder,
                                               SubprocVecNavRep3DEncodedEnv)
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.sb3_callbacks import NavRep3DLogCallback
+from navdreams.auto_debug import enable_auto_debug
 
 if __name__ == "__main__":
     enable_auto_debug()

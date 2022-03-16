@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.auto_debug import enable_auto_debug
 
 enable_auto_debug()
 
@@ -44,6 +44,7 @@ bridge = CvBridge()
 # bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-14-12-40.bag"
 # bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-18-39-38.bag"
 bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag"
+bag_path = "~/Downloads/2022-02-09-16-09-51_30min_K2.bag"
 
 archive_dir = "~/navrep3d_W/datasets/V/rosbag"
 

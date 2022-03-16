@@ -7,7 +7,7 @@ from navrep.models.torchvae import VAE
 from navrep.models.gpt import Block
 from pydreamer.models.dreamer import D
 
-from navrep3d.worldmodel import WorldModel
+from navdreams.worldmodel import WorldModel
 
 version = 2
 

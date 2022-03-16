@@ -1,6 +1,6 @@
 from stable_baselines3 import SAC
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv
 
 if __name__ == "__main__":
     MILLION = 1000000

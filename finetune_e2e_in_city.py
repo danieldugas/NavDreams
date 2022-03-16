@@ -3,8 +3,8 @@ from navrep.tools.commonargs import parse_common_args
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
-from navrep3d.custom_policy import NavRep3DTrainEnvDiscreteFlattened, NavRep3DTupleCNN
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
+from navdreams.custom_policy import NavRep3DTrainEnvDiscreteFlattened, NavRep3DTupleCNN
+from navdreams.sb3_callbacks import NavRep3DLogCallback
 
 if __name__ == "__main__":
     args, _ = parse_common_args()

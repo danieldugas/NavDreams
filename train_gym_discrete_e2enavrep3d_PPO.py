@@ -4,10 +4,10 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import PPO
 from strictfire import StrictFire
 
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.custom_policy import NavRep3DTupleCNN
-from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscreteFlattened
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.sb3_callbacks import NavRep3DLogCallback
+from navdreams.custom_policy import NavRep3DTupleCNN
+from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscreteFlattened
+from navdreams.auto_debug import enable_auto_debug
 
 MILLION = 1000000
 

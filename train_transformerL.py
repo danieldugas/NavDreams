@@ -19,8 +19,8 @@ from strictfire import StrictFire
 
 from navrep.models.gpt import save_checkpoint, set_seed
 
-from navrep3d.auto_debug import enable_auto_debug
-from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel, version, _S
+from navdreams.auto_debug import enable_auto_debug
+from navdreams.transformerL import TransformerLWMConf, TransformerLWorldModel, version, _S
 from train_gpt import N3DWorldModelDataset, gpt_worldmodel_error
 
 

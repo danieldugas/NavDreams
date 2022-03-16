@@ -4,7 +4,7 @@ from stable_baselines3.common.vec_env import VecEnv, SubprocVecEnv, DummyVecEnv
 from typing import Any, Callable, List, Optional, Sequence, Type, Union
 import gym
 
-from navrep3d.navrep3dtrainencodedenv import SubprocVecNavRep3DEncodedEnv, NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder
+from navdreams.navrep3dtrainencodedenv import SubprocVecNavRep3DEncodedEnv, NavRep3DTrainEncodedEnv, NavRep3DTrainEncoder
 
 def debug_env_max_speed(env, n=2000, render=False):
     from tqdm import tqdm

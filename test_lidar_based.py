@@ -5,7 +5,7 @@ from navrep.envs.navreptrainencodedenv import NavRepTrainEncoder
 from navrep.scripts.test_navrep import NavRepCPolicy, run_test_episodes
 from strictfire import StrictFire
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv
 
 class NavRep3DTrainEnvLidarBased(NavRep3DTrainEnv):
     def __init__(self, **kwargs):

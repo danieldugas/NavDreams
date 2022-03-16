@@ -5,8 +5,8 @@ from stable_baselines3 import PPO
 import numpy as np
 import gym
 
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navdreams.sb3_callbacks import NavRep3DLogCallback
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv
 
 np.set_printoptions(suppress=True, precision=2)
 

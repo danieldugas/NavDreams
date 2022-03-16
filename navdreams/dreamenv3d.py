@@ -6,11 +6,11 @@ from strictfire import StrictFire
 
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
 
-from navrep3d.navrep3dtrainenv import (NavRep3DTrainEnv, convert_continuous_to_discrete_action,
+from navdreams.navrep3dtrainenv import (NavRep3DTrainEnv, convert_continuous_to_discrete_action,
                                        convert_discrete_to_continuous_action)
-from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
-from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
-from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
+from navdreams.rssm import RSSMWMConf, RSSMWorldModel
+from navdreams.tssm import TSSMWMConf, TSSMWorldModel
+from navdreams.transformerL import TransformerLWMConf, TransformerLWorldModel
 
 PUNISH_SPIN = True
 

@@ -4,8 +4,8 @@ import gym
 from strictfire import StrictFire
 from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy, HumanControlPolicy
 
-from navrep3d.navrep3danyenv import NavRep3DAnyEnv
-from navrep3d.navrep3dtrainenv import (convert_continuous_to_discrete_action,
+from navdreams.navrep3danyenv import NavRep3DAnyEnv
+from navdreams.navrep3dtrainenv import (convert_continuous_to_discrete_action,
                                        convert_discrete_to_continuous_action)
 
 class OneHotActionPolicyWrapper(object):

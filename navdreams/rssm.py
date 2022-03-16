@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 from navrep.models.torchvae import VAE
 from pydreamer.models.dreamer import RSSMCore, init_weights_tf2, D
-from navrep3d.worldmodel import WorldModel
+from navdreams.worldmodel import WorldModel
 
 ablation = 1
 # ablated the encoder / decoder to the transformer one

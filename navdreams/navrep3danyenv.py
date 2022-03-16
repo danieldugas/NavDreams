@@ -1,10 +1,10 @@
 import os
 
-from navrep3d.mlagents_gym_wrapper import (NavRep3DStaticASLEnv, NavRep3DStaticASLEnvDiscrete,
+from navdreams.mlagents_gym_wrapper import (NavRep3DStaticASLEnv, NavRep3DStaticASLEnvDiscrete,
                                            MLAGENTS_BUILD_NAMES)
-from navrep3d.archiveenv import ArchiveEnv
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
-from navrep3d.custom_policy import FlattenN3DObsWrapper
+from navdreams.archiveenv import ArchiveEnv
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
+from navdreams.custom_policy import FlattenN3DObsWrapper
 
 def NavRep3DAnyEnv(**kwargs):
     """ wrapper to hide the difference between the two kinds of navrep3d environments

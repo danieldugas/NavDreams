@@ -5,10 +5,10 @@ import os
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from functools import partial
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
-from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
-from navrep3d.encodedenv3d import EnvEncoder
-from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv
+from navdreams.navrep3dtrainenv import convert_discrete_to_continuous_action
+from navdreams.encodedenv3d import EnvEncoder
+from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscrete
 
 class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding, variant="S",

@@ -5,8 +5,8 @@ from stable_baselines3 import PPO
 from tqdm import tqdm
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 
-from navrep3d.navrep3dtrainencodedenv import EncoderObsWrapper
-from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
+from navdreams.navrep3dtrainencodedenv import EncoderObsWrapper
+from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscrete
 from plot_gym_training_progress import get_variant
 
 def main(build_name="kozehd", render=True, difficulty_mode="easiest", model_path=None, n_episodes=1000):

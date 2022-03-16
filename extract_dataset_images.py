@@ -8,12 +8,12 @@ from strictfire import StrictFire
 from tqdm import tqdm
 
 from navrep.models.gpt import GPT, GPTConfig, load_checkpoint
-from navrep3d.rssm import RSSMWMConf, RSSMWorldModel
-from navrep3d.rssm_a0 import RSSMA0WMConf, RSSMA0WorldModel
-from navrep3d.tssm import TSSMWMConf, TSSMWorldModel
-from navrep3d.transformerL import TransformerLWMConf, TransformerLWorldModel
-from navrep3d.worldmodel import fill_dream_sequence, DummyWorldModel, GreyDummyWorldModel
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.rssm import RSSMWMConf, RSSMWorldModel
+from navdreams.rssm_a0 import RSSMA0WMConf, RSSMA0WorldModel
+from navdreams.tssm import TSSMWMConf, TSSMWorldModel
+from navdreams.transformerL import TransformerLWMConf, TransformerLWorldModel
+from navdreams.worldmodel import fill_dream_sequence, DummyWorldModel, GreyDummyWorldModel
+from navdreams.auto_debug import enable_auto_debug
 from plot_gym_training_progress import make_legend_pickable
 
 def main():

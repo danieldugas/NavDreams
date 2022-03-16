@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import dreamerv2.api as dv2
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnvDiscrete
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnvDiscrete
 
 config = dv2.defaults.update({
     'logdir': '~/logdir/dreamerv2',

@@ -4,10 +4,10 @@ from strictfire import StrictFire
 
 from stable_baselines3 import PPO
 
-from navrep3d.navrep3dtrainencodedenv import (NavRep3DTrainEncoder,
+from navdreams.navrep3dtrainencodedenv import (NavRep3DTrainEncoder,
                                               SubprocVecNavRep3DEncodedEnvDiscrete)
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.sb3_callbacks import NavRep3DLogCallback
+from navdreams.auto_debug import enable_auto_debug
 
 MILLION = 1000000
 

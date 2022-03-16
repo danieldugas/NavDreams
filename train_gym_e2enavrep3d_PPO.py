@@ -5,10 +5,10 @@ from stable_baselines3.sac.policies import CnnPolicy
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv, check_running_unity_backends
-from navrep3d.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.sb3_callbacks import NavRep3DLogCallback
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv, check_running_unity_backends
+from navdreams.custom_policy import NavRep3DTupleCNN, NavRep3DTrainEnvFlattened
+from navdreams.auto_debug import enable_auto_debug
 
 if __name__ == "__main__":
     enable_auto_debug()

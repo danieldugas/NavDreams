@@ -19,8 +19,8 @@ from strictfire import StrictFire
 
 from navrep.models.gpt import save_checkpoint, set_seed
 
-from navrep3d.auto_debug import enable_auto_debug
-from navrep3d.rssm import RSSMWMConf, RSSMWorldModel, ablation
+from navdreams.auto_debug import enable_auto_debug
+from navdreams.rssm import RSSMWMConf, RSSMWorldModel, ablation
 from train_gpt import N3DWorldModelDataset, gpt_worldmodel_error
 
 # In the pydreamer version, _Z is around 1500, _H is large too.

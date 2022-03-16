@@ -9,13 +9,28 @@ from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
-from navrep3d.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use
+from navdreams.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use
 
 HOMEDIR = os.path.expanduser("~")
 DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
+DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "navdreams_binaries/mlagents_executables")
+UNITY_EXE_REPOSITORY = "https://github.com/ethz-asl/navrep3d_lfs"
 # TODO: RELEASE - make a tool which downloads LFS files
 
 MLAGENTS_BUILD_NAMES = ["staticasl", "cathedral", "gallery", "kozehd"]
+
+def download_binaries_if_not_found(binary_dir):
+    if os.path.isdir(binary_dir):
+        return
+    yn = input(
+        "NavDreams simulator binaries not found at {}. Download the binaries (~1GB)? [y/n]".format(
+            binary_dir)
+    )
+    # git clone
+    cmd = ["git", "clone", UNITY_EXE_REPOSITORY, DEFAULT_UNITY_EXE]
+
+
+
 
 class MLAgentsGymEnvWrapper(gym.Env):
     """
@@ -581,6 +596,7 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
     if unity_player_dir is None:
         file_name = None
     else:
+        download_binaries_if_not_found(unity_player_dir)
         file_name = os.path.join(unity_player_dir, build_name)
     if not start_with_random_rot:
         raise ValueError

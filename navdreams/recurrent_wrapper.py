@@ -6,9 +6,9 @@ from functools import partial
 from stable_baselines3.common.vec_env import VecEnv
 
 
-from navrep3d.navrep3dtrainencodedenv import NavRep3DTrainEncoder
-from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
-from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
+from navdreams.navrep3dtrainencodedenv import NavRep3DTrainEncoder
+from navdreams.navrep3dtrainenv import convert_discrete_to_continuous_action
+from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscrete
 
 class Sequencify(object):
     """ given a single input, it returns a fixed-length sequence of the last n inputs """

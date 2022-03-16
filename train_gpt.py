@@ -21,7 +21,7 @@ from navrep.models.gpt import GPT, GPTConfig, save_checkpoint, set_seed
 from navrep.tools.wdataset import WorldModelDataset, scans_to_lidar_obs
 from navrep.tools.test_worldmodel import mse
 
-from navrep3d.auto_debug import enable_auto_debug
+from navdreams.auto_debug import enable_auto_debug
 
 def gpt_worldmodel_error(gpt, test_dataset_folder, device, batch_size=128):
     sequence_size = gpt.module.block_size
@@ -63,7 +63,7 @@ class N3DWorldModelDataset(WorldModelDataset):
     """ same as a WorldModelDataset, but data regeneration is specialized for navrep3d """
     def _partial_regen(self, n_new_sequences=1, build_name=None):
         from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
-        from navrep3d.navrep3danyenv import NavRep3DAnyEnv
+        from navdreams.navrep3danyenv import NavRep3DAnyEnv
         if self.regen in ["S", "SC", "Salt", "SCR", "R"]:
             if build_name is None:
                 if self.regen == "S":

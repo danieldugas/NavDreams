@@ -3,7 +3,7 @@ import os
 from tqdm import tqdm
 from strictfire import StrictFire
 
-from navrep3d.encodedenv3d import EnvEncoder
+from navdreams.encodedenv3d import EnvEncoder
 
 from multitask_generate_labels import basic_archive_check
 

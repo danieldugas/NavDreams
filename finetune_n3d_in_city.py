@@ -2,8 +2,8 @@ import os
 from navrep.tools.commonargs import parse_common_args
 from stable_baselines3 import PPO
 
-from navrep3d.navrep3dtrainencodedenv import SubprocVecNavRep3DEncodedEnvDiscrete
-from navrep3d.sb3_callbacks import NavRep3DLogCallback
+from navdreams.navrep3dtrainencodedenv import SubprocVecNavRep3DEncodedEnvDiscrete
+from navdreams.sb3_callbacks import NavRep3DLogCallback
 
 from plot_gym_training_progress import get_variant
 

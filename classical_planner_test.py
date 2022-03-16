@@ -5,7 +5,7 @@ from navrep.models.gpt import load_checkpoint
 from CMap2D import CMap2D, gridshow
 from sensor_msgs.msg import LaserScan
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv
 from multitask_train import TaskLearner
 
 _100 = 100.

@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from navrep.models.torchvae import VAE
 from navrep.models.gpt import Block
 
-from navrep3d.worldmodel import WorldModel
+from navdreams.worldmodel import WorldModel
 
 logger = logging.getLogger(__name__)
 

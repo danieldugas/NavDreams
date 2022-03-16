@@ -3,7 +3,7 @@ import os
 from tqdm import tqdm
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 
-from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
+from navdreams.navrep3dtrainenv import convert_discrete_to_continuous_action
 
 def quantize_discrete_dataset(directory):
     # list all data files

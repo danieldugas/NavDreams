@@ -2,7 +2,7 @@ import numpy as np
 import copy
 import torch
 from pydreamer.models.dreamer import RSSMCore, MultiDecoder, MultiEncoder, init_weights_tf2, D, logavgexp
-from navrep3d.worldmodel import WorldModel
+from navdreams.worldmodel import WorldModel
 
 # original loss, decoder encoder, everything
 ablation = 0

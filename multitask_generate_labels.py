@@ -4,7 +4,7 @@ from strictfire import StrictFire
 from pyniel.python_tools.path_tools import make_dir_if_not_exists
 from navrep.scripts.make_vae_dataset import SemiRandomMomentumPolicy
 
-from navrep3d.navrep3dtrainenv import NavRep3DTrainEnv
+from navdreams.navrep3dtrainenv import NavRep3DTrainEnv
 
 def generate_segmentation_dataset(env, n_sequences,
                                   episode_length=1000,

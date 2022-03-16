@@ -18,8 +18,8 @@ from stable_baselines3 import PPO
 from pepper_2d_simulator import remove_python2_entries_from_sys_path
 import threading
 
-from navrep3d.navrep3dtrainencodedenv import NavRep3DTrainEncoder
-from navrep3d.navrep3dtrainenv import convert_discrete_to_continuous_action
+from navdreams.navrep3dtrainencodedenv import NavRep3DTrainEncoder
+from navdreams.navrep3dtrainenv import convert_discrete_to_continuous_action
 
 # these modules do not work with python2, but are put in the python path when sourcing ros
 remove_python2_entries_from_sys_path()

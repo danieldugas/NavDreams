@@ -3,8 +3,8 @@ from strictfire import StrictFire
 from stable_baselines3 import PPO
 from tqdm import tqdm
 
-from navrep3d.navrep3dtrainencodedenv import EncoderObsWrapper
-from navrep3d.navrep3danyenv import NavRep3DAnyEnvDiscrete
+from navdreams.navrep3dtrainencodedenv import EncoderObsWrapper
+from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscrete
 from plot_gym_training_progress import get_variant
 
 def main(build_name="./alternate.x86_64", difficulty_mode="random", model_path=None):

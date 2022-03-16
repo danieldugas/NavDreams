@@ -3,8 +3,8 @@
 Camera-based robot navigation simulator, world-models, and policies for the paper
 **NavDreams: Towards Camera-Only RL Navigation Among Humans**
 
+![dream](media/dreaming.gif)
 ![title](media/title.gif)
-![dream](media/dream.gif)
 
 ## Simulator
 

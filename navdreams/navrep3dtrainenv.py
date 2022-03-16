@@ -97,11 +97,11 @@ def download_binaries_if_not_found(binary_dir):
     if os.path.isdir(binary_dir):
         return
     yn = input(
-        "NavDreams simulator binaries not found at {}. Download the binaries (~1GB)? [y/n]".format(
+        "NavDreams simulator binaries not found at {}. Download the binaries (~6GB)? [y/n]".format(
             binary_dir)
     )
     if yn.lower() in ["y", "yes"]:
-        os.system("git clone {} {}".format(UNITY_EXE_REPOSITORY, UNITY_EXE_DIR))
+        os.system("git lfs clone {} {}".format(UNITY_EXE_REPOSITORY, UNITY_EXE_DIR))
     else:
         raise ValueError("Simulator binaries not downloaded, aborting.")
     if not os.path.isdir(binary_dir):

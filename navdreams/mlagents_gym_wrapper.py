@@ -9,28 +9,15 @@ from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
-from navdreams.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use
+from navdreams.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use, download_binaries_if_not_found
 
 HOMEDIR = os.path.expanduser("~")
-DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
-DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "navdreams_binaries/mlagents_executables")
+# DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
 UNITY_EXE_REPOSITORY = "https://github.com/ethz-asl/navrep3d_lfs"
-# TODO: RELEASE - make a tool which downloads LFS files
+UNITY_EXE_DIR = os.path.join(HOMEDIR, "navdreams_binaries")
+DEFAULT_UNITY_EXE = os.path.join(UNITY_EXE_DIR, "mlagents_executables")
 
 MLAGENTS_BUILD_NAMES = ["staticasl", "cathedral", "gallery", "kozehd"]
-
-def download_binaries_if_not_found(binary_dir):
-    if os.path.isdir(binary_dir):
-        return
-    yn = input(
-        "NavDreams simulator binaries not found at {}. Download the binaries (~1GB)? [y/n]".format(
-            binary_dir)
-    )
-    # git clone
-    cmd = ["git", "clone", UNITY_EXE_REPOSITORY, DEFAULT_UNITY_EXE]
-
-
-
 
 class MLAgentsGymEnvWrapper(gym.Env):
     """

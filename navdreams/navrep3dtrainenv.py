@@ -18,8 +18,8 @@ from CMap2D import CMap2D
 import subprocess
 from strictfire import StrictFire
 
-import navrep3d.helpers as helpers
-import navrep3d.socket_handler as socket_handler
+from navdreams import helpers as helpers
+from navdreams import socket_handler as socket_handler
 
 _H = 64 # 36 # 120
 _W = 64 # 36 # 160
@@ -39,7 +39,9 @@ AGENT_RADIUS = 0.33
 REBOOT_EVERY_N_EPISODES = 100
 
 HOMEDIR = os.path.expanduser("~")
-DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/executables")
+UNITY_EXE_REPOSITORY = "https://github.com/ethz-asl/navrep3d_lfs"
+UNITY_EXE_DIR = os.path.join(HOMEDIR, "navdreams_binaries")
+DEFAULT_UNITY_EXE = os.path.join(UNITY_EXE_DIR, "executables")
 # TODO: RELEASE - make a tool which downloads LFS files
 
 scenario_names = {
@@ -91,6 +93,20 @@ def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=No
             os.remove(filepath)
         else:
             print(f"Warning: File {filepath} missing when trying to free port")
+
+def download_binaries_if_not_found(binary_dir):
+    if os.path.isdir(binary_dir):
+        return
+    yn = input(
+        "NavDreams simulator binaries not found at {}. Download the binaries (~1GB)? [y/n]".format(
+            binary_dir)
+    )
+    if yn.lower() in ["y", "yes"]:
+        os.system("git clone {} {}".format(UNITY_EXE_REPOSITORY, UNITY_EXE_DIR))
+    else:
+        raise ValueError("Simulator binaries not downloaded, aborting.")
+    if not os.path.isdir(binary_dir):
+        ValueError("NavDreams simulator binaries not found after download, aborting.")
 
 class NavRep3DTrainEnv(gym.Env):
     def __init__(self, verbose=0, collect_statistics=True,

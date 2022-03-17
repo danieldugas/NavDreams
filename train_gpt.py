@@ -216,6 +216,8 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         regen=dataset,
         lidar_mode="images",
     )
+    if len(train_dataset) == 0:
+        raise ValueError("No training data found")
     if dry_run:
         train_dataset._partial_regen()
 

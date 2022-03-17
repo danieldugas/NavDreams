@@ -29,4 +29,4 @@ RUN pip3 install \
   jedi==0.17 gym==0.18.0 \
   navdreams
  # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
-RUN git clone git@github.com:danieldugas/navdreams
+RUN git clone git@github.com:danieldugas/NavDreams.git

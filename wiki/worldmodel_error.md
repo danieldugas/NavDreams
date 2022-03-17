@@ -1,13 +1,19 @@
-# Example Workflow: Testing Dream Error
+# Example Workflow: Evaluating World-model Dreams
 
 ### Install
 
-[this install script](install_dependencies.sh) is an example of how to get the necessary dependencies,
+[this install script](../install_dependencies.sh) is an example of how to get the necessary dependencies,
 as well as pydreamer and NavDreams in development mode
 
-### Download data
+### Download Existing Dataset
 Download the [navdreams_data](https://drive.google.com/drive/folders/17_o7jPLKKlRbgySIOxn6-Z1kUHcOgld5?usp=sharing)
 folder to your home directory so that `~/navdreams_data/wm_experiments` is a valid location.
+
+(Alternatively, you can generate the datasets using the simulator.
+Afterwards, make sure to move them to the location expected by the script e.g. `~/navdreams_data/wm_test_data`)
+```
+python make_vae_dataset.py --scope SCR
+```
 
 ### Run The Dream Error Script
 

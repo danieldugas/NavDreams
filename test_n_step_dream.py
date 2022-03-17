@@ -414,6 +414,12 @@ def main(dataset="SCR",
             linegroups.append([line1, line2])
         L = fig2.legend([lines[0] for lines in linegroups], legends)
         make_legend_pickable(L, linegroups)
+    axes2[0, 0].set_title("Image error")
+    axes2[0, 1].set_title("Vector-obs error")
+    axes2[0, 0].set_ylabel("MSE error")
+    axes2[1, 0].set_ylabel("MSE error")
+    axes2[1, 0].set_xlabel("timestep")
+    axes2[1, 1].set_xlabel("timestep")
     fig2.savefig("/tmp/n_step_error_for_dream_comparison_{}.png".format(name))
 
     # images plot

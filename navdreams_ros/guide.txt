@@ -19,7 +19,7 @@ watch -n 10 source ./go_to_rl_posture.sh
 # -- navrep3d and evaluator --
 source ~/pepper3venv/bin/activate
 source ~/Code/pepper_ws/devel/setup.bash
-cd ~/Code/cbsim/navrep3d/navrep3d_ros/launch
+cd ~/Code/cbsim/navrep3d/navdreams_ros/launch
 mon launch evaluator_navrep3d.launch
 
 # -- rosbag --

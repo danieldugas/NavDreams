@@ -26,7 +26,7 @@
 <!--   _________________________________________________- -->
 
   <node pkg="ros_run_command" type="ros_run_command" name="navrep3d_node" output="screen"
-    args="python ~/Code/cbsim/navrep3d/navrep3d_ros/scripts/navrep3d_node"
+    args="python ~/Code/cbsim/navrep3d/navdreams_ros/scripts/navrep3d_node"
   />
 
   <node pkg="rviz" type="rviz" name="rviz" output="log"

@@ -35,7 +35,7 @@ def generate_paper_sequences(dir_, dataset_dir, sequence_length):
         i += 1
 
 def load_paper_sequences(examples, n_examples, dataset_dir, sequence_length,
-                         dir_="~/navrep3d_test/sequences/"):
+                         dir_="~/navdreams_data/wm_test_data/sequences/"):
     dir_ = os.path.expanduser(dir_)
     make_dir_if_not_exists(dir_)
     # list all data files
@@ -91,11 +91,11 @@ def plot_sequence(sequence, skip=1, title=""):
 
 def main():
     N = 100
-    dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dalt"),
-                   os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dcity"),
-                   os.path.expanduser("~/navrep3d_test/datasets/V/navrep3doffice"),
-                   os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dasl"),
-                   os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+    dataset_dir = [os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dalt"),
+                   os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dcity"),
+                   os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3doffice"),
+                   os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dasl"),
+                   os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
     example_sequences = load_paper_sequences(range(N), N, dataset_dir, 64)
     for idx in example_sequences:
         sequence = example_sequences[idx]

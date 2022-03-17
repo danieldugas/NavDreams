@@ -41,7 +41,7 @@ def check_encodings(archive_dir):
 
 def main(dry_run=False, check_archive=False, gpu=True):
     np.set_printoptions(precision=2, suppress=True)
-    archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
+    archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/multitask/navrep3dalt_segmentation")
     if check_archive:
         check_encodings(archive_dir)
         return
@@ -59,17 +59,17 @@ def main(dry_run=False, check_archive=False, gpu=True):
     for encoder_type in encoder_types:
         if encoder_type == "E2E":
             # img, rs -> 64
-            modelpath = os.path.expanduser("~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip") # noqa
+            modelpath = os.path.expanduser("~/navdreams_data/results/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip") # noqa
             encoder = EnvEncoder("E2E", "V_ONLY", gpt_model_path=modelpath, gpu=gpu)
         elif encoder_type == "N3D":
             # img, rs -> 64
             # (can use z)
-            modelpath = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+            modelpath = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_Salt")
             encoder = EnvEncoder("GPT", "V_ONLY", gpt_model_path=modelpath, gpu=gpu)
         elif encoder_type == "sequenceN3D":
             # {(img, a, rs, d), (img, a, rs, d), ...} -> (64, 64, 64, 64)
             # (uses get_h)
-            modelpath = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+            modelpath = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_Salt")
             encoder = EnvEncoder("GPT", "M_ONLY", gpt_model_path=modelpath, gpu=gpu)
         else:
             raise NotImplementedError

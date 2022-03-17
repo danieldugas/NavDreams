@@ -16,11 +16,11 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
     _Z = shared_encoder._Z
     _H = shared_encoder._H
 
-    DIR = os.path.expanduser("~/navrep3d/models/gym")
-    LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")
+    DIR = os.path.expanduser("~/navdreams_data/results/models/gym")
+    LOGDIR = os.path.expanduser("~/navdreams_data/results/logs/gym")
     if dry_run:
-        DIR = "/tmp/navrep3d/models/gym"
-        LOGDIR = "/tmp/navrep3d/logs/gym"
+        DIR = "/tmp/navdreams_data/results/models/gym"
+        LOGDIR = "/tmp/navdreams_data/results/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(backend, encoding, _Z, _H, variant)
     if build_name is None:

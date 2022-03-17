@@ -14,13 +14,13 @@ class NavRep3DTrainEncoder(EnvEncoder):
     def __init__(self, backend, encoding, variant="S",
                  gpu=False, encoder_to_share_model_with=None):
         if backend == "GPT":
-            wm_model_path = "~/navrep3d_W/models/W/transformer_{}".format(variant)
+            wm_model_path = "~/navdreams_data/wm_experiments/models/W/transformer_{}".format(variant)
         elif backend == "RSSM_A0":
-            wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(variant)
+            wm_model_path = "~/navdreams_data/wm_experiments/models/W/RSSM_A0_{}".format(variant)
         elif backend == "TransformerL_V0":
-            wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(variant)
+            wm_model_path = "~/navdreams_data/wm_experiments/models/W/TransformerL_V0_{}".format(variant)
         elif backend == "TSSM_V2":
-            wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(variant)
+            wm_model_path = "~/navdreams_data/wm_experiments/models/W/TSSM_V2_{}".format(variant)
         else:
             raise NotImplementedError
         wm_model_path = os.path.expanduser(wm_model_path)

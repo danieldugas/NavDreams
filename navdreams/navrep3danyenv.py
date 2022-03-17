@@ -28,7 +28,7 @@ def NavRep3DAnyEnv(**kwargs):
     if build_name in MLAGENTS_BUILD_NAMES:
         return NavRep3DStaticASLEnv(**kwargs)
     elif build_name == "rosbag":
-        directory = os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")
+        directory = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")
         return ArchiveEnv(directory, shuffle_episodes=True)
     else:
         return NavRep3DTrainEnv(**kwargs)

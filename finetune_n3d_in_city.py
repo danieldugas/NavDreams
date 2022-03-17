@@ -11,10 +11,10 @@ if __name__ == "__main__":
     args, _ = parse_common_args()
     from_scratch = False
 
-#     MODELPATH = "~/navrep3d/models/gym/navrep3dtrainencodedenv_2021_10_02__12_44_20_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
-    MODELPATH = "~/navrep3d/models/gym/navrep3daltencodedenv_2021_10_25__15_01_28_DISCRETE_PPO_GPT_V_ONLY_V64M64_SC_ckpt.zip" # noqa
+#     MODELPATH = "~/navdreams_data/results/models/gym/navrep3dtrainencodedenv_2021_10_02__12_44_20_DISCRETE_PPO_GPT_V_ONLY_V64M64_Salt_ckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltencodedenv_2021_10_25__15_01_28_DISCRETE_PPO_GPT_V_ONLY_V64M64_SC_ckpt.zip" # noqa
     if from_scratch:
-        MODELPATH = "~/navrep3d/models/gym/navrep3daltencodedenv_from_scratch_DISCRETE_PPO_GPT_V_ONLY_V64M64_Random_ckpt.zip" # noqa
+        MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltencodedenv_from_scratch_DISCRETE_PPO_GPT_V_ONLY_V64M64_Random_ckpt.zip" # noqa
     MODELPATH = os.path.expanduser(MODELPATH)
 
     variant = get_variant(os.path.basename(MODELPATH))
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     else:
         model = PPO.load(MODELPATH, env=env)
 
-    BASE = os.path.expanduser("~/navrep3d")
+    BASE = os.path.expanduser("~/navdreams_data/results")
     TRAIN_STEPS = 2000000
     FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0].replace("_ckpt", "")
     LOGDIR = os.path.join(BASE, "logs/finetune")

@@ -6,7 +6,7 @@ import typer
 
 def main(refresh : bool = True, logdir : str = None, paper : bool = False):
     if logdir is None:
-        logdir = os.path.expanduser("~/navrep3d/logs/multitask")
+        logdir = os.path.expanduser("~/navdreams_data/results/logs/multitask")
 
     plt.close('all')
     while True:

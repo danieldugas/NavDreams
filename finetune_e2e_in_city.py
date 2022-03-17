@@ -10,9 +10,9 @@ if __name__ == "__main__":
     args, _ = parse_common_args()
     from_scratch = False
 
-    MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
     if from_scratch:
-        MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_from_scratch_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
+        MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltenv_from_scratch_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
     MODELPATH = os.path.expanduser(MODELPATH)
 
     if "DISCRETE" in MODELPATH:
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     else:
         model = PPO.load(MODELPATH, env=env)
 
-    BASE = os.path.expanduser("~/navrep3d")
+    BASE = os.path.expanduser("~/navdreams_data/results")
     TRAIN_STEPS = 2000000
     FILENAME = os.path.splitext(os.path.basename(MODELPATH))[0].replace("_ckpt", "")
     LOGDIR = os.path.join(BASE, "logs/finetune")

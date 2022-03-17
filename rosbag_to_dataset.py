@@ -46,7 +46,7 @@ bridge = CvBridge()
 bag_path = "/media/lake/koze_n3d_tests/day1/2022-01-19-18-50-01.bag"
 bag_path = "~/Downloads/2022-02-09-16-09-51_30min_K2.bag"
 
-archive_dir = "~/navrep3d_W/datasets/V/rosbag"
+archive_dir = "~/navdreams_data/wm_experiments/datasets/V/rosbag"
 
 DT = 0.2
 # FIXED_FRAME = "odom" # StefanKiss, merged_demo, meet_your_lab

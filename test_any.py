@@ -13,24 +13,24 @@ def main(build_name="kozehd", render=False, difficulty_mode="easiest", model_pat
     if n_episodes is True:
         raise ValueError("n_episodes not specified. Must be int")
     # e2e
-    MODELPATH = "~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip" # noqa
     # n3d
-    MODELPATH = "~/navrep3d/models/gym/navrep3daslencodedenv_2021_12_11__00_23_55_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
-    MODELPATH = "~/navrep3d/models/gym/navrep3daslencodedenv_2021_12_08__10_18_09_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
-    MODELPATH = "~/navrep3d/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 10% # cathedral - easiest 93
-    MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdencodedenv_2022_01_17__12_55_53_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 30%
-    MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdencodedenv_2022_01_17__12_55_53_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" # noqa # kozehd - easiest: 50%
-    MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 50%
-    MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" # noqa # kozehd - easiest: 65%
-#     MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdremptyencodedenv_2022_01_30__22_12_30_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_bestckpt.zip" # noqa # kozehd - easiest: 51%
-#     MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdremptyencodedenv_2022_01_30__22_12_30_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_ckpt.zip" # noqa # kozehd - easiest: 50%
-    MODELPATH = "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
-    MODELPATH = "~/navrep3d/models/gym/navrep3daslfixedencodedenv_2021_12_29__17_17_16_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daslencodedenv_2021_12_11__00_23_55_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daslencodedenv_2021_12_08__10_18_09_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3dSCRencodedenv_2021_12_12__16_46_51_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 10% # cathedral - easiest 93
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdencodedenv_2022_01_17__12_55_53_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 30%
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdencodedenv_2022_01_17__12_55_53_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" # noqa # kozehd - easiest: 50%
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa # kozehd - easiest: 50%
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdoldencodedenv_2022_01_13__16_13_45_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_ckpt.zip" # noqa # kozehd - easiest: 65%
+#     MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdremptyencodedenv_2022_01_30__22_12_30_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_bestckpt.zip" # noqa # kozehd - easiest: 51%
+#     MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdremptyencodedenv_2022_01_30__22_12_30_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_ckpt.zip" # noqa # kozehd - easiest: 50%
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daslfixedencodedenv_2021_12_29__17_17_16_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
     # untested
-#     MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdrencodedenv_2022_01_28__06_44_50_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_ckpt.zip" # noqa # kozehd - easiest: ?
-#     MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdrencodedenv_2022_01_25__21_34_44_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_ckpt.zip" # noqa # kozehd - easiest: ?
-#     MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdrencodedenv_2022_01_26__08_56_54_DISCRETE_PPO_GPT_V_ONLY_V64M64_K_ckpt.zip" # noqa # kozehd - easiest: ?
-    MODELPATH = "~/navrep3d/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" # noqa # kozehdrs - easiest: >80%
+#     MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdrencodedenv_2022_01_28__06_44_50_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_ckpt.zip" # noqa # kozehd - easiest: ?
+#     MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdrencodedenv_2022_01_25__21_34_44_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCRK_ckpt.zip" # noqa # kozehd - easiest: ?
+#     MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdrencodedenv_2022_01_26__08_56_54_DISCRETE_PPO_GPT_V_ONLY_V64M64_K_ckpt.zip" # noqa # kozehd - easiest: ?
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3dkozehdrsencodedenv_2022_02_02__17_18_59_DISCRETE_PPO_GPT_V_ONLY_V64M64_K2_bestckpt.zip" # noqa # kozehdrs - easiest: >80%
     if model_path is not None:
         MODELPATH = model_path
     MODELPATH = os.path.expanduser(MODELPATH)

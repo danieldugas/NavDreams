@@ -169,11 +169,11 @@ def main(dataset="SCR",
     discrete_actions = False
 
     if dataset == "SCR":
-        dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dalt"),
-                       os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dcity"),
-                       os.path.expanduser("~/navrep3d_test/datasets/V/navrep3doffice"),
-                       os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dasl"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dalt"),
+                       os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dasl"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         examples = [34, 51, 23, 42, 79, 5, 120]
         examples = [0, 1500, 3000, 4500, 6000, 1000, 4000] # for length 64
         examples = [0, 3000, 6000, 9000, 12000, 1000, 4000]
@@ -188,16 +188,16 @@ def main(dataset="SCR",
         examples = [3, 92]
         print("examples:", examples)
     elif dataset == "staticasl":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dasl")]
         examples = [34, 51, 23, 42, 79, 5, 120]
     elif dataset == "dSalt":
-        dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/discrete_navrep3dalt")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/discrete_navrep3dalt")]
         examples = [34, 51, 23, 42, 79, 5, 120]
         discrete_actions = True
         worldmodel_types = ["TransformerL_V0"]
     elif dataset == "qSalt":
         dataset = "Salt"
-        dataset_dir = [os.path.expanduser("~/navrep3d_test/datasets/V/quantized_navrep3dalt")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/quantized_navrep3dalt")]
         examples = [34, 51, 23, 42, 79, 5, 120]
         worldmodel_types = ["TransformerL_V0", "transformer"]
     else:
@@ -212,7 +212,7 @@ def main(dataset="SCR",
         worldmodels = []
         for worldmodel_type in worldmodel_types:
             if worldmodel_type == "transformer":
-                wm_model_path = "~/navrep3d_W/models/W/transformer_{}".format(dataset)
+                wm_model_path = "~/navdreams_data/wm_experiments/models/W/transformer_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
                 BLOCK_SIZE = 32
                 _H = 64
@@ -225,7 +225,7 @@ def main(dataset="SCR",
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
             elif worldmodel_type == "RSSM_A1":
-                wm_model_path = "~/navrep3d_W/models/W/RSSM_A1_{}".format(dataset)
+                wm_model_path = "~/navdreams_data/wm_experiments/models/W/RSSM_A1_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
                 mconf = RSSMWMConf()
                 mconf.image_channels = 3
@@ -233,7 +233,7 @@ def main(dataset="SCR",
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
             elif worldmodel_type == "RSSM_A0" or worldmodel_type == "RSSM_A0_explicit":
-                wm_model_path = "~/navrep3d_W/models/W/RSSM_A0_{}".format(dataset)
+                wm_model_path = "~/navdreams_data/wm_experiments/models/W/RSSM_A0_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
                 mconf = RSSMA0WMConf()
                 mconf.image_channels = 3
@@ -246,7 +246,7 @@ def main(dataset="SCR",
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
             elif worldmodel_type == "TSSM_V2":
-                wm_model_path = "~/navrep3d_W/models/W/TSSM_V2_{}".format(dataset)
+                wm_model_path = "~/navdreams_data/wm_experiments/models/W/TSSM_V2_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
                 mconf = TSSMWMConf()
                 mconf.image_channels = 3
@@ -254,7 +254,7 @@ def main(dataset="SCR",
                 load_checkpoint(model, wm_model_path, gpu=gpu)
                 worldmodel = model
             elif worldmodel_type == "TransformerL_V0":
-                wm_model_path = "~/navrep3d_W/models/W/TransformerL_V0_{}".format(dataset)
+                wm_model_path = "~/navdreams_data/wm_experiments/models/W/TransformerL_V0_{}".format(dataset)
                 wm_model_path = os.path.expanduser(wm_model_path)
                 mconf = TransformerLWMConf()
                 mconf.image_channels = 3

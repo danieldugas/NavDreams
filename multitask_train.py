@@ -247,14 +247,14 @@ def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     if task == "segmentation":
         log_path = os.path.expanduser(
-            "~/navrep3d/logs/multitask/{}_segmenter_train_log_{}.csv".format(encoder_type, START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_segmenter_{}".format(
+            "~/navdreams_data/results/logs/multitask/{}_segmenter_train_log_{}.csv".format(encoder_type, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/results/models/multitask/{}_segmenter_{}".format(
             encoder_type, START_TIME))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_segmenter_step".format(encoder_type))
     elif task == "depth":
         log_path = os.path.expanduser(
-            "~/navrep3d/logs/multitask/{}_depth_train_log_{}.csv".format(encoder_type, START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d/models/multitask/{}_depth_{}".format(
+            "~/navdreams_data/results/logs/multitask/{}_depth_train_log_{}.csv".format(encoder_type, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/results/models/multitask/{}_depth_{}".format(
             encoder_type, START_TIME))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_depth_step".format(encoder_type))
     if dry_run:
@@ -263,7 +263,7 @@ def train_multitask(encoder_type, task="segmentation", dry_run=False, gpu=True):
         plot_path = plot_path.replace(os.path.expanduser("~"), "/tmp")
     from_image = encoder_type == "baseline"
 
-    archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
+    archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/multitask/navrep3dalt_segmentation")
     if from_image:
         filename_mask = "_images_labels.npz"
     else:

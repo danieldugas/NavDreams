@@ -18,11 +18,11 @@ class ClassicalPlanner(object):
         label_is_onehot = False
         self.depth_model = TaskLearner(task_channels, from_image, label_is_onehot, gpu=gpu)
         depth_model_path = os.path.expanduser(
-            "~/navrep3d/models/multitask/baseline_depth_2021_11_08__22_21_30")
+            "~/navdreams_data/results/models/multitask/baseline_depth_2021_11_08__22_21_30")
         load_checkpoint(self.depth_model, depth_model_path, gpu=gpu)
         self.segmentation_model = TaskLearner(6, from_image, True, gpu=gpu)
         segmentation_model_path = os.path.expanduser(
-            "~/navrep3d/models/multitask/baseline_segmenter_2021_11_09__04_13_38")
+            "~/navdreams_data/results/models/multitask/baseline_segmenter_2021_11_09__04_13_38")
         load_checkpoint(self.segmentation_model, segmentation_model_path, gpu=gpu)
 
     def _obs_to_depth(self, image):

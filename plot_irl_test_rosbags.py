@@ -324,7 +324,7 @@ def main(clean=False, bypass=False):
 
     with open(
         os.path.expanduser(
-            "~/navrep3d/irl/2022-02-09-16-09-51_30min_K2.bag_2022-02-09-15-53-15.bag_processed.pkl"
+            "~/navdreams_data/results/irl/2022-02-09-16-09-51_30min_K2.bag_2022-02-09-15-53-15.bag_processed.pkl"
         ),
         "rb",
     ) as f:

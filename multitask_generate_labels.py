@@ -143,9 +143,9 @@ def main(n_sequences=100, env="S", render=False, dry_run=False,
          subproc_id=0, n_subprocs=1,
          check_archive=False):
     np.set_printoptions(precision=2, suppress=True)
-    archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_segmentation")
+    archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/multitask/navrep3dalt_segmentation")
     if dry_run:
-        archive_dir = "/tmp/navrep3d/datasets/multitask/navrep3dalt_segmentation"
+        archive_dir = "/tmp/navdreams_data/results/datasets/multitask/navrep3dalt_segmentation"
     if check_archive:
         visual_archive_check(archive_dir)
         return

@@ -49,7 +49,7 @@ def find_checkpoints(archive_dir, encoder_type, task):
 def main(gpu : bool = False):
     tasks = ["segmentation", "depth"]
     encoder_types = ["baseline", "E2E", "N3D"]
-    archive_dir = os.path.expanduser("~/navrep3d_W/datasets/multitask/navrep3dalt_comparison")
+    archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/multitask/navrep3dalt_comparison")
     dataset = ComparisonDataset(archive_dir)
     loader = DataLoader(
         dataset,
@@ -61,7 +61,7 @@ def main(gpu : bool = False):
     for img, E2Eencoding, N3Dencoding, label, depth in loader:
         break
 
-    models_dir = os.path.expanduser("~/navrep3d/models/multitask")
+    models_dir = os.path.expanduser("~/navdreams_data/results/models/multitask")
     predictions = {}
     for encoder_type in encoder_types:
         predictions[encoder_type] = {}

@@ -130,7 +130,7 @@ def print_matches(lookup, data):
 
 def main(
     paper=False,
-    logdir="~/navrep3d/test/",
+    logdir="~/navdreams_data/results/test/",
 ):
     # find logfiles
     logdir = os.path.expanduser(logdir)

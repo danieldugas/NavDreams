@@ -277,7 +277,7 @@ class ArchiveEnv(gym.Env):
 def main(
     # Env args
     shuffle=False,
-    directory="~/navrep3d_W/datasets/V/rosbag",
+    directory="~/navdreams_data/wm_experiments/datasets/V/rosbag",
     # Player args
     render_mode='human', step_by_step=False,
 ):

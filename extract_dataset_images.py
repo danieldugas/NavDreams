@@ -18,14 +18,14 @@ from plot_gym_training_progress import make_legend_pickable
 
 def main():
     dataset_dir = [
-#         os.path.expanduser("~/navrep3d_test/datasets/V/navrep3dalt"),
-#         os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
-#         os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
-#         os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
-#         os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd"),
-        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dgallery"),
-        os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcathedral"),
-#         os.path.expanduser("~/navrep3d_W/datasets/V/rosbag"),
+#         os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dalt"),
+#         os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcity"),
+#         os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3doffice"),
+#         os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dasl"),
+#         os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dkozehd"),
+        os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dgallery"),
+        os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcathedral"),
+#         os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag"),
     ]
     sequence_length = 8
 

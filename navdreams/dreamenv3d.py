@@ -30,7 +30,7 @@ BLOCK_SIZE = 32  # sequence length (context)
 class DreamEnv(object):
     """ Generic class for generating dreams from trained world models """
     def __init__(self,
-                 wm_model_path=os.path.expanduser("~/navrep3d_W/models/W/transformer_SC"),
+                 wm_model_path=os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_SC"),
                  worldmodel_type="Transformer",
                  gpu=False,
                  alongside_sim=False,
@@ -239,15 +239,15 @@ def main(wm_type="Transformer"):
     from navrep.tools.envplayer import EnvPlayer
     discrete = False
     if wm_type == "Transformer":
-        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
+        wm_model_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_SC")
     elif wm_type == "RSSM":
-        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/RSSM_A1_SCR")
+        wm_model_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/RSSM_A1_SCR")
     elif wm_type == "TSSM":
-        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TSSM_V2_SCR")
+        wm_model_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/TSSM_V2_SCR")
     elif wm_type == "TransformerL":
-        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TransformerL_V0_SCR")
+        wm_model_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/TransformerL_V0_SCR")
     elif wm_type == "dTransformerL":
-        wm_model_path = os.path.expanduser("~/navrep3d_W/models/W/TransformerL_V0_dSalt")
+        wm_model_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/TransformerL_V0_dSalt")
         discrete = True
     else:
         raise NotImplementedError

@@ -47,5 +47,5 @@ def quantize_discrete_dataset(directory):
 
 if __name__ == "__main__":
     quantize_discrete_dataset(
-        os.path.expanduser("~/navrep3d_test/datasets/V/discrete_navrep3dalt")
+        os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/discrete_navrep3dalt")
     )

@@ -28,8 +28,8 @@ class EnvEncoder(object):
     look at EncodedEnv to see how it is typically used """
     def __init__(self,
                  backend, encoding,
-                 wm_model_path=os.path.expanduser("~/navrep3d/models/W/transformer"),
-                 e2e_model_path=os.path.expanduser("~/navrep3d/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip"), # noqa
+                 wm_model_path=os.path.expanduser("~/navdreams_data/results/models/W/transformer"),
+                 e2e_model_path=os.path.expanduser("~/navdreams_data/results/models/gym/navrep3daltenv_2021_11_01__08_52_03_DISCRETE_PPO_E2E_VCARCH_C64_ckpt.zip"), # noqa
                  gpu=False,
                  encoder_to_share_model_with=None,  # another EnvEncoder
                  ):

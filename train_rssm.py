@@ -34,27 +34,27 @@ def main(max_steps=222222, dataset="SCR", dry_run=False, gpu=True):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
     if dataset == "SCR":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dalt"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dasl"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/{}_SCR_train_log_{}.csv".format(namestring, START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_SCR".format(namestring))
+            "~/navdreams_data/wm_experiments/logs/W/{}_SCR_train_log_{}.csv".format(namestring, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/{}_SCR".format(namestring))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_SCR_step".format(namestring))
     elif dataset == "staticasl":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dasl")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/{}_staticasl_train_log_{}.csv".format(namestring, START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/{}_staticasl".format(namestring))
+            "~/navdreams_data/wm_experiments/logs/W/{}_staticasl_train_log_{}.csv".format(namestring, START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/{}_staticasl".format(namestring))
         plot_path = os.path.expanduser("~/tmp_navrep3d/{}_staticasl_step".format(namestring))
     else:
         raise NotImplementedError(dataset)
 
     if dry_run:
-        log_path = log_path.replace(os.path.expanduser("~/navrep3d"), "/tmp/navrep3d")
-        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navrep3d"), "/tmp/navrep3d")
+        log_path = log_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
+        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
 
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))

@@ -20,11 +20,11 @@ def main(dry_run=False, n=None, scenario=None):
     if TRAIN_STEPS is None:
         TRAIN_STEPS = 5 * MILLION
     _C = 64
-    DIR = os.path.expanduser("~/navrep3d/models/gym")
-    LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")
+    DIR = os.path.expanduser("~/navdreams_data/results/models/gym")
+    LOGDIR = os.path.expanduser("~/navdreams_data/results/logs/gym")
     if dry_run:
-        DIR = "/tmp/navrep3d/models/gym"
-        LOGDIR = "/tmp/navrep3d/logs/gym"
+        DIR = "/tmp/navdreams_data/results/models/gym"
+        LOGDIR = "/tmp/navdreams_data/results/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     CONTROLLER_ARCH = "_VCARCH_C{}".format(_C)
     if build_name is None:

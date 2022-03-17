@@ -60,7 +60,7 @@ def angle_difference(a, b):
 def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=None):
     """ creates a file in /tmp/ to indicate that a port is in use """
     # check if file already exists
-    filepath = f"/tmp/navrep3d_port_{port}_in_use"
+    filepath = f"/tmp/navdreams_data/results_port_{port}_in_use"
     class PortLockHandle(object):
         def __init__(self, port, filehandle):
             self.port = port
@@ -879,7 +879,7 @@ class NavRep3DTrainEnv(gym.Env):
             win.flip()
             if save_to_file:
                 pyglet.image.get_buffer_manager().get_color_buffer().save(
-                    "/tmp/navrep3dtrainenv{:05}.png".format(self.total_steps))
+                    "/tmp/navdreams_data/resultstrainenv{:05}.png".format(self.total_steps))
 
         if self.verbose > 1:
             toc = timer()

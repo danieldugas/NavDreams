@@ -9,7 +9,7 @@ from plot_gym_training_progress import get_variant
 
 def main(build_name="./alternate.x86_64", difficulty_mode="random", model_path=None):
     render = True
-    MODELPATH = "~/navrep3d/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
+    MODELPATH = "~/navdreams_data/results/models/gym/navrep3daltencodedenv_2021_12_15__08_43_12_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" # noqa
     if model_path is not None:
         MODELPATH = model_path
     MODELPATH = os.path.expanduser(MODELPATH)

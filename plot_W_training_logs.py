@@ -7,7 +7,7 @@ from strictfire import StrictFire
 from plot_gym_training_progress import make_legend_pickable
 
 def main(
-    logdir="~/navrep3d_W",
+    logdir="~/navdreams_data/wm_experiments",
     refresh=False,
     y_axis="lidar_test_error",
 ):

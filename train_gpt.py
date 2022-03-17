@@ -118,80 +118,80 @@ def main(max_steps=222222, dataset="S", dry_run=False):
     # note that the "S" dataset in the paper is called "Salt" in the code, due to naming collision
     # with a legacy "S" dataset
     if dataset == "S_old":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dtrain")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_S_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_S_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_S")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_S_step")
     elif dataset == "S":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dalt")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_Salt_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Salt")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_Salt_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_Salt")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_Salt_step")
     elif dataset == "SC":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dtrain"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3doffice")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_SC_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SC")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_SC_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_SC")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SC_step")
     elif dataset == "Random":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dalt")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_Random_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_Random")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_Random_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_Random")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_Random_step")
         max_steps = 0
     elif dataset == "SCR":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dalt"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dasl"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_SCR_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCR")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_SCR_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_SCR")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SCR_step")
     elif dataset == "R":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dasl"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dasl"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_R_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_R")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_R_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_R")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_R_step")
     elif dataset == "K":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehd"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dkozehd"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_K_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_K")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_K_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_K")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_K_step")
     elif dataset == "K2":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehdr"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dkozehdr"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_K2_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_K2")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_K2_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_K2")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_K2_step")
     elif dataset == "SCRK":
-        dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dcity"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3doffice"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3daslv2"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dkozehdr"),
-                       os.path.expanduser("~/navrep3d_W/datasets/V/rosbag")]
+        dataset_dir = [os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dalt"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcity"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3doffice"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3daslv2"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dkozehdr"),
+                       os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
         log_path = os.path.expanduser(
-            "~/navrep3d_W/logs/W/transformer_SCRK2_train_log_{}.csv".format(START_TIME))
-        checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_SCRK2")
+            "~/navdreams_data/wm_experiments/logs/W/transformer_SCRK2_train_log_{}.csv".format(START_TIME))
+        checkpoint_path = os.path.expanduser("~/navdreams_data/wm_experiments/models/W/transformer_SCRK2")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_SCRK2_step")
     else:
         raise NotImplementedError(dataset)
 
     if dry_run:
-        log_path = log_path.replace(os.path.expanduser("~/navrep3d"), "/tmp/navrep3d")
-        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navrep3d"), "/tmp/navrep3d")
+        log_path = log_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
+        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
 
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))

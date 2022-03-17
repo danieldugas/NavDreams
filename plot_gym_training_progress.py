@@ -107,7 +107,7 @@ def get_visible(lines):
 
 def parse_logfiles(navrep_dirs, logfolder=None, exclude=None, include=None):
     """
-    navrep_dirs : ["~/navrep3d", "~/navrep3d_W"]
+    navrep_dirs : ["~/navdreams_data/results", "~/navdreams_data/wm_experiments"]
     logfolder : "logs/gym"
     """
     logfolder = "logs/gym" if logfolder is None else logfolder
@@ -640,7 +640,7 @@ def make_legend_pickable(legend, lines):
 def str_enum(options: list):
     return Enum("", {n: n for n in options}, type=str)
 
-def main(logdir="~/navrep3d",
+def main(logdir="~/navdreams_data/results",
          x_axis: str_enum(["wall_time", "train_time", "total_steps"]) = "wall_time", # noqa
          y_axis: str_enum(["reward", "difficulty", "progress", "worst_perf"]) = "difficulty", # noqa (flake8 bug?)
          no_dots: bool = False,

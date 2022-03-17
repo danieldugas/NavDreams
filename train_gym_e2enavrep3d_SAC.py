@@ -18,11 +18,11 @@ if __name__ == "__main__":
 
     MILLION = 1000000
     TRAIN_STEPS = 60 * MILLION
-    DIR = os.path.expanduser("~/navrep3d/models/gym")
-    LOGDIR = os.path.expanduser("~/navrep3d/logs/gym")
+    DIR = os.path.expanduser("~/navdreams_data/results/models/gym")
+    LOGDIR = os.path.expanduser("~/navdreams_data/results/logs/gym")
     if args.dry_run:
-        DIR = "/tmp/navrep3d/models/gym"
-        LOGDIR = "/tmp/navrep3d/logs/gym"
+        DIR = "/tmp/navdreams_data/results/models/gym"
+        LOGDIR = "/tmp/navdreams_data/results/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     CONTROLLER_ARCH = "_VCARCH_C64"
     LOGNAME = "navrep3dtrainenv_" + START_TIME + "_SAC" + "_E2E" + CONTROLLER_ARCH

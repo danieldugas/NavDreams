@@ -1,7 +1,7 @@
 from navrep.tools.envplayer import EnvPlayer
 from strictfire import StrictFire
 
-from navrep3d.navrep3danyenv import NavRep3DAnyEnv
+from navdreams.navrep3danyenv import NavRep3DAnyEnv
 
 def main(build_name=None, cont=0):
     build_names = [

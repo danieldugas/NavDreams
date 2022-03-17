@@ -20,8 +20,19 @@ sudo apt install -y build-essential python3-dev cmake # needed to compile some o
 
 pip install numpy cython
 pip install mlagents
-pip install pyrvo2-danieldugas matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet navrep typer strictfire \
+pip install pyrvo2-danieldugas matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet \
+  typer strictfire \
+  navrep navdreams \
   jedi==0.17 gym==0.18.0 # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
+
+mkdir ~/Code
+cd ~/Code/
+git clone git@github.com:danieldugas/pydreamer.git --branch n3d
+cd ~/Code/pydreamer
+pip install -e .
+git clone git@github.com:danieldugas/NavDreams.git
+cd ~/Code/NavDreams
+pip install -e .
 
 # ROS (useful if extracting rosbag)
 # pip install --extra-index-url https://rospypi.github.io/simple/ rospy rosbag tf tf2_ros

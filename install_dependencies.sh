@@ -25,6 +25,7 @@ cd ~/Code/
 git clone git@github.com:danieldugas/pydreamer.git --branch n3d
 cd ~/Code/pydreamer
 pip install -e .
+cd ~/Code/
 git clone git@github.com:danieldugas/NavDreams.git
 cd ~/Code/NavDreams
 pip install -e .

@@ -540,7 +540,7 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
             win.flip()
             if save_to_file:
                 pyglet.image.get_buffer_manager().get_color_buffer().save(
-                    "/tmp/navdreams_data/resultstrainenv{:05}.png".format(self.total_steps))
+                    "/tmp/navrep3dtrainenv{:05}.png".format(self.total_steps))
 
         if self.verbose > 1:
             toc = timer()

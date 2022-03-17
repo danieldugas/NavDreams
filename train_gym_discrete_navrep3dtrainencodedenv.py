@@ -4,15 +4,19 @@ from strictfire import StrictFire
 
 from stable_baselines3 import PPO
 
+from navdreams.navrep3danyenv import scenario_to_build_name
 from navdreams.navrep3dtrainencodedenv import (NavRep3DTrainEncoder,
-                                              SubprocVecNavRep3DEncodedEnvDiscrete)
+                                               SubprocVecNavRep3DEncodedEnvDiscrete)
 from navdreams.sb3_callbacks import NavRep3DLogCallback
 from navdreams.auto_debug import enable_auto_debug
 
 MILLION = 1000000
 
-def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=None, build_name=None):
+def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=False, n=None, scenario=None):
     shared_encoder = NavRep3DTrainEncoder(backend, encoding, variant, gpu=not no_gpu)
+    if scenario is None:
+        scenario = "simple"
+    build_name = scenario_to_build_name[scenario]
     _Z = shared_encoder._Z
     _H = shared_encoder._H
 
@@ -23,8 +27,6 @@ def main(backend="GPT", encoding="V_ONLY", variant="S", no_gpu=False, dry_run=Fa
         LOGDIR = "/tmp/navrep3d/logs/gym"
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
     ENCODER_ARCH = "_{}_{}_V{}M{}_{}".format(backend, encoding, _Z, _H, variant)
-    if build_name is None:
-        build_name = "./alternate.x86_64"
     build_names = build_name
     if build_name == "./build.x86_64":
         ENV_NAME = "navrep3dtrainencodedenv_"

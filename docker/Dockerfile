@@ -9,13 +9,12 @@ RUN apt-get install -y sudo
 RUN sudo apt-get install -y build-essential python3-dev cmake gcc g++ # needed to build navrep dependencies
 RUN sudo apt-get install -y git git-lfs # needed to download sim binaries
 RUN sudo apt-get install -y python3-pip virtualenv
-
-# GUI libraries needed by opencv, but a dependency asks for the timezone
+# GUI libraries needed by opencv, but during install a dependency asks for the timezone
 ENV CONTAINER_TIMEZONE=America/New_York
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
 RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y python3-opencv
 
-ENV VIRTUAL_ENV=~/navdreamsenv
+ENV VIRTUAL_ENV=navdreamsenv
 RUN virtualenv $VIRTUAL_ENV --python=python3.6
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
@@ -30,3 +29,4 @@ RUN pip3 install \
   jedi==0.17 gym==0.18.0 \
   navdreams
  # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
+RUN git clone git@github.com:danieldugas/navdreams

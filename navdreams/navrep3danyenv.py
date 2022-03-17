@@ -1,10 +1,23 @@
 import os
+from navrep.tools.envplayer import EnvPlayer
+from strictfire import StrictFire
 
 from navdreams.mlagents_gym_wrapper import (NavRep3DStaticASLEnv, NavRep3DStaticASLEnvDiscrete,
-                                           MLAGENTS_BUILD_NAMES)
+                                            MLAGENTS_BUILD_NAMES)
 from navdreams.archiveenv import ArchiveEnv
 from navdreams.navrep3dtrainenv import NavRep3DTrainEnv, NavRep3DTrainEnvDiscrete
 from navdreams.custom_policy import FlattenN3DObsWrapper
+
+# internally, scenarios were given different original names, that those used in the paper (for clarity)
+scenario_to_build_name = {
+    "simple": "./alternate.x86_64",
+    "city": "./city.x86_64",
+    "office": "./office.x86_64",
+    "modern": "staticasl",
+    "cathedral": "cathedral",
+    "gallery": "gallery",
+    "replica": "kozehd",
+}
 
 def NavRep3DAnyEnv(**kwargs):
     """ wrapper to hide the difference between the two kinds of navrep3d environments
@@ -35,14 +48,16 @@ def NavRep3DAnyEnvDiscreteFlattened(**kwargs):
     and FlattenN3DObsWrapper (used by custom E2E policy) """
     return FlattenN3DObsWrapper(NavRep3DAnyEnvDiscrete(**kwargs))
 
-
-if __name__ == "__main__":
+def test_envs():
     for build_name in [
             "./build.x86_64",
             "./alternate.x86_64",
             "./city.x86_64",
             "./office.x86_64",
             "staticasl",
+            "cathedral",
+            "gallery",
+            "kozehd",
             "rosbag",
     ]:
         for envtype in [NavRep3DAnyEnv, NavRep3DAnyEnvDiscrete]:
@@ -54,3 +69,14 @@ if __name__ == "__main__":
             print(env.step(env.action_space.sample()))
             env.render()
             env.close()
+
+
+def main(scenario="replica", difficulty_mode="progressive"):
+    build_name = scenario_to_build_name[scenario]
+    env = NavRep3DAnyEnv(build_name=build_name, difficulty_mode=difficulty_mode)
+    player = EnvPlayer(env)
+    player.run()
+
+
+if __name__ == "__main__":
+    StrictFire(main)

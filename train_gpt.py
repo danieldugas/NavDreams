@@ -115,13 +115,15 @@ class N3DWorldModelDataset(WorldModelDataset):
 def main(max_steps=222222, dataset="S", dry_run=False):
     START_TIME = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 
-    if dataset == "S":
+    # note that the "S" dataset in the paper is called "Salt" in the code, due to naming collision
+    # with a legacy "S" dataset
+    if dataset == "S_old":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dtrain")]
         log_path = os.path.expanduser(
             "~/navrep3d_W/logs/W/transformer_S_train_log_{}.csv".format(START_TIME))
         checkpoint_path = os.path.expanduser("~/navrep3d_W/models/W/transformer_S")
         plot_path = os.path.expanduser("~/tmp_navrep3d/transformer_S_step")
-    elif dataset == "Salt":
+    elif dataset == "S":
         dataset_dir = [os.path.expanduser("~/navrep3d_W/datasets/V/navrep3dalt")]
         log_path = os.path.expanduser(
             "~/navrep3d_W/logs/W/transformer_Salt_train_log_{}.csv".format(START_TIME))

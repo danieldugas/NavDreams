@@ -45,20 +45,27 @@ pip install navdreams
 ## Running the simulated environments
 
 ```
-python -m navdreams.mlagents_gym_wrapper
+python -m navdreams.navrep3danyenv --scenario replica
 ```
 
 ## Training the World-Model
 
+Generate the dataset
+
 ```
-python make_vae_dataset.py --env SCR
+python make_vae_dataset.py --scope SCR
+```
+
+Train the world-model
+
+```
 python train_gpt.py --dataset SCR
 ```
 
 ## Training the Controller
 
 ```
-python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --build-name ./city.x86_64
+python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city
 ```
 
 ---

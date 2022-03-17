@@ -4,7 +4,7 @@ setup(
     name="navdreams",
     description='NavDreams python package, including simulator and tools',
     author='Daniel Dugas',
-    version='0.0.5',
+    version='0.0.6',
     packages=["navdreams",
               ],
     python_requires='>=3.6',

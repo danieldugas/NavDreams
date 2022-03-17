@@ -4,6 +4,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import PPO
 from strictfire import StrictFire
 
+from navdreams.navrep3danyenv import scenario_to_build_name
 from navdreams.sb3_callbacks import NavRep3DLogCallback
 from navdreams.custom_policy import NavRep3DTupleCNN
 from navdreams.navrep3danyenv import NavRep3DAnyEnvDiscreteFlattened
@@ -11,7 +12,10 @@ from navdreams.auto_debug import enable_auto_debug
 
 MILLION = 1000000
 
-def main(dry_run=False, n=None, build_name=None):
+def main(dry_run=False, n=None, scenario=None):
+    if scenario is None:
+        scenario = "simple"
+    build_name = scenario_to_build_name[scenario]
     TRAIN_STEPS = n
     if TRAIN_STEPS is None:
         TRAIN_STEPS = 5 * MILLION

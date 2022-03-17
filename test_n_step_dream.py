@@ -154,7 +154,7 @@ def main(dataset="SCR",
          error=False,
          dataset_info=False,
          offset=0,
-         skip=2,
+         skip=3,
          samples=1000,
          gifs=False,
          paper_sequences=False,
@@ -418,9 +418,7 @@ def main(dataset="SCR",
 
     # images plot
     n_rows_per_example = (len(worldmodels) + 1)
-    n_cols = sequence_length // (1 + skip)
-    if skip == 3: # dirty but no time
-        n_cols += 1
+    n_cols = int(np.ceil(sequence_length / (1 + skip)))
     fig, axes = plt.subplots(n_rows_per_example * n_examples, n_cols, num="dream",
                              figsize=(22, 3 * n_examples), dpi=100)
     axes = np.array(axes).reshape((-1, n_cols))

@@ -1,23 +1,17 @@
-# virtualenv ~/cbcenv
-# source ~/cbcenv/bin/activate
-#
-# pip install matplotlib numpy cython ipython pyyaml snakeviz
-# cd lib_dwa
-# pip install .
-# cd ..
-# git clone git@github.com:danieldugas/Python-RVO2.git
-# cd Python-RVO2
-# pip install .
-#
 set -x
 set -e
+
+# system dependencies
+sudo apt install -y virtualenv python3-pip git-lfs
+
+# create virtualenv
 rm -rf ~/n3denv
 virtualenv ~/n3denv --python=python3.6
 source ~/n3denv/bin/activate
+
+# pip install python dependencies
 pip install --upgrade pip # fixes ubuntu 20 pip pep517 error
-
 sudo apt install -y build-essential python3-dev cmake # needed to compile some of the pip packages
-
 pip install numpy cython
 pip install mlagents
 pip install pyrvo2-danieldugas matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet \
@@ -25,6 +19,7 @@ pip install pyrvo2-danieldugas matplotlib ipython pyyaml snakeviz stable-baselin
   navrep navdreams \
   jedi==0.17 gym==0.18.0 # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
 
+# install pydreamer and navdreams in development mode
 mkdir ~/Code
 cd ~/Code/
 git clone git@github.com:danieldugas/pydreamer.git --branch n3d

@@ -25,7 +25,7 @@ Our simulator currently contains 7 scenarios. Some of these are based on 2D envi
 
 ## Models and Tools
 
-Model implementations, trained checkpoints, training tools, and plotting tools are made available in this repo.
+Model implementations, trained checkpoints, training tools, and plotting tools are made available in this repo. See the *How-to* section for examples of use. 
 
 ![models](media/models.gif)
 
@@ -67,6 +67,10 @@ python train_gpt.py --dataset SCR
 ```
 python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city
 ```
+
+## More
+
+[Example Workflow: Evaluating World-model Dreams](wiki/worldmodel_error.md)
 
 ---
 

@@ -57,6 +57,16 @@ def angle_difference(a, b):
     delta = (delta + np.pi) % (2.*np.pi) - np.pi
     return delta
 
+class DummyPortLockHandle(object):
+    def __init__(self):
+        self.port = None
+
+    def write(self, message):
+        pass
+
+    def free(self):
+        pass
+
 def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=None):
     """ creates a file in /tmp/ to indicate that a port is in use """
     # check if file already exists

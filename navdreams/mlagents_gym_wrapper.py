@@ -9,7 +9,8 @@ from mlagents_envs.base_env import ActionTuple
 # from gym_unity.envs import UnityToGymWrapper
 
 from navdreams.crowd_sim_info import Timeout, ReachGoal, Collision, CollisionOtherAgent
-from navdreams.navrep3dtrainenv import DiscreteActionWrapper, mark_port_use, download_binaries_if_not_found
+from navdreams.navrep3dtrainenv import DiscreteActionWrapper
+from navdreams.navrep3dtrainenv import mark_port_use, DummyPortLockHandle, download_binaries_if_not_found
 
 HOMEDIR = os.path.expanduser("~")
 # DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
@@ -18,6 +19,15 @@ UNITY_EXE_DIR = os.path.join(HOMEDIR, "navdreams_binaries")
 DEFAULT_UNITY_EXE = os.path.join(UNITY_EXE_DIR, "mlagents_executables")
 
 MLAGENTS_BUILD_NAMES = ["staticasl", "cathedral", "gallery", "kozehd"]
+
+def images_to_uint8(obs_dict):
+    new_obs_dict = {}
+    for k, v in obs_dict.items():
+        if k in ["CameraSensor", "DepthSensor", "SemanticSensor"]:
+            new_obs_dict[k] = (v * 255).astype(np.uint8)
+        else:
+            new_obs_dict[k] = v
+    return new_obs_dict
 
 class MLAgentsGymEnvWrapper(gym.Env):
     """
@@ -58,7 +68,7 @@ class MLAgentsGymEnvWrapper(gym.Env):
         Converts a MLAgents observation spec to an OpenAI Gym observation space.
         """
         if self.visual_to_uint8:
-            if name == "CameraSensor":
+            if name in ["CameraSensor", "DepthSensor", "SemanticSensor"]:
                 return gym.spaces.Box(low=0, high=255, shape=obs_spec.shape, dtype=np.uint8)
         return gym.spaces.Box(low=-np.inf, high=np.inf, shape=obs_spec.shape, dtype=np.float32)
 
@@ -69,7 +79,7 @@ class MLAgentsGymEnvWrapper(gym.Env):
         obs = decision_step.obs
         obs_dict = {key: ob for key, ob in zip(self.observation_space, obs)}
         if self.visual_to_uint8:
-            obs_dict['CameraSensor'] = (obs_dict['CameraSensor'] * 255).astype(np.uint8)
+            obs_dict = images_to_uint8(obs_dict)
         return obs_dict
 
     def step(self, action):
@@ -86,7 +96,7 @@ class MLAgentsGymEnvWrapper(gym.Env):
             reward = decision_step.reward
             obs_dict = {key: ob for key, ob in zip(self.observation_space, obs)}
             if self.visual_to_uint8:
-                obs_dict['CameraSensor'] = (obs_dict['CameraSensor'] * 255).astype(np.uint8)
+                obs_dict = images_to_uint8(obs_dict)
             return obs_dict, reward, done, {}
         if len(terminal_steps) == 1:
             # episode has ended, next step should be reset
@@ -96,7 +106,7 @@ class MLAgentsGymEnvWrapper(gym.Env):
             reward = terminal_step.reward
             obs_dict = {key: ob for key, ob in zip(self.observation_space, obs)}
             if self.visual_to_uint8:
-                obs_dict['CameraSensor'] = (obs_dict['CameraSensor'] * 255).astype(np.uint8)
+                obs_dict = images_to_uint8(obs_dict)
             return obs_dict, reward, done, {}
         raise ValueError("Expected either a decision ({}) or a terminal step ({}).".format(
             len(decision_steps), len(terminal_steps)))
@@ -217,6 +227,10 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
         self.steps_since_reset += 1
         self.episode_reward += reward
         self.last_image = obs['CameraSensor']
+        if 'DepthSensor' in obs:
+            info["depth_image"] = obs['DepthSensor']
+        if 'SemanticSensor' in obs:
+            info["segmentation_image"] = obs['SemanticSensor']
         self.goal_xy = obs['VectorSensor_size6'][:2]
         self.last_odom = np.array([0, 0, 0, 0, 0, 0, 0])
         self.last_action = action
@@ -564,10 +578,11 @@ class StaticASLToNavRep3DEnvWrapper(gym.Env):
 def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv signature
     """ Shorthand to create env made by stacking wrappers which is equivalent to NavRep3DTrainEnv,
     """
+    DEFAULT_PORT = 25001
     build_name = kwargs.pop('build_name', "staticasl")
     unity_player_dir = kwargs.pop('unity_player_dir', DEFAULT_UNITY_EXE)
     start_with_random_rot = kwargs.pop('start_with_random_rot', True)
-    port = kwargs.pop('port', 25001)
+    port = kwargs.pop('port', DEFAULT_PORT)
     collect_statistics = kwargs.pop('collect_statistics', True)
     debug_export_every_n_episodes = kwargs.pop('debug_export_every_n_episodes', 0)
     # these args are unityenv specific
@@ -582,13 +597,15 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
         raise ValueError
     if unity_player_dir is None:
         file_name = None
+        worker_id = 0
+        port_lock_handle = DummyPortLockHandle()
     else:
         download_binaries_if_not_found(unity_player_dir)
         file_name = os.path.join(unity_player_dir, build_name)
+        port_lock_handle = mark_port_use(port, True, auto_switch=True, process_info="staticasl")
+        worker_id = port_lock_handle.port - DEFAULT_PORT
     if not start_with_random_rot:
         raise ValueError
-    port_lock_handle = mark_port_use(port, True, auto_switch=True, process_info="staticasl")
-    worker_id = port_lock_handle.port - 25001
     channel = EngineConfigurationChannel()
     unity_env = UnityEnvironment(file_name=file_name, seed=seed, worker_id=worker_id, side_channels=[channel])
     port_lock_handle.write(f"actual port {unity_env._port}\n")
@@ -609,11 +626,15 @@ def NavRep3DStaticASLEnvDiscrete(**kwargs):
     env = DiscreteActionWrapper(env)
     return env
 
-def main(step_by_step=False, render_mode='human', difficulty_mode="progressive", build_name="staticasl"):
+def main(step_by_step=False, render_mode='human', difficulty_mode="progressive", build_name="staticasl",
+         editor=False):
     from navrep.tools.envplayer import EnvPlayer
     np.set_printoptions(precision=1, suppress=True)
+    unity_player_dir = DEFAULT_UNITY_EXE
+    if editor:
+        unity_player_dir = None
     env = NavRep3DStaticASLEnv(
-        verbose=0, collect_statistics=True, build_name=build_name,
+        verbose=0, collect_statistics=True, build_name=build_name, unity_player_dir=unity_player_dir,
         debug_export_every_n_episodes=0, port=25004, difficulty_mode=difficulty_mode)
     player = EnvPlayer(env, render_mode, step_by_step)
     player.run()

@@ -41,6 +41,8 @@ def generate_segmentation_dataset(env, n_sequences,
             dones.append(done)
             labels.append(info["segmentation_image"])
             depths.append(info["depth_image"])
+            if True:  # show labels in render
+                env.last_image = info["segmentation_image"]
             if render:
                 env.render()
             if done:

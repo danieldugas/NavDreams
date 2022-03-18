@@ -3,11 +3,11 @@
 ### Install
 
 [This install script](../install_dependencies.sh) is an example of how to get the necessary dependencies,
-as well as pydreamer and NavDreams code and python libraries installed in development mode
+as well as pydreamer and NavDreams code and python libraries installed in development mode. It was used on ubuntu 18.04 machines for training.
 
 ### Download Existing Dataset
 Download the [navdreams_data](https://drive.google.com/drive/folders/17_o7jPLKKlRbgySIOxn6-Z1kUHcOgld5?usp=sharing)
-folder to your home directory so that `~/navdreams_data/wm_experiments` is a valid location.
+folder to your home directory so that `~/navdreams_data/wm_experiments` is a valid location. (*Note: we have reports that GDrive may be adding unwanted extensions to files, such as adding '.zip' to model checkpoints. We will investigate and switch to another hosting solution, until then, if you get an error that a file is missing, check the extension*)
 
 Note that this is quite a large download, you can potentially only download the parts which you requre to save on space.
 

@@ -18,7 +18,8 @@ UNITY_EXE_REPOSITORY = "https://github.com/ethz-asl/navrep3d_lfs"
 UNITY_EXE_DIR = os.path.join(HOMEDIR, "navdreams_binaries")
 DEFAULT_UNITY_EXE = os.path.join(UNITY_EXE_DIR, "mlagents_executables")
 
-MLAGENTS_BUILD_NAMES = ["staticasl", "cathedral", "gallery", "kozehd"]
+MLAGENTS_BUILD_NAMES = ["staticasl", "cathedral", "gallery", "kozehd",
+                        "kozehd_labelling"]
 
 def images_to_uint8(obs_dict):
     new_obs_dict = {}

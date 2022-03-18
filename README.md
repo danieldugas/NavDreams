@@ -35,6 +35,7 @@ Model implementations, trained checkpoints, training tools, and plotting tools a
 - Running the simulator
 - Training the world-model
 - Training the controller
+- Testing the controller
 
 ## Manual Install
 
@@ -66,6 +67,15 @@ python train_gpt.py --dataset SCR
 
 ```
 python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city
+```
+
+## Testing the Controller
+
+Test the controller you trained, (or a [downloaded model](https://drive.google.com/drive/folders/17_o7jPLKKlRbgySIOxn6-Z1kUHcOgld5?usp=sharing)).
+```
+ python test_any.py --model-path \
+   "~/navdreams_data/results/models/gym/navrep3dcityencodedenv_2022_02_18__18_26_31_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+   --n-episodes 100 --build-name "./city.x86_64" --difficulty-mode "hardest" --render True
 ```
 
 ## More

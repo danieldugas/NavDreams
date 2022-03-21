@@ -30,6 +30,9 @@ git clone git@github.com:danieldugas/NavDreams.git
 cd ~/Code/NavDreams
 pip install -e .
 
+# Pre-install the simulator binaries
+git lfs clone git@github.com:ethz-asl/navrep3d_lfs.git ~/navdreams_binaries
+
 # ROS (useful if extracting rosbag)
 # pip install --extra-index-url https://rospypi.github.io/simple/ rospy rosbag tf tf2_ros
 # pip install --extra-index-url https://rospypi.github.io/simple/ sensor_msgs std_srvs geometry_msgs nav_msgs std_msgs visualization_msgs cv_bridge

@@ -39,9 +39,11 @@ Model implementations, trained checkpoints, training tools, and plotting tools a
 
 ## Manual Install
 
+If you already have the typical python/DL dependencies, installing should be as simple as
 ```
 pip install navdreams
 ```
+For a more details, refer to this [install script](install_dependencies.sh)
 
 ## Running the simulated environments
 

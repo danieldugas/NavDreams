@@ -13,18 +13,24 @@ source ~/n3denv/bin/activate
 # pip install python dependencies
 pip install --upgrade pip # fixes ubuntu 20 pip pep517 error
 sudo apt install -y build-essential python3-dev cmake # needed to compile some of the pip packages
-pip install numpy cython
-pip install mlagents
+pip install numpy cython # separate because a build dep for some of the next deps
+pip install mlagents # separate because has a too strict pytorch requirement
 pip install pyrvo2-danieldugas matplotlib ipython pyyaml snakeviz stable-baselines3  pyglet \
   typer strictfire \
   navrep navdreams \
-  jedi==0.17 gym==0.18.0 # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
+  torch==1.9.0 \
+  tensorflow==1.13.2 Keras==2.3.1 \
+  jedi==0.17 gym==0.18.0
+# tensorflow used by stable baselines (<2), keras by legacy crowd_sim imports
+# jedi because newer versions break ipython (py3.6)
+# gym because of error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
 
 # install pydreamer and navdreams in development mode
 mkdir -p ~/Code
 cd ~/Code/
 git clone git@github.com:danieldugas/pydreamer.git --branch n3d
 cd ~/Code/pydreamer
+pip install mlflow
 pip install -e .
 cd ~/Code/
 git clone git@github.com:danieldugas/NavDreams.git

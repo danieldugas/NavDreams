@@ -19,3 +19,6 @@ python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario ci
 python test_any.py --model-path \
    "~/navdreams_data/results/models/gym/navrep3dcityencodedenv_2022_02_18__18_26_31_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
    --n-episodes 100 --build-name "./city.x86_64" --difficulty-mode "hardest" --render True
+
+cd ~/Code/pydreamer
+ipython -i -- train.py --configs defaults navrep3dtrain

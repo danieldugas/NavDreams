@@ -69,46 +69,46 @@ def main(n_sequences=100, scope="S", render=False, dry_run=False, subproc_id=0, 
         if env == "S":
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dtrain")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3dtrain"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3dtrain"
             build_name = "./build.x86_64"
         elif env == "Salt":
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dalt")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3dalt"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3dalt"
             build_name = "./alternate.x86_64"
         elif env == "CC": # City
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcity")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3dcity"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3dcity"
             build_name = "./city.x86_64"
         elif env == "CO": # Office
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3doffice")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3doffice"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3doffice"
             build_name = "./office.x86_64"
         elif env == "R": # R
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3daslv2")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3daslv2"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3daslv2"
             build_name = "staticasl"
         elif env == "OG":
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dgallery")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3dgallery"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3dgallery"
             build_name = "gallery"
         elif env == "OC":
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dcathedral")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3dcathedral"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3dcathedral"
             build_name = "cathedral"
         elif env == "K": # R
             archive_dir = os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/navrep3dkozehdr")
             if dry_run:
-                archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3dkozehdr"
+                archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3dkozehdr"
             build_name = "kozehd"
             difficulty_mode = "bimodal"
         elif env == "rosbag": # only for testing, used in regen
-            archive_dir = "/tmp/navdreams_data/results/datasets/V/navrep3drosbag"
+            archive_dir = "/tmp/navdreams_data/wm_experiments/datasets/V/navrep3drosbag"
             build_name = "rosbag"
             if discrete_actions or quantized_actions:
                 raise ValueError("discrete/quantized actions not supported for rosbag")

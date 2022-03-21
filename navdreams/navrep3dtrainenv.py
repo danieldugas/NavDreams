@@ -610,6 +610,16 @@ class NavRep3DTrainEnv(gym.Env):
         self.port_lock_handle.free()
         time.sleep(1)
 
+    def render_ascii(self):
+        chars = np.array(['@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.'])
+        if self.last_image is not None:
+            color = self.last_image / 255.
+            greyscale = 0.2989 * color[:,:,0] + 0.5870 * color[:,:,1] + 0.1140 * color[:,:,2]
+            indices = (np.clip(greyscale, 0, 1) * (len(chars)-1)).astype(int)
+            ascii_img = chars[indices]
+            for line in ascii_img[::3]:
+                print(''.join(line))
+
     def render(self, mode='human', close=False, save_to_file=False):
         tic = timer()
         if close:

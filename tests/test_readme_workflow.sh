@@ -11,10 +11,11 @@ wget -r -np -nH --cut-dirs 3 -R "index.html*" http://robotics.ethz.ch/~asl-datas
 
 # Readme Example Commands
 source ~/n3denv/bin/activate
+cd ~/Code/NavDreams
 python -m navdreams.navrep3danyenv --scenario replica
-python make_vae_dataset.py --scope SCR
-python train_gpt.py --dataset SCR
-python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city
+python make_vae_dataset.py --scope SCR --n-sequences 2
+python train_gpt.py --dataset SCR --max-steps 2 --dry-run
+python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city --n 10 --dry-run
 python test_any.py --model-path \
    "~/navdreams_data/results/models/gym/navrep3dcityencodedenv_2022_02_18__18_26_31_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
    --n-episodes 100 --build-name "./city.x86_64" --difficulty-mode "hardest" --render True

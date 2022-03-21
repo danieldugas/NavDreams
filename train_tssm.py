@@ -48,8 +48,8 @@ def main(max_steps=222222, dataset="SCR", dry_run=False):
         raise NotImplementedError(dataset)
 
     if dry_run:
-        log_path = log_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
-        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
+        log_path = log_path.replace(os.path.expanduser("~/navdreams_data"), "/tmp/navdreams_data")
+        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navdreams_data"), "/tmp/navdreams_data")
 
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))

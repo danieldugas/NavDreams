@@ -62,6 +62,8 @@ _S = 32  # sequence length
 class N3DWorldModelDataset(WorldModelDataset):
     """ same as a WorldModelDataset, but data regeneration is specialized for navrep3d """
     def _partial_regen(self, n_new_sequences=1, build_name=None):
+        print("Partial regen disabled.")
+        return # Disabled since making a larger dataset is more straightforward
         from navrep.scripts.make_vae_dataset import generate_vae_dataset, SemiRandomMomentumPolicy
         from navdreams.navrep3danyenv import NavRep3DAnyEnv
         if self.regen in ["S", "SC", "Salt", "SCR", "R"]:
@@ -190,8 +192,8 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         raise NotImplementedError(dataset)
 
     if dry_run:
-        log_path = log_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
-        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navdreams_data/results"), "/tmp/navdreams_data/results")
+        log_path = log_path.replace(os.path.expanduser("~/navdreams_data"), "/tmp/navdreams_data")
+        checkpoint_path = checkpoint_path.replace(os.path.expanduser("~/navdreams_data"), "/tmp/navdreams_data")
 
     make_dir_if_not_exists(os.path.dirname(checkpoint_path))
     make_dir_if_not_exists(os.path.dirname(log_path))

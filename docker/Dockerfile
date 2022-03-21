@@ -14,7 +14,7 @@ ENV CONTAINER_TIMEZONE=America/New_York
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
 RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y python3-opencv
 
-ENV VIRTUAL_ENV=navdreamsenv
+ENV VIRTUAL_ENV=n3denv
 RUN virtualenv $VIRTUAL_ENV --python=python3.6
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 

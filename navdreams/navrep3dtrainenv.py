@@ -127,6 +127,9 @@ class NavRep3DTrainEnv(gym.Env):
         # default args
         if build_name is None:
             build_name = "./alternate.x86_64"
+        # download binaries if necessary
+        if unity_player_dir == DEFAULT_UNITY_EXE:
+            download_binaries_if_not_found(unity_player_dir)
         # gym env definition
         super(NavRep3DTrainEnv, self).__init__()
         self.action_space = gym.spaces.Box(low=-MAX_VEL, high=MAX_VEL, shape=(3,), dtype=np.float32)

@@ -2,7 +2,7 @@
 cd /tmp
 wget https://raw.githubusercontent.com/danieldugas/NavDreams/master/install_dependencies.sh
 chmod +x install_dependencies.sh
-. ./install_dependencies.sh
+./install_dependencies.sh
 
 # fetch a minimal version of the navdreams_data folder, for testing only
 mkdir -p ~/navdreams_data

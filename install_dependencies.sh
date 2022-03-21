@@ -2,6 +2,7 @@ set -x
 set -e
 
 # system dependencies
+sudo add-apt-repository multiverse
 sudo apt install -y virtualenv python3-pip git-lfs
 
 # create virtualenv
@@ -20,7 +21,7 @@ pip install pyrvo2-danieldugas matplotlib ipython pyyaml snakeviz stable-baselin
   jedi==0.17 gym==0.18.0 # jedi because newer versions break ipython (py3.6) gym error in (py3.6) https://stackoverflow.com/questions/69520829/openai-gym-attributeerror-module-contextlib-has-no-attribute-nullcontext
 
 # install pydreamer and navdreams in development mode
-mkdir ~/Code
+mkdir -p ~/Code
 cd ~/Code/
 git clone git@github.com:danieldugas/pydreamer.git --branch n3d
 cd ~/Code/pydreamer

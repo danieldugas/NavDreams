@@ -41,6 +41,8 @@ pip install -e . --no-deps
 
 # Pre-install the simulator binaries
 git lfs clone git@github.com:ethz-asl/navrep3d_lfs.git ~/navdreams_binaries
+cd ~/navdreams_binaries
+git reset --hard # this shouldn't be necessary, but git-lfs...
 
 # ROS (useful if extracting rosbag)
 # pip install --extra-index-url https://rospypi.github.io/simple/ rospy rosbag tf tf2_ros

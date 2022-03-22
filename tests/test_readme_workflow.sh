@@ -22,3 +22,11 @@ python test_any.py --model-path \
 
 cd ~/Code/pydreamer
 ipython -i -- train.py --configs defaults navrep3dtrain
+
+# cleanup
+deactivate
+rm -rf ~/navdreams_binaries
+rm -rf ~/navdreams_data
+rm -rf ~/n3denv
+rm -rf ~/Code/NavDreams
+rm -rf ~/Code/pydreamer

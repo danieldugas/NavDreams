@@ -34,6 +34,7 @@ variant_colors = {
     "E2E": "grey",
     "DREAMER": "orange",
     "SCRK": "blue",
+    "SCRK2": "violet",
     "K2": "red",
 }
 clean_scenario_names = {

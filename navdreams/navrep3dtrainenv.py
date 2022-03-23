@@ -57,16 +57,6 @@ def angle_difference(a, b):
     delta = (delta + np.pi) % (2.*np.pi) - np.pi
     return delta
 
-class DummyPortLockHandle(object):
-    def __init__(self):
-        self.port = None
-
-    def write(self, message):
-        pass
-
-    def free(self):
-        pass
-
 def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=None):
     """ creates a file in /tmp/ to indicate that a port is in use """
     # check if file already exists
@@ -89,7 +79,7 @@ def mark_port_use(port, occupy, auto_switch=True, process_info="", filehandle=No
                 return mark_port_use(port, occupy,
                                      auto_switch=True, process_info=process_info, filehandle=filehandle)
             else:
-                raise ValueError(f"Port {port} is already in use")
+                raise ValueError(f"Port {port} is already in use. (If not, delete {filepath})")
         else:
             filehandle = open(filepath, "w")
             filehandle.write(process_info)
@@ -142,7 +132,8 @@ class NavRep3DTrainEnv(gym.Env):
         HOST = '127.0.0.1'
         self.socket_host = HOST
         self.build_name = build_name
-        self.port_lock_handle = mark_port_use(port, True, auto_switch=True, process_info=f"{self.build_name}")
+        self.port_lock_handle = mark_port_use(port, True, auto_switch=unity_player_dir is not None,
+                                              process_info=f"{self.build_name}")
         self.collect_statistics = collect_statistics
         self.debug_export_every_n_episodes = debug_export_every_n_episodes
         self.verbose = verbose
@@ -1135,7 +1126,6 @@ def main(
         debug_env_max_speed(env)
     else:
         player = EnvPlayer(env, render_mode, step_by_step)
-        player.run()
 
 
 if __name__ == "__main__":

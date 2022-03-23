@@ -10,7 +10,7 @@ from mlagents_envs.base_env import ActionTuple
 
 from navdreams.crowd_sim_info import Timeout, ReachGoal, Collision, CollisionOtherAgent
 from navdreams.navrep3dtrainenv import DiscreteActionWrapper
-from navdreams.navrep3dtrainenv import mark_port_use, DummyPortLockHandle, download_binaries_if_not_found
+from navdreams.navrep3dtrainenv import mark_port_use, download_binaries_if_not_found
 
 HOMEDIR = os.path.expanduser("~")
 # DEFAULT_UNITY_EXE = os.path.join(HOMEDIR, "Code/cbsim/navrep3d/LFS/mlagents_executables")
@@ -598,13 +598,13 @@ def NavRep3DStaticASLEnv(**kwargs): # using kwargs to respect NavRep3DTrainEnv s
         raise ValueError
     if unity_player_dir is None:
         file_name = None
-        worker_id = 0
-        port_lock_handle = DummyPortLockHandle()
+        port = DEFAULT_PORT
     else:
         download_binaries_if_not_found(unity_player_dir)
         file_name = os.path.join(unity_player_dir, build_name)
-        port_lock_handle = mark_port_use(port, True, auto_switch=True, process_info="staticasl")
-        worker_id = port_lock_handle.port - DEFAULT_PORT
+    port_lock_handle = mark_port_use(port, True, auto_switch=unity_player_dir is not None,
+                                     process_info=f"{build_name}")
+    worker_id = port_lock_handle.port - DEFAULT_PORT
     if not start_with_random_rot:
         raise ValueError
     channel = EngineConfigurationChannel()
@@ -638,8 +638,6 @@ def main(step_by_step=False, render_mode='human', difficulty_mode="progressive",
         verbose=0, collect_statistics=True, build_name=build_name, unity_player_dir=unity_player_dir,
         debug_export_every_n_episodes=0, port=25004, difficulty_mode=difficulty_mode)
     player = EnvPlayer(env, render_mode, step_by_step)
-    player.run()
-    env.close()
 
 
 if __name__ == "__main__":

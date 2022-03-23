@@ -51,6 +51,8 @@ For a more details, refer to this [install script](install_dependencies.sh)
 python -m navdreams.navrep3danyenv --scenario replica
 ```
 
+See [simulator troubleshooting](wiki/troubleshoot_sim.md) if you encounter issues.
+
 ## Training the World-Model
 
 Generate the dataset

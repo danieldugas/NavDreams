@@ -13,7 +13,7 @@ then use this world model to do camera-based robot navigation.
 
 ![title](media/real_tests.gif)
 
-More information available in [our paper](TODO)
+More information available in [our paper](http://arxiv.org/abs/2203.12299)
 
 ## Simulator
 

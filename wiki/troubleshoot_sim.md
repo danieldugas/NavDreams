@@ -86,6 +86,6 @@ Rarely, we observed that on some EC2 instances specific binaries run strangely (
 
 If nothing else works, there is always the possibility of building the binaries from the source Unity project on the target architecture.
 
-Refer to [NavDreamsUnity](github.com/ethz-asl/NavDreamsUnity) for more information.
+Refer to [NavDreamsUnity](https://www.github.com/ethz-asl/NavDreamsUnity) for more information.
 
 

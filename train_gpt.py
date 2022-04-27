@@ -216,7 +216,7 @@ def main(max_steps=222222, dataset="S", dry_run=False):
         dataset_dir, _S,
         pre_convert_obs=False,
         regen=dataset,
-        lidar_mode="images",
+        lidar_mode="images",file_limit=None
     )
     if len(train_dataset) == 0:
         raise ValueError("No training data found")

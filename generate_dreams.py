@@ -49,102 +49,8 @@ class TransformerWorldModel(GPT):
         dream_sequence[-1]['action'] = next_actions[-1] * 1.
         return dream_sequence
 
-def single_sequence_n_step_error(real_sequence, dream_sequence, dones, context_length):
-    sequence_length = len(real_sequence)
-    dream_length = sequence_length - context_length
-    dream_obs = np.array([d["obs"] for d in dream_sequence[context_length:]]) # (D, W, H, C)
-    dream_vecobs = np.array([d["state"] for d in dream_sequence[context_length:]])
-    real_obs = np.array([d["obs"] for d in real_sequence[context_length:]])
-    real_vecobs = np.array([d["state"] for d in real_sequence[context_length:]])
-    obs_error = np.mean( # mean over all pixels and channels
-        np.reshape(np.square(dream_obs - real_obs), (dream_length, -1)),
-        axis=-1) # now (D,)
-    vecobs_error = np.mean(
-        np.reshape(np.square(dream_vecobs - real_vecobs), (dream_length, -1)),
-        axis=-1) # now (D, )
-    # if a reset is in the sequence, ignore predictions for subsequent frames
-    ignore_error = np.cumsum(dones[context_length:]) > 0 # (D,)
-    obs_error[ignore_error] = np.nan
-    vecobs_error[ignore_error] = np.nan
-    return obs_error, vecobs_error
 
-def worldmodel_n_step_error(worldmodel, test_dataset_folder,
-                            sequence_length=32, context_length=16, samples=0):
-    # parameters
-    shuffle = True
-    dream_length = sequence_length - context_length
-    # load dataset
-    seq_loader = WorldModelDataset(test_dataset_folder, sequence_length, lidar_mode="images",
-                                   channel_first=False, as_torch_tensors=False, file_limit=10)
-    N = min(samples, len(seq_loader))
-    if samples == 0:
-        N = len(seq_loader)
-    obs_error = np.ones((N, dream_length)) * np.nan
-    vecobs_error = np.ones((N, dream_length)) * np.nan
-    indices = list(range(len(seq_loader)))
-    if shuffle:
-        random.Random(4).shuffle(indices)
-    pbar = tqdm(indices[:N])
-#     for i, (x, a, y, x_rs, y_rs, dones) in enumerate(seq_loader):
-    for i, idx in enumerate(pbar):
-        if idx >= len(seq_loader): # this shouldn't be necessary, but it is (len is not honored by for)
-            continue
-        x, a, y, x_rs, y_rs, dones = seq_loader[idx]
-        real_sequence = [dict(obs=x[j], state=x_rs[j], action=a[j]) for j in range(sequence_length)]
-        dream_sequence = worldmodel.fill_dream_sequence(real_sequence, context_length)
-        obs_error[i], vecobs_error[i] = single_sequence_n_step_error(
-            real_sequence, dream_sequence, dones, context_length)
-        if i % 10 == 0:
-            pbar.set_description(
-                f"1-step error {np.nanmean(obs_error, axis=0)[0]:.5f} \
-                  16-step error {np.nanmean(obs_error, axis=0)[15]:.5f}"
-            )
-    archive_path = "/tmp/{}_n_step_errors.npz".format(type(worldmodel).__name__)
-    np.savez_compressed(archive_path, obs_error=obs_error, vecobs_error=vecobs_error)
-    print(f"Saved n-step errors to {archive_path}")
-    mean_obs_error = np.nanmean(obs_error, axis=0)
-    mean_vecobs_error = np.nanmean(vecobs_error, axis=0)
-    return mean_obs_error, mean_vecobs_error
 
-def hide_axes_but_keep_ylabel(ax):
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    if False:
-        ax.set_axis_off()
-
-def sequence_to_gif(dream_sequence, worldmodel_name, real_sequence=None, sequence_idx=0):
-    from moviepy.editor import ImageSequenceClip
-    dreamframes = [(d["obs"] * 255).astype(np.uint8) for d in dream_sequence]
-    frames = dreamframes
-    if real_sequence is not None:
-        realframes = [(d["obs"] * 255).astype(np.uint8) for d in real_sequence]
-        frames = [np.concatenate([r, d], axis=0) for r, d in zip(realframes, dreamframes)]
-    clip = ImageSequenceClip(list(frames), fps=20)
-    clip.write_gif("/tmp/dream_of_length{}_index{}_{}.gif".format(
-        len(frames), sequence_idx, worldmodel_name), fps=20)
-
-def sequences_to_comparison_gif(dream_sequences, worldmodel_names, real_sequence, sequence_idx=0):
-    from moviepy.editor import ImageSequenceClip
-    all_dreamframes = [[(d["obs"] * 255).astype(np.uint8) for d in dream_sequence]
-                       for dream_sequence in dream_sequences]
-    realframes = [(d["obs"] * 255).astype(np.uint8) for d in real_sequence]
-    frames = [np.concatenate(imglist, axis=0) for imglist in zip(realframes, *all_dreamframes)]
-    clip = ImageSequenceClip(list(frames), fps=20)
-    clip.write_gif("/tmp/comparison_dream_of_length{}_index{}_{}.gif".format(
-        len(frames), sequence_idx, '_'.join([n[:6] for n in worldmodel_names])), fps=20)
-
-def black_sequence_after_done(dream_sequence):
-    done = False
-    for dic in dream_sequence:
-        img = dic["obs"]
-        if np.mean(img) < 0.1:
-            done = True
-        if done:
-            dic["obs"] = np.zeros_like(img)
 
 def main(dataset="SCR",
          gpu=False,
@@ -161,7 +67,7 @@ def main(dataset="SCR",
          ):
     sequence_length = dream_length + context_length
 
-    worldmodel_types = ["TransformerL_V0"] # comparison image
+    worldmodel_types = ["DummyWorldModel"]  # comparison image
     discrete_actions = False
 
     if dataset == "SCR":
@@ -170,7 +76,6 @@ def main(dataset="SCR",
                        os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3doffice"),
                        os.path.expanduser("~/navdreams_data/wm_test_data/datasets/V/navrep3dasl"),
                        os.path.expanduser("~/navdreams_data/wm_experiments/datasets/V/rosbag")]
-
 
 
     def load_worldmodels(worldmodel_types):
@@ -246,31 +151,21 @@ def main(dataset="SCR",
                                    channel_first=False, as_torch_tensors=False, file_limit=10)
 
     print("{} sequences available".format(len(seq_loader)))
-    examples = list(range(len(seq_loader)))
-    example_sequences = {examples[i]: None for i in range(len(examples))}
-    for idx in example_sequences:
-        if idx >= len(seq_loader):
-            raise IndexError("{} is out of range".format(idx))
-        (x, a, y, x_rs, y_rs, dones) = seq_loader[idx]
+
+    seq_len = len(seq_loader)
+    model = worldmodels[0]
+    for n in tqdm(range(seq_len)):
+        (x, a, y, x_rs, y_rs, dones) = seq_loader[n]
         example_sequence = [dict(obs=x[i], state=x_rs[i], action=a[i], done=dones[i])
                             for i in range(sequence_length)]
-        example_sequences[idx] = example_sequence
-
-    # fill dream sequences from world model
-    #example_filled_sequences = []
-    model = worldmodels[0]
-    for n, idx in enumerate(tqdm(example_sequences)):
-        if example_sequences[idx] is None:
-            continue
-        real_sequence = example_sequences[idx]
         #dones = [step["done"] for step in real_sequence]
 
-        dream =  model.fill_dream_sequence(real_sequence, context_length)
+        dream =  model.fill_dream_sequence(example_sequence, context_length)
 
         real_data = np.zeros([sequence_length,64,64,3])
         dream_data = np.zeros([sequence_length, 64, 64, 3])
         for i in range(sequence_length):
-            real_data[i] = real_sequence[i]['obs']
+            real_data[i] = example_sequence[i]['obs']
             dream_data[i] = dream[i]['obs']
         save_data = {}
         save_data['real'] = real_data

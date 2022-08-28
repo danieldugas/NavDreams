@@ -14,20 +14,10 @@ def make_dir_if_not_exists(dir_):
 
 class RandomAgent:
     def __init__(self):
-        pass
-
-    def reset(self):
-        pass
-
-    def act(self, observations):
-        action = np.random.uniform(low=-1, high=1, size=(ACTION_DIM,))
-        return action
-
-class RandomAgentAlsoRec:
-    def __init__(self):
         # params
-        self.archive_dir=os.path.expanduser("~/navdreams/datasets/V/igibsonchallenge")
+        self.archive_dir=os.path.expanduser("/tmp/navdreams/datasets/V/igibsonchallenge")
         # vars
+        self.n = 0
         self.scans = []
         self.robotstates = []
         self.actions = []
@@ -43,7 +33,7 @@ class RandomAgentAlsoRec:
     def act(self, observations):
         action = np.random.uniform(low=-1, high=1, size=(ACTION_DIM,))
         self.scans.append(observations["rgb"])
-        self.robotstates.append(observations["sensor"])
+        self.robotstates.append(np.array(list(observations["task_obs"]) + [0]))
         self.actions.append(action)
         self.rewards.append(0)
         self.dones.append(0)
@@ -59,10 +49,11 @@ class RandomAgentAlsoRec:
             if self.archive_dir is not None:
                 make_dir_if_not_exists(self.archive_dir)
                 archive_path = os.path.join(
-                    self.archive_dir, "{:03}_scans_robotstates_actions_rewards_dones.npz".format(n)
+                    self.archive_dir, "{:03}_scans_robotstates_actions_rewards_dones.npz".format(self.n)
                     )
                 np.savez_compressed(archive_path, **data)
                 print(archive_path, "written.")
+            self.n += 1
             self.scans = []
             self.robotstates = []
             self.actions = []
@@ -92,4 +83,3 @@ if __name__ == "__main__":
     agent = ForwardOnlyAgent()
     action = agent.act(obs)
     print('action', action)
-

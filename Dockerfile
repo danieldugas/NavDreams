@@ -71,4 +71,4 @@ ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # needed by pyglet
-RUN apt-get install -y  libfreetype6-dev libfontconfig1-dev
+RUN sudo apt-get update && sudo apt-get install -y  libfreetype6-dev libfontconfig1-dev

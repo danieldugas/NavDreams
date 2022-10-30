@@ -1,12 +1,20 @@
-FROM ubuntu:18.04
+# FROM ubuntu:18.04
+FROM pytorch/pytorch:1.9.0-cuda10.2-cudnn7-devel
+# Dockerfile for ubuntu 20.04 with cuda and pytorch pre-installed.
+# Unsure if they can be used: the unity executables seem to have an error (KeyeHistogramClear)
 
 SHELL ["/bin/bash", "-c"]
-ENV LC_CTYPE en_US.UTF-8
-ENV LANG en_US.UTF-8
 
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
 RUN apt-get update && apt-get -y install sudo software-properties-common
 RUN sudo add-apt-repository multiverse && \
     sudo apt-get install -y virtualenv python3-pip git-lfs
+
+# GUI libraries needed by opencv, but during install a dependency asks for the timezone
+ENV CONTAINER_TIMEZONE=America/New_York
+RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y python3-opencv
 
 # create virtualenv
 # RUN add-apt-repository ppa:deadsnakes/ppa
@@ -45,6 +53,8 @@ RUN cd $HOME/Code/ && \
 # mitigates encoding errors in pip install
 RUN sudo apt-get -y install language-pack-en-base
 RUN sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LC_CTYPE en_US.UTF-8
+ENV LANG en_US.UTF-8
 
 RUN echo "source ~/n3denv/bin/activate" >> ~/.bashrc
 RUN cd $HOME/Code/pydreamer && \

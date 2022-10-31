@@ -1,5 +1,19 @@
 FROM ubuntu:18.04
 
+# install docker
+# install nvidia-docker (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
+# test both
+# docker run --rm --gpus all nvidia/cuda:11.0.3-base-ubuntu20.04 nvidia-smi
+
+# build
+# docker build -t n3d_nocuda .
+
+# run 
+# xhost +
+# docker run --rm --env="DISPLAY" --gpus all --net=host --name=n3d -it n3d_nocuda
+# (inside container): python -m navdreams.navrep3danyenv --scenario replica
+
+
 SHELL ["/bin/bash", "-c"]
 ENV LC_CTYPE en_US.UTF-8
 ENV LANG en_US.UTF-8

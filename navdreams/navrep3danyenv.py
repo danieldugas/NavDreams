@@ -72,6 +72,9 @@ def test_envs():
 
 
 def main(scenario="replica", difficulty_mode="progressive"):
+    if not scenario in scenario_to_build_name:
+        raise ValueError("unknown scenario {}. \n Scenario must be one of: \n{}".format(
+            scenario, "\n".join(scenario_to_build_name.keys())))
     build_name = scenario_to_build_name[scenario]
     env = NavRep3DAnyEnv(build_name=build_name, difficulty_mode=difficulty_mode)
     player = EnvPlayer(env)

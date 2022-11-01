@@ -31,11 +31,33 @@ Model implementations, trained checkpoints, training tools, and plotting tools a
 
 # How-to
 
-- Manual Install
+- Installation
 - Running the simulator
 - Training the world-model
 - Training the controller
 - Testing the controller
+
+## Using Docker
+
+First, make sure [docker is installed](https://docs.docker.com/engine/install/ubuntu/),
+and, if your computer has a GPU, that [nvidia-docker is installed](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
+
+
+A pre-built container image is available [here](https://drive.google.com/file/d/1tMgHli2-8Q07Y1Jr_F7qdcLCkNE636Kq/view?usp=share_link).
+To load it into your docker images:
+```
+docker load --input navdreams-docker-image.tar
+```
+
+Then, you can run the container with:
+```
+xhost + # allows docker to create UI windows in ubuntu
+docker run --rm --gpus all --env="DISPLAY" --net=host --name=n3d_test -it n3d_nocuda
+(inside running container) # python -m navdreams.navrep3danyenv --scenario replica
+```
+
+Not working? Check the troubleshooting guide.
+
 
 ## Manual Install
 
@@ -73,6 +95,12 @@ python train_gpt.py --dataset SCR
 python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city
 ```
 
+and for the end-to-end baseline
+
+```
+python train_gym_discrete_e2enavrep3d_PPO.py
+```
+
 ## Testing the Controller
 
 Test the controller you trained, (or a [downloaded model](https://drive.google.com/drive/folders/17_o7jPLKKlRbgySIOxn6-Z1kUHcOgld5?usp=sharing)).
@@ -88,29 +116,22 @@ Test the controller you trained, (or a [downloaded model](https://drive.google.c
 
 ---
 
-## Server Install
+## Troubleshooting Guide
 
-System check:
-
+GPU / Docker check (the output should be text information about your GPU):
 ```
 docker run -it --rm --gpus all pytorch/pytorch:1.9.0-cuda10.2-cudnn7-devel nvidia-smi
 ```
 
-Build Container
+Check whether the graphical environment is working. A window with a rotating horse should appear.
 ```
-docker build -t navdreams .
-```
-
-Train E2E model
-```
-docker run -it --rm --gpus all -v ~/logdir:/logdir navdreams \
-  python3 train_gym_discrete_e2enavrep3d_PPO.py
+sudo docker run --rm --gpus all --env="DISPLAY" --net=host -it n3d_nocuda bash -c "apt-get update && apt-get -y install glmark2 && glmark2"
 ```
 
-Note that due to using Unity as the simulation backend (MLAgents), a visual environment is required
-Here's an example on how to start the XServer on a ubuntu server with a Tesla T4 GPU.
-[Read here](https://dugas.ch/lord_of_the_files/run_your_unity_ml_executable_in_the_cloud.html) for more details.
-
+Are you trying to run this on a computer without a screen (like a cloud server)?  
+Note that due to using Unity as the simulation backend (MLAgents), a visual environment is required.  
+It's still possible to do so on cloud servers like AWS (we tested this workflow and it works), but requires a good understanding of the graphics pipeline.  
+Here's an example on how to start the XServer on a ubuntu server with a Tesla T4 GPU:
 ```
 # create virtual display with nvidia drivers
 # nvidia-xconfig --query-gpu-info
@@ -121,3 +142,13 @@ sudo Xorg :0 & # unlike startx, this only starts the x server, no DEs
 nvidia-smi # check that Xorg is running on the GPU
 echo "export DISPLAY=:0" >> ~/.bashrc # applications need to know which display to use
 ```
+
+[Read here](https://dugas.ch/lord_of_the_files/run_your_unity_ml_executable_in_the_cloud.html) for more details.
+
+If you want to see the virtual display, you can use a vnc viewer, like for example:
+```
+sudo apt install -y x11vnc xfce4-session
+x11vnc -display :0 -usepw -rfbport 5901
+DISPLAY=:0 startxfce4
+```
+

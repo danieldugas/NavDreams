@@ -1,0 +1,10 @@
+from n3d_nocuda
+# this dockerfile was used to make small adjustments to the already-built container.
+
+RUN sudo apt-get -y install glmark2
+RUN cd ~/Code/NavDreams && git pull
+
+RUN echo "cd ~/Code/NavDreams" >> ~/.bashrc
+
+RUN echo "cat ~/Code/NavDreams/cheatsheet.txt" >> ~/.bashrc
+

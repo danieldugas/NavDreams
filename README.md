@@ -43,16 +43,16 @@ First, make sure [docker is installed](https://docs.docker.com/engine/install/ub
 and, if your computer has a GPU, that [nvidia-docker is installed](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
 
 
-A pre-built container image is available [here](https://drive.google.com/file/d/1tMgHli2-8Q07Y1Jr_F7qdcLCkNE636Kq/view?usp=share_link).
+A pre-built container image is available [here](https://drive.google.com/file/d/1O6YxcyMxkSIkpwjaAvrSlYB0xTzxbMVp/view?usp=share_link).
 To load it into your docker images:
 ```
-docker load --input navdreams-docker-image.tar
+docker load --input navdreams-docker-image-v2.tar
 ```
 
 Then, you can run the container with:
 ```
 xhost + # allows docker to create UI windows in ubuntu
-docker run --rm --gpus all --env="DISPLAY" --net=host --name=n3d_test -it n3d_nocuda
+docker run --rm --gpus all --env="DISPLAY" --net=host --name=n3d_test -it n3d
 (inside running container) # python -m navdreams.navrep3danyenv --scenario replica
 ```
 
@@ -125,7 +125,7 @@ docker run -it --rm --gpus all pytorch/pytorch:1.9.0-cuda10.2-cudnn7-devel nvidi
 
 Check whether the graphical environment is working. A window with a rotating horse should appear.
 ```
-sudo docker run --rm --gpus all --env="DISPLAY" --net=host -it n3d_nocuda bash -c "apt-get update && apt-get -y install glmark2 && glmark2"
+sudo docker run --rm --gpus all --env="DISPLAY" --net=host -it n3d bash -c "glmark2"
 ```
 
 Are you trying to run this on a computer without a screen (like a cloud server)?  

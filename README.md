@@ -128,6 +128,24 @@ Check whether the graphical environment is working. A window with a rotating hor
 sudo docker run --rm --gpus all --env="DISPLAY" --net=host -it n3d bash -c "glmark2"
 ```
 
+### Running on a laptop
+
+On my T480, the above line
+```
+docker run --rm --gpus all --env="DISPLAY" --net=host --name=n3d_test -it n3d
+```
+leads to an error due to missing gpu. But when removing the --gpus all flag, things seem to work, except that OpenGL complains about missing drivers, and the simulator sometimes crashes.
+```
+libGL error: failed to load driver: i915
+libGL error: failed to open /dev/dri/card0: No such file or directory
+```
+in this case, replacing `--gpus all` with `--device /dev/dri/` solves these errors, and the simulator can then run smoothly on the laptop with integrated graphics.
+```
+xhost +
+docker run --rm --device /dev/dri/ --env="DISPLAY" --net=host --name=n3d_test -it n3d
+```
+
+### No Screen? No problem.
 Are you trying to run this on a computer without a screen (like a cloud server)?  
 Note that due to using Unity as the simulation backend (MLAgents), a visual environment is required.  
 It's still possible to do so on cloud servers like AWS (we tested this workflow and it works), but requires a good understanding of the graphics pipeline.  

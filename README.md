@@ -56,7 +56,7 @@ docker run --rm --gpus all --env="DISPLAY" --net=host --name=n3d_test -it n3d
 (inside running container) # python -m navdreams.navrep3danyenv --scenario replica
 ```
 
-Not working? Check the troubleshooting guide.
+Not working? Check the [troubleshooting guide](https://github.com/danieldugas/NavDreams#troubleshooting-guide).
 
 
 ## Manual Install

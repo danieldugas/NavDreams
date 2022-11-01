@@ -1,0 +1,24 @@
+Welcome to the NavDreams container image!
+=========================================
+
+Quick command cheatsheet:
+
+# test the simulator in human mode
+python -m navdreams.navrep3danyenv --scenario replica
+
+# train the end-to-end baseline
+python train_gym_discrete_e2enavrep3d_PPO.py
+
+# Create the world-model dataset
+python make_vae_dataset.py --scope SCR
+
+# Train the world-model
+python train_gpt.py --dataset SCR
+
+# Train the controller
+python train_gym_discrete_navrep3dtrainencodedenv.py --variant SCR --scenario city
+
+# Test the controller
+python test_any.py --model-path \
+ "~/navdreams_data/results/models/gym/navrep3dcityencodedenv_2022_02_18__18_26_31_DISCRETE_PPO_GPT_V_ONLY_V64M64_SCR_bestckpt.zip" \
+  --n-episodes 100 --build-name "./city.x86_64" --difficulty-mode "hardest" --render True

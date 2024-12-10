@@ -1,6 +1,6 @@
 Status: Unstable! Release in progress.
 
-# NavDreams
+# NavDreams: Social-Navigation World Models
 
 Camera-based robot navigation simulator, world-models, and policies for the paper
 **NavDreams: Towards Camera-Only RL Navigation Among Humans**

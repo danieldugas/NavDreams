@@ -1,5 +1,3 @@
-Status: Unstable! Release in progress.
-
 # NavDreams: Social-Navigation World Models
 
 Camera-based robot navigation simulator, world-models, and policies for the paper
